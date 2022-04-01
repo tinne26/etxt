@@ -1,4 +1,4 @@
-### Quantization
+# Quantization
 Quantization in the context of **etxt** refers to the process of adjusting glyph coordinates to the pixel grid. If you don't quantize anything, each glyph may be drawn at a different fractional pixel position. This means that the flow of text will be more faithful to the original font scalable outlines, but it also means that the same character may be rendered in different ways based on its position.
 
 Here's a quick summary of the modes available in **etxt**:

@@ -1,4 +1,4 @@
-### Font pixel sizes
+# Font pixel sizes
 So, the question that everyone is asking...
 
 If you set the font size to 16px, how big will be your text, really?
@@ -15,7 +15,7 @@ Display fonts designed for titles, hand-drawn fonts, pixelated fonts and similar
 
 Finally, remember that font sizes will also affect line height if you don't change that manually too.
 
-#### Taming sizes on the wild west
+## Taming sizes on the wild west
 If you are working with a fixed set of fonts, you can usually try different sizes until you get the fonts to look more or less consistent and call it a day.
 
 Sadly, if you don't know what fonts may be used (maybe you depend on system fonts or you let users specify their own), figuring out font sizes can become a real problem.
@@ -25,7 +25,7 @@ There are three things you can do (each one improving slightly on the previous):
 - Compute the size of a font dynamically based on the font's x-height and your own target x-height. In general I find x-height to be more reliable than cap-height, but you could also use both. When you do this, though, you should also set the renderer's line height manually.
 - Allow users to set their own scaling factor for each font so they can get it to be balanced with the rest of the fonts. This generally only makes sense if you are letting users load their own fonts to define custom UI styles, though, which is quite uncommon.
 
-#### Why pixels instead of points?
+## Why pixels instead of points?
 You might have noticed that most software uses points (pt) for font sizes, instead of pixels. Why? I don't know. One reason might be that in the case of screens with non-square pixels, using points allows the software to adjust to different horizontal and vertical resolutions and make text look as it should. But tradition might also play a role.
 
 By default, **etxt** doesn't bother with all that because:

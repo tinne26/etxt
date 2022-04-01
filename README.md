@@ -1,4 +1,4 @@
-### etxt
+# etxt
 [![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt.svg)](https://pkg.go.dev/github.com/tinne26/etxt)
 
 **NOTICE: Work in progress! In most ways the package is very mature and solid already, but there are still a few rough edges (most notably faux bold, EdgeMarker, and a couple important missing examples).**
@@ -15,7 +15,7 @@ As a quick summary of what this package provides:
 - A few custom rasterizers that allow you to draw faux-bold, oblique, ~~blurred and hollow text~~ (WIP). Not really "main features", though, only examples of what you can do with **etxt**.
 - Lots of [examples](https://github.com/tinne26/etxt/examples) and thorough documentation.
 
-#### Code example
+## Code example
 Less talk and more code!
 ```Golang
 package main
@@ -92,12 +92,12 @@ func checkMissingRunes(name string, font *etxt.Font) error {
 
 This example focuses on the mundane usage of the main **etxt** `FontLibrary` and `Renderer` types, with abundant checks to fail fast if anything seems out of place, but there are [many more examples](https://github.com/tinne26/etxt/examples) (and much flashier) in the project, so check them out!
 
-#### Can I use this package without Ebiten?
+## Can I use this package without Ebiten?
 Yeah, you can compile it with `-tags gtxt` (in fact, the Ebiten version could be a modified fork of the `gtxt` version instead, but that's a pain to manage... so I gave preference to the Ebiten version as my original target).
 
 Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time stuff. In particular, be careful to not accidentally use `gtxt` with Ebiten (they are compatible in many cases, but performance will die).
 
-#### Should I bother learning to use etxt?
+## Should I bother learning to use etxt?
 The difficult part is learning about fonts in general, not **etxt** in particular. If you are only dealing with text rendering incidentally and **ebiten/text** does the job well enough for you, I won't try to convince you to learn more about fonts, you probably have better things to spend your time on.
 
 That said, if you want to know more and have some time to invest, here's my advice:
@@ -106,7 +106,7 @@ That said, if you want to know more and have some time to invest, here's my advi
 3. Re-read 1.
 4. Now you can go through this package's documentation and examples, and they shouldn't pose any problems.
 
-#### Any limitations I should be aware of?
+## Any limitations I should be aware of?
 - Colored glyphs like emojis are not supported. **sfnt** doesn't support them, but **etxt** is not designed to support them anyway (and in a game context, using images directly is perfectly appropriate as an alternative).
 - No automatic support for bidirectional text. You can use [x/text/unicode/bidi](https://pkg.go.dev/golang.org/x/text/unicode/bidi) though, and then **etxt**'s `Renderer` allows you to set the rendering direction. See [examples/gtxt/direction_bidi](https://github.com/tinne26/examples/gtxt/direction_bidi/main.go).
 - **etxt** relies on [/x/image/font/sfnt](https://pkg.go.dev/golang.org/x/image/font/sfnt) under the hood, so it has the same limitations that **sfnt** has, which are significant. This will get technical, but here we go:
@@ -116,7 +116,7 @@ That said, if you want to know more and have some time to invest, here's my advi
 	- You get the hang of it: https://github.com/golang/go/issues/45325.
 - Glyph masks for Ebiten will be simplified (breaking compatibility) once Ebiten [accepts arbitrary bounds](https://github.com/hajimehoshi/ebiten/issues/2013) for its images.
 
-#### Any future plans?
+## Any future plans?
 If I ever get really bored, I'd like to look into:
 - Contributing to Golang's **sfnt** to expose more tables and allow the creation of minimal packages to do basic text shaping in arabic or other complex scripts.
 - Add outline expansion. Freetype and libASS do this, and it would be quite nice to get high quality outlines and better faux-bolds... but it's also *hard*; I don't really know if I want to go there.

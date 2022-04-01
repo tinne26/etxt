@@ -1,9 +1,9 @@
-### Rasterizing outlines
+# Rasterizing outlines
 This document aims to give a general overview of the rasterization algorithms used by [`vector.Rasterizer`](https://pkg.go.dev/golang.org/x/image/vector) and [`emask.EdgeMarker`](https://pkg.go.dev/github.com/tinne26/etxt/emask#EdgeMarker).
 
 While this package focuses on glyph rendering, these algorithms are suitable for general 2D vector graphics. That said, they are CPU-based processes best suited for small shapes; in the case of big shapes, GPU algorithms based on triangulation and [spline curve rendering](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-25-rendering-vector-art-gpu) may be a better choice.
 
-#### The problem
+## The problem
 Given a vectorial outline, we want to rasterize it (convert the outline to a raster image, which is a grid of square pixels). Here's a visual example:
 
 TODO: add image (zhe, ElMessiri, fontForge).
@@ -18,7 +18,7 @@ While quadratic and cubic Bézier curves are also allowed in `vector.Rasterizer`
 
 Notice also that while we often talk about lines and pen positions and outlines, it's best that you think in terms of "boundaries" and "delimiting segments". Boundaries have no width, what matters is the areas they delimit.
 
-#### Allowing outlines with holes
+## Allowing outlines with holes
 Each outline can have one or more contours, which are closed shapes delimiting an outer or inner region of the outline. For example:
 - The outline of a "1" generally has only one outer contour.
 - The outline of a "6" generally has two contours, one being an inner contour (the hole), and the other being an outer contour.
@@ -28,7 +28,7 @@ In order to make "holes" work, the standard procedure is to consider the contour
 - If two overlapping contours are defined in opposite directions (clockwise and counter-clockwise, or viceversa), we will make their overlapping area be unfilled.
 - If contours share the same orientation, overlapping areas will stay filled.
 
-#### How to solve the problem
+## How to solve the problem
 Now that we are situated, we can finally ask ourselves **how to go from outlines to a mask**.
 
 Here comes a first idea: determine the bounds of the outline, allocate an image big enough to contain it, and then for each pixel in the image determine if it's inside or outside the outlines.
@@ -45,7 +45,7 @@ There are multiple answers to each of these questions:
 
 ...but while triangulation is a suitable method for big shapes to be processed on the GPU, on CPU we will use another approach: marking the outline boundaries.
 
-#### Mark outline boundaries
+## Mark outline boundaries
 Let's say we have a letter like this:
 
 TODO: image (black/white char, e.g 楽).
@@ -80,7 +80,7 @@ To illustrate the concept more practically, let's imagine we have a mask with a 
 
 I'd explain more, but jumping directly into the code may be a better idea at this point.
 
-#### Limitations
+## Limitations
 This algorithm works decently in general, but notice that what happens inside a pixel can only be balanced, not distinguished. For example, if we define a 1x1 square in the middle of four pixels, we will get 25% opacity from each pixel. That's the best we can do, ok... but if you repeat the process 4 times, the 4 pixels will all get to 100% opacity. Mathematically speaking, this shouldn't happen, but since pixels can't tell where lines start or end within them, they can't tell it's always the same area being covered, so the result kinda "overflows".
 
 Floating point precision can also be an issue when dealing with big shapes, unaligned and angled boundaries, etc.
