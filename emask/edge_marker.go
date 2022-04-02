@@ -16,7 +16,7 @@ import "math"
 //
 // NOTICE: this code still has some issues that make the results not great.
 //
-// [explanation]: https://github.com/tinne26/etxt/docs/rasterize-outlines.md
+// [explanation]: https://github.com/tinne26/etxt/blob/main/docs/rasterize-outlines.md
 type EdgeMarker struct {
 	x float64 // current drawing point position
 	y float64 // current drawing point position

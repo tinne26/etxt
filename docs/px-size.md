@@ -1,19 +1,19 @@
 # Font pixel sizes
 So, the question that everyone is asking...
 
-If you set the font size to 16px, how big will be your text, really?
+If you set the font size to 16px, how big will your text really be?
 
 Well, while every font can do whatever it wants, in practice there's some general consensus:
 - In most sane fonts, the height of a *capital* latin letter will typically be between 65% and 75% of the pixel size. So, if you are drawing with a font at 16px, an "A" will usually be between 10 and 12px tall.
-- In most sane fonts, the x-height of a *lowercase* latin letter will typically be between 46% and 52% of the pixel size (the x-height is the height of lowercase letters without accounting for ascenders and descenders that characters like "g", "p", "y" or "t" tend to include). So, if you are drawing with a font at 16px, characters like "x", "a", "r", "v" and similar will usually be between 7 and 9px tall.
+- In most sane fonts, the x-height of a *lowercase* latin letter will typically be between 46% and 52% of the pixel size (the x-height is the height of lowercase letters without accounting for the ascenders and descenders of characters like "g", "p", "y" and "t"). So, if you are drawing with a font at 16px, characters like "x", "a", "r", "v" and similar will usually be between 7 and 9px tall.
 
 These properties can actually be obtained from the [font metrics](https://pkg.go.dev/golang.org/x/image/font#Metrics) (see `CapHeight` and `XHeight`). Although not common, notice that they can still be wrong and not match the actual font. For example, [Carter One](https://fonts.google.com/specimen/Carter+One) reports an x-height of 473 when it's actually something like 1120.
 
-When we talk about font size in pixels, what we are really defining is the [em](https://en.wikipedia.org/wiki/Em_(typography)) size. For example, a "j" —which has features going both upwards and downwards in its glyph— tends to be close to an em in vertical length. If you draw a "j" at 16px with **etxt** and measure its height, you will see it's 14px for most fonts (with an empty pixel of padding up and down).
+When we talk about font size in pixels, what we are really defining is the [em](https://en.wikipedia.org/wiki/Em_(typography)) size. For example, a "j" —which has features going both upwards and downwards in its glyph— tends to be close to an em in vertical length. If you draw a "j" at 16px with **etxt** and measure its height, you will see it's 14px for most fonts (~add an empty pixel of padding up and down).
 
 Display fonts designed for titles, hand-drawn fonts, pixelated fonts and similar are the most likely to break the general sizing rules, often with legit reasons to do so. Also, random fonts from the internet might do all kinds of weird stuff that I don't even want to start talking about.
 
-Finally, remember that font sizes will also affect line height if you don't change that manually too.
+Finally, remember that font sizes will also affect line height (unless you are controlling that manually with `SetLineHeight`).
 
 ## Taming sizes on the wild west
 If you are working with a fixed set of fonts, you can usually try different sizes until you get the fonts to look more or less consistent and call it a day.
@@ -31,7 +31,7 @@ You might have noticed that most software uses points (pt) for font sizes, inste
 By default, **etxt** doesn't bother with all that because:
 - All non-ancient computer screens have square pixels. Some TVs have non-square pixels, but this is also becoming increasingly rare as SMPTE standards define the PAR (pixel aspect-ratio) to be 1 (square) for HD screens.
 - DPIs are confusing as hell for most developers, specially game developers that would like to only have to care about pixels. Font sizes are already confusing enough on its own. And don't even get me started on DPI vs PPI...
-- Why are you people still using inches? Can't we ban DPI from the digital realm already?
+- ~~Why are you people still using inches? Can't we ban DPI from the digital realm already?~~
 - Golang alternatives like the **opentype** package (used by **ebiten/text**) ask for DPIs... but the same value is used horizontally and vertically (there's no real distinction in the code). This means that even if you wanted to work with non-square pixels and cared about DPIs/PPIs, the **opentype** DPI configuration wouldn't help you either.
 - If you really want to mess with all this, you can still go and implement a custom rasterizer and a sizer in **etxt**.
 

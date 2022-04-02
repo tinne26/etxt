@@ -10,17 +10,17 @@ To make it easier to interpret:
 - If you have a fixed point `int26.6`, your `int32` represents 1/64th parts (remember that 64 comes from 2^6) of whatever you are measuring. Pixels in our case.
 
 ## So, why do we have to work with fixed precision numbers?
-I don't know and I didn't bother to figure out, but the thing is that since fonts are scalable, sometimes we need to work with coordinates that do not exactly match the pixel grid, and fixed point numbers have been traditionally chosen to take care of this. Both 16.16 and 26.6 fixed point types are common when working with fonts, but only 26.6 is used with **etxt**.
+I don't know and I didn't bother to figure out, but the thing is that since font outlines are scalable, sometimes we need to work with coordinates that do not exactly match the pixel grid, and fixed point numbers have been traditionally chosen to take care of this. Both 16.16 and 26.6 fixed point types are common when working with fonts, but only 26.6 is used within **etxt**.
 
 The type used in Golang for fixed 26.6 values is defined in https://pkg.go.dev/golang.org/x/image/math/fixed. **etxt** also has a small [efixed](https://pkg.go.dev/github.com/tinne26/etxt/efixed) package which includes some useful helper functions.
 
 ## In which situations do we need fixed precision numbers?
 - After drawing a glyph, the amount of space we need to advance to prepare for drawing the next glyph may leave us at a fractional pixel coordinate.
-- From the previous point, if you are not quantizing fractional coordinates, you may have to start drawing text at a fractional pixel position. That's why `Draw*Fract*()` functions exist and why `Traverse` functions use `fixed.Int26_6` values.
+- From the previous point, if you are not quantizing fractional coordinates, you may have to start drawing text at a fractional pixel position. That's why `DrawFract()` exists and why `Traverse*` functions use `fixed.Int26_6` values.
 - Glyph rasterizers need to be able to deal with fractional pixel positions.
 
 ## Practical advice for operating with fixed precision numbers
-Most of the time operating with fixed precision numbers is quite easy, and you only need to do one of the following:
+Most of the time operating with fixed precision numbers is quite easy and you only need to do one of the following:
 - Use the right rounding function (see [efixed](https://pkg.go.dev/github.com/tinne26/etxt/efixed) helper package).
 - Convert from/to integer coordinates by shifting by 6 (multiplying or dividing by 64).
 - Convert from/to actual `float` coordinates (also by casting and multiplying or dividing by 64).

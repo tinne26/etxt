@@ -26,7 +26,7 @@ type Font = sfnt.Font
 // Support for glyph indices (and not only runes) is important in order
 // to make renderers usable with [text shapers] and complex scripts.
 //
-// [text shaping document]: https://github.com/tinne26/etxt/docs/shaping.md
+// [text shaping document]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
 type GlyphIndex = sfnt.GlyphIndex
 
 // A GlyphMask is the image that results from rasterizing a glyph.
@@ -52,7 +52,7 @@ type GlyphMask = internal.GlyphMask
 //
 // Read the [quantization document] if you need more details.
 //
-// [quantization document]: https://github.com/tinne26/etxt/docs/quantization.md
+// [quantization document]: https://github.com/tinne26/etxt/blob/main/docs/quantization.md
 type QuantizationMode uint8
 const (
 	QuantizeNone QuantizationMode = 0
@@ -96,13 +96,12 @@ const (
 )
 
 // Creates a new cache for glyphs. You can call NewHandler() on the
-// returned cache to obtain a cache handler to pass to Renderer
-// objects. A handler can only be used with a single Renderer, but
-// you can create multiple handlers for the same underlying cache
-// (although the default cache is not optimized for heavy concurrency).
+// returned cache to obtain a cache handler to pass to your Renderer.
+// A handler can only be used with a single Renderer, but you can create
+// multiple handlers for the same underlying cache.
 //
 // Will panic if maxBytes < 1024 or crypto/rand fails. If you want
-// to handle those errors, use ecache.NewDefaultCache directly.
+// to handle those errors or learn more, see the ecache subpackage.
 func NewDefaultCache(maxBytes int) *ecache.DefaultCache {
 	cache, err := ecache.NewDefaultCache(maxBytes)
 	if err != nil { panic(err) }

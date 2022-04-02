@@ -29,8 +29,8 @@ import "github.com/tinne26/etxt/esizer"
 // If you need more advice or guidance, check the [renderers document]
 // and the [examples].
 //
-// [renderers document]: https://github.com/tinne26/etxt/docs/renderer.md
-// [examples]: https://github.com/tinne26/etxt/examples
+// [renderers document]: https://github.com/tinne26/etxt/blob/main/docs/renderer.md
+// [examples]: https://github.com/tinne26/etxt/tree/main/examples
 type Renderer struct {
 	font *Font
 	target TargetImage
@@ -207,7 +207,7 @@ func (self *Renderer) SetRasterizer(rasterizer emask.Rasterizer) {
 //  - A lowercase latin letter is usually around 48% as tall as
 //    the given size. E.g: at 16px, "x" will be 7-9px tall.
 //
-// [general reference]: https://github.com/tinne26/etxt/px-size.md
+// [general reference]: https://github.com/tinne26/etxt/blob/main/docs/px-size.md
 func (self *Renderer) SetSizePx(sizePx int) {
 	self.SetSizePxFract(fixed.Int26_6(sizePx << 6))
 }
@@ -220,7 +220,7 @@ func (self *Renderer) SetSizePx(sizePx int) {
 // Like SetSizePx, but accepting a fractional pixel size in the
 // form of a [26.6 fixed point] integer.
 //
-// [26.6 fixed point]: https://github.com/tinne26/etxt/docs/fixed-26-6.md
+// [26.6 fixed point]: https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 func (self *Renderer) SetSizePxFract(sizePx fixed.Int26_6) {
 	if sizePx < 64 { panic("sizePx must be >= 1") }
 	if sizePx == self.sizePx { return }
@@ -247,7 +247,7 @@ func (self *Renderer) SetSizePxFract(sizePx fixed.Int26_6) {
 
 // Returns the current font size as a [fixed.Int26_6].
 //
-// [fixed.Int26_6]: https://github.com/tinne26/etxt/docs/fixed-26-6.md
+// [fixed.Int26_6]: https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 func (self *Renderer) GetSizePxFract() fixed.Int26_6 {
 	return self.sizePx
 }
@@ -353,8 +353,8 @@ func (self *Renderer) SetHorzAlign(horzAlign HorzAlign) {
 //    dinates passed to subsequent operations will be interpreted
 //    as the center of the box in which the text has to be drawn.
 //
-// See https://github.com/tinne26/etxt/doc/etxt_aligns.png for a visual
-// explanation instead.
+// See https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_aligns.png
+// for a visual explanation instead.
 //
 // By default, the renderer's alignment is (etxt.Baseline, etxt.Left).
 func (self *Renderer) SetAlign(vertAlign VertAlign, horzAlign HorzAlign) {

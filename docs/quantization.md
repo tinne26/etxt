@@ -6,7 +6,7 @@ Here's a quick summary of the modes available in **etxt**:
 - Vertical-only quantization: respects the natural flow of horizontal text at a manageable cost. Rarely worth it with big text though.
 - Full quantization: computationally the cheapest option, while still being reasonable to use in many situations.
 
-Here's the example from [examples/gtxt/quantization](https://github.com/tinne26/etxt/examples/gtxt/quantization):
-![](https://github.com/tinne26/etxt/docs/img/etxt_quantization.png)
+Here's the example from [examples/gtxt/quantization](https://github.com/tinne26/etxt/blob/main/examples/gtxt/quantization/main.go):
+![](https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_quantization.png?raw=true)
 
 The differences are visible if you start comparing the lines letter by letter, but they are also not major enough to be obvious if you aren't focusing on them. Different sizes and fonts may produce different results. For example, monospaced fonts and fonts in a pixelated style may look more consistent with quantization, while fonts with more natural or hand drawn styles may flow better without horizontal quantization.

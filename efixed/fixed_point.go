@@ -1,8 +1,9 @@
-// A utility package containing functions for working with fixed
-// point fixed.Int26_6 values. You most likely will never need to
-// use this package, but maybe if you are rolling your own
-// emask.Rasterizer or ecache.GlyphCacheHandler you find something
-// useful here.
+// efixed is a utility subpackage containing functions for working with
+// fixed point [fixed.Int26_6 numbers]. You most likely will never need
+// to use this package, but if you are rolling your own emask.Rasterizer
+// or ecache.GlyphCacheHandler maybe you find something useful here.
+//
+// [fixed.Int26_6 numbers]: https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 package efixed
 
 import "math"

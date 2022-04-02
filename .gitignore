@@ -1,0 +1,16 @@
+# ignore images except the ones from the docs
+*.png
+!docs/img/*.png
+
+# ignore generable documentation (./run_docsgen.sh)
+docs/*.html
+
+# ignore fonts
+fonts/
+*.ttf
+*.otf
+*.ttf.gzip
+*.otf.gzip
+
+# don't share the dirty secrets
+TODO.txt

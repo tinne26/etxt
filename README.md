@@ -3,7 +3,7 @@
 
 **NOTICE: Work in progress! In most ways the package is very mature and solid already, but there are still a few rough edges (most notably faux bold, EdgeMarker, and a couple important missing examples).**
 
-**etxt** is a package for font management and text rendering in Golang designed to be used with the [Ebiten](https://github.com/hajimehoshi/ebiten) game engine.
+**etxt** is a package for font management and text rendering in Golang designed to be used with the [**Ebiten**](https://github.com/hajimehoshi/ebiten) game engine.
 
 While Ebiten already provides the [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package that makes *getting some text drawn on the screen* easy enough, **etxt** aims to help you actually understand what you are doing, doing it in a structured way, and giving you much more power and control.
 
@@ -13,7 +13,8 @@ As a quick summary of what this package provides:
 - Structured font management and usage through the `FontLibrary` and `Renderer` types... because having to create and manage new `font.Face`s just to change text size is *not* ok.
 - Full control over glyph mask caching and rasterization (or just stay with the defaults!).
 - A few custom rasterizers that allow you to draw faux-bold, oblique, ~~blurred and hollow text~~ (WIP). Not really "main features", though, only examples of what you can do with **etxt**.
-- Lots of [examples](https://github.com/tinne26/etxt/examples) and thorough documentation.
+- Lots of [examples](https://github.com/tinne26/etxt/tree/main/examples) and thorough documentation.
+
 
 ## Code example
 Less talk and more code!
@@ -90,7 +91,8 @@ func checkMissingRunes(name string, font *etxt.Font) error {
 }
 ```
 
-This example focuses on the mundane usage of the main **etxt** `FontLibrary` and `Renderer` types, with abundant checks to fail fast if anything seems out of place, but there are [many more examples](https://github.com/tinne26/etxt/examples) (and much flashier) in the project, so check them out!
+This example focuses on the mundane usage of the main **etxt** `FontLibrary` and `Renderer` types, with abundant checks to fail fast if anything seems out of place, but there are [many more examples](https://github.com/tinne26/etxt/tree/main/examples) (and much flashier) in the project, so check them out!
+
 
 ## Can I use this package without Ebiten?
 Yeah, you can compile it with `-tags gtxt` (in fact, the Ebiten version could be a modified fork of the `gtxt` version instead, but that's a pain to manage... so I gave preference to the Ebiten version as my original target).
@@ -101,20 +103,21 @@ Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use
 The difficult part is learning about fonts in general, not **etxt** in particular. If you are only dealing with text rendering incidentally and **ebiten/text** does the job well enough for you, I won't try to convince you to learn more about fonts, you probably have better things to spend your time on.
 
 That said, if you want to know more and have some time to invest, here's my advice:
-1. Spend an hour reading https://freetype.org/freetype2/docs/glyphs/index.html up to section IV or V. Seriously, if you are interested in the topic but you don't read this you are just self-sabotaging.
+1. Spend an hour reading [FreeType glyph conventions](https://freetype.org/freetype2/docs/glyphs/index.html) up to section IV or V. Seriously, if you are interested in the topic but you don't read this you are just self-sabotaging.
 2. Sleep on it.
 3. Re-read 1.
 4. Now you can go through this package's documentation and examples, and they shouldn't pose any problems.
 
 ## Any limitations I should be aware of?
 - Colored glyphs like emojis are not supported. **sfnt** doesn't support them, but **etxt** is not designed to support them anyway (and in a game context, using images directly is perfectly appropriate as an alternative).
-- No automatic support for bidirectional text. You can use [x/text/unicode/bidi](https://pkg.go.dev/golang.org/x/text/unicode/bidi) though, and then **etxt**'s `Renderer` allows you to set the rendering direction. See [examples/gtxt/direction_bidi](https://github.com/tinne26/examples/gtxt/direction_bidi/main.go).
+- No automatic support for bidirectional text. You can use [x/text/unicode/bidi](https://pkg.go.dev/golang.org/x/text/unicode/bidi) though, and then **etxt**'s `Renderer` allows you to set the rendering direction. See [examples/gtxt/direction_bidi](https://github.com/tinne26/etxt/blob/main/examples/gtxt/direction_bidi/main.go).
 - **etxt** relies on [/x/image/font/sfnt](https://pkg.go.dev/golang.org/x/image/font/sfnt) under the hood, so it has the same limitations that **sfnt** has, which are significant. This will get technical, but here we go:
 	- Hinting doesn't exist in **etxt** because what **sfnt** does isn't hinting yet. All **sfnt** is doing is quantizing glyph positions and measures, not trying to read TrueType hinting instructions or applying any techniques to improve the readability of glyphs when projected to the pixel grid.
 	- Vertical text is not supported in any clean way because **sfnt** doesn't expose the relevant tables to determine vertical spacing between glyphs.
-	- While **etxt** supports drawing text based on glyph indices (instead of only runes), there's a hole in Go's landscape when it comes to [text shaping](https://github.com/tinne26/etxt/docs/shaping.md). **sfnt** doesn't expose enough information directly, so you might want to look into [go-text/typesetting](https://github.com/go-text/typesetting) instead.
+	- While **etxt** supports drawing text based on glyph indices (instead of only runes), there's a hole in Go's landscape when it comes to [text shaping](https://github.com/tinne26/etxt/blob/main/docs/shaping.md). **sfnt** doesn't expose enough information directly, so you might want to look into [go-text/typesetting](https://github.com/go-text/typesetting) instead.
 	- You get the hang of it: https://github.com/golang/go/issues/45325.
 - Glyph masks for Ebiten will be simplified (breaking compatibility) once Ebiten [accepts arbitrary bounds](https://github.com/hajimehoshi/ebiten/issues/2013) for its images.
+
 
 ## Any future plans?
 If I ever get really bored, I'd like to look into:

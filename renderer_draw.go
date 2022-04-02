@@ -38,7 +38,7 @@ func (self *Renderer) Draw(text string, x, y int) fixed.Point26_6 {
 // be fractionally aligned by itself, that still depends on the renderer's
 // quantization mode.
 //
-// [fractional pixel] https://github.com/tinne26/etxt/docs/fixed-26-6.md
+// [fractional pixel] https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 func (self *Renderer) DrawFract(text string, x, y fixed.Int26_6) fixed.Point26_6 {
 	// safety checks
 	if self.target == nil { panic("draw called while target == nil (tip: renderer.SetTarget())") }

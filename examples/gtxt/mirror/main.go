@@ -21,7 +21,7 @@ import "github.com/tinne26/etxt"
 //       is not enough like in gtxt/rainbow, so we will be doing some
 //       heavy lifting on our side..! If you aren't familiar with fixed
 //       point types, you might also want to take a look at this doc:
-//       >> https://github.com/tinne26/etxt/docs/fixed-26-6.md
+//       >> https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 
 const fontSize = 48
 func main() {

@@ -123,7 +123,7 @@ func (self *Renderer) Traverse(text string, xy fixed.Point26_6, operation func(f
 // already working with glyphs, implementing your own operations on top
 // of TraverseGlyphs should be fairly simple.
 //
-// [text shaping]: https://github.com/tinne26/etxt/docs/shaping.md
+// [text shaping]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
 func (self *Renderer) TraverseGlyphs(glyphIndices []GlyphIndex, xy fixed.Point26_6, operation func(fixed.Point26_6, GlyphIndex)) fixed.Point26_6 {
 	if len(glyphIndices) == 0 { return xy } // empty case
 
