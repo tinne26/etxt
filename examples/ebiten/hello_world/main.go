@@ -56,8 +56,8 @@ func main() {
 	txtRenderer.SetSizePx(72)
 
 	// run the "game"
-	err = ebiten.RunGame(&Game{ txtRenderer })
 	ebiten.SetWindowSize(400, 400)
+	err = ebiten.RunGame(&Game{ txtRenderer })
 	if err != nil {
 		log.Fatalf("ebiten.RunGame error: %s", err.Error())
 	}

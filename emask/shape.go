@@ -24,18 +24,18 @@ import "golang.org/x/image/math/fixed"
 //
 // Shapes by themselves do not care about the direction you use to define
 // the segments (clockwise/counter-clockwise), but rasterizers that use
-// the segments most often do. For example, if you defined two squares one
-// inside the other, if you define both in the same order (e.g: top-left to
-// top-right, top-right to bottom right...) the rasterized result will
-// be a single square. If you define them following opposite directions you
-// will get an outline with the difference between the two squares instead.
+// the segments most often do. For example, if you define two squares one
+// inside the other, both in the same order (e.g: top-left to top-right,
+// top-right to bottom right...) the rasterized result will be a single
+// square. If you define them following opposite directions, instead,
+// the result will be the difference between the two squares.
 type Shape struct {
 	segments []sfnt.Segment
 	invertY bool // but rasterizers already invert coords, so this is negated
 }
 
 // Creates a new Shape object. The commandsCount is used to
-// indicate the initial capacity of an internal slice.
+// indicate the initial capacity of its internal segments buffer.
 func NewShape(commandsCount int) Shape {
 	return Shape {
 		segments: make([]sfnt.Segment, 0, commandsCount),
@@ -43,7 +43,7 @@ func NewShape(commandsCount int) Shape {
 	}
 }
 
-// Whether Y coordinates will be inverted. See InvertY.
+// Returns whether InvertY is active or inactive. See InvertY.
 func (self *Shape) HasInvertY() bool { return self.invertY }
 
 // Glyphs are typically drawn with the ascenders being in the negative
@@ -158,16 +158,15 @@ func (self *Shape) CubeToFract(cx1, cy1, cx2, cy2, x, y fixed.Int26_6) {
 		})
 }
 
-// Reset the shape segments. Be careful to not be holding the segments
+// Resets the shape segments. Be careful to not be holding the segments
 // from Segments() when calling this (they may be overriden soon).
 func (self *Shape) Reset() { self.segments = self.segments[0 : 0] }
 
-// A quick method to rasterize the current shape with the default
-// rasterizer. You can then export to a png file with image/png and
-// some code like:
+// A helper method to rasterize the current shape with the default
+// rasterizer. You could then export the result to a png file, like:
 //   file, _ := os.Create("my_ugly_shape.png")
 //   _ = png.Encode(file, shape.Paint(color.White, color.Black))
-//   // ...but check errors and close the file ;)
+//   // ...maybe even checking errors and closing the file ;)
 func (self *Shape) Paint(drawColor, backColor color.Color) *image.RGBA {
 	segments := self.Segments()
 	if len(segments) == 0 { return nil }

@@ -1,6 +1,6 @@
-// The ecache subpackage contains the definition of the GlyphCacheHandler
-// interface used within etxt, along with default implementations and helper
-// types to assist you if you want to implement your own caches.
+// The ecache subpackage defines the GlyphCacheHandler interface used
+// within etxt, provides a default cache implementation and exposes a
+// few more helper types to assist you if you want to implement your own.
 //
 // Since glyph rasterization is usually an expensive CPU process, caches are
 // a vital part of any real-time text rendering pipeline.

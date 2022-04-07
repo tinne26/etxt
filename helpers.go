@@ -26,7 +26,7 @@ type Font = sfnt.Font
 // Support for glyph indices (and not only runes) is important in order
 // to make renderers usable with [text shapers] and complex scripts.
 //
-// [text shaping document]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
+// [text shapers]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
 type GlyphIndex = sfnt.GlyphIndex
 
 // A GlyphMask is the image that results from rasterizing a glyph.
@@ -82,7 +82,7 @@ const (
 	Right   HorzAlign = 2
 )
 
-// Renderer's can have their text direction configured as
+// Renderers can have their text direction configured as
 // left-to-right or right-to-left.
 //
 // Directions can be casted directly to [unicode/bidi] directions, e.g:

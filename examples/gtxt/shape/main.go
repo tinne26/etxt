@@ -50,7 +50,7 @@ func main() {
 		shape.LineTo(-x,  x)
 	}
 
-	// use the handy Paint image go from an alpha mask
+	// use the handy Paint function to go from an alpha mask
 	// to a RGBA image. in general if you are feeling less
 	// fancy you simply use (color.White, color.Black)
 	emerald := color.RGBA{  80, 200, 120, 255 }

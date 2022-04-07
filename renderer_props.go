@@ -139,7 +139,7 @@ func (self *Renderer) SetQuantizationMode(mode QuantizationMode) {
 
 // Gets the current glyph cache handler, which is nil by default.
 //
-// Rarely used unless you are examining the cache handle manually.
+// Rarely used unless you are examining the cache handler manually.
 func (self *Renderer) GetCacheHandler() ecache.GlyphCacheHandler {
 	return self.cacheHandler
 }
@@ -165,7 +165,7 @@ func (self *Renderer) SetCacheHandler(cacheHandler ecache.GlyphCacheHandler) {
 // Gets the current glyph mask rasterizer.
 //
 // This function is only useful when working with configurable rasterizers;
-// ignore it if you are using the standard glyph mask rasterizer.
+// ignore it if you are using the default glyph mask rasterizer.
 //
 // Mask rasterizers are not concurrent-safe, so be careful with
 // what you do and where you put them.

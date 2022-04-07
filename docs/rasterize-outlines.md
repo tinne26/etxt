@@ -45,20 +45,20 @@ There are multiple answers to each of these questions:
 
 ...but while triangulation is a suitable method for big shapes to be processed on the GPU, on CPU we will use another approach: marking the outline boundaries.
 
-## Mark outline boundaries
-Let's say we have a letter like this:
+## Marking outline boundaries
+Let's say we have a glyph like this:
 
 TODO: image (black/white char, e.g 楽).
 
-Now, starting from the left border, we start going to the right, and each time we cross an outline boundary, we mark it. The result would be something like this:
+Now, starting from the left side, we start going to the right, and each time we cross an outline boundary, we mark it. The result would be something like this:
 
 TODO: image (black borders).
 
-Well, that's the core idea we will take advantage of to solve our problem! Each time we issue a `LineTo` command to define a boundary segment for a contour, we will follow the line, see which pixels it crosses, and somehow store that information.
+Well, that's the core idea that will help us solve our problem. Each time we issue a `LineTo` command to define a boundary segment for a contour, we will follow the line, see which pixels it crosses, and somehow store that information.
 
 This data can be stored internally in a regular array or buffer (dense representation), or using a sparse(r) representation. For the sake of simplicity we will be using a buffer, but both are used in practice and offer different trade-offs. You could even use a hybrid approach based on the final size of the mask.
 
-We are closer now, but there are still a few loose ends...
+We are making progress now, but there are still a few loose ends...
 
 First, to account for clockwise and counter-clockwise directions and make "holes" possible, we will make positive y changes (upward lines) set positive crossing values, and negative y changes (downward lines) set negative crossing values.
 
@@ -70,17 +70,17 @@ The important part is that different directions result in values of opposite sig
 
 Now that we have an outline closer to what we want, it's time to dive into the final details.
 
-If you look at the previous outlines, you will see that the fully horizontal boundaries are not marked. This is key: since boundaries do not have any thickness and we don't have an infinitesimal grid (but rather a chunky pixel grid), what we have to mark are not the boundaries themselves, but the regions through which we cross them.
+If you look at the previous outlines, you will see that the fully horizontal boundaries are not marked. This is key: since boundaries do not have any thickness and we don't have an infinitesimal grid (but rather a chunky pixel grid), what we have to mark are not the boundaries themselves, but *the regions through which we cross them*.
 
 To do this, we need to choose a consistent direction to annotate all "crossings". To play nicely with computer memory layouts, we mark boundaries when they cross pixels *vertically*. Then, at a later step, we can traverse our buffer from left to right (horizontally) and fill the outline using accumulators. It's ok if you don't fully understand this right now, just remember that *we adjust the pixel opacities when boundaries cross them vertically*.
 
 To illustrate the concept more practically, let's imagine we have a mask with a single pixel:
 - If we create an outline that starts at `(0, 0)` and goes to `(0, 1)`, `(1, 1)`, `(0, 1)` and finally back to the start (creating a pixel-sized square), since the first `(0, 0) -> (0, 1)` boundary crosses the pixel vertically in full and does so from its horizontal start, we would set the opacity of that pixel to 1. Horizontal boundaries like `(0, 1) -> (1, 1)`, instead, *don't change opacity*. The other vertical boundary going back to `y = 0` would decrease the opacity, but it would do so in the next pixel to the right, not on the current one.
-- If we made a narrower rectangle starting at `x = 0.5`, the vertical area would still be fully traversed, but now since the boundary starts at half the pixel, we would only set its value to half the opacity. But this extremely important! Since we have fully traversed the vertical area, the opacity of the next pixels (going to the right) would have to become 100% later anyway! As an **invariant**, *each crossing that we mark has to add opacity proportional to how much we moved vertically*. Since the current pixel can't take 100% opacity, only 50%, the remaining 50% would go to the next one. This may sound strange at the beginning, but if you apply these rules consistently, you can use the pixel opacities as accumulator values, and when going from left to right, you can know the opacity of each pixel (well, the magnitude, as sign may vary).
+- If we made a narrower rectangle starting at `x = 0.5`, the vertical area would still be fully traversed, but now since the boundary starts at half the pixel, we would only set its value to half the opacity. But this extremely important! Since we have fully traversed the vertical area, the opacity of the next pixels (going to the right) would have to become 100% later anyway! As an **invariant**, *each crossing that we mark has to add opacity proportional to how much we moved vertically*. Since the current pixel can't take 100% opacity, only 50%, the remaining 50% would go to the next one. This may sound strange at the beginning, but if you apply these rules consistently you can use the pixel opacities as accumulator values and determine the opacity of each pixel by scanning them from left to right (well, technically the magnitude; the opacity sign may vary).
 
-I'd explain more, but jumping directly into the code may be a better idea at this point.
+I'd explain more, but at this point you have enough context and jumping directly [into the code](https://github.com/tinne26/etxt/blob/main/emask/edge_marker.go) may be the best next step.
 
 ## Limitations
-This algorithm works decently in general, but notice that what happens inside a pixel can only be balanced, not distinguished. For example, if we define a 1x1 square in the middle of four pixels, we will get 25% opacity from each pixel. That's the best we can do, ok... but if you repeat the process 4 times, the 4 pixels will all get to 100% opacity. Mathematically speaking, this shouldn't happen, but since pixels can't tell where lines start or end within them, they can't tell it's always the same area being covered, so the result kinda "overflows".
+This algorithm works decently in general, but notice that what happens inside a pixel can only be balanced, not distinguished. For example, if we define a 1x1 square in the middle of four pixels, we will get 25% opacity from each pixel. That's the best we can do, ok... but if you repeat the process 4 times, the 4 pixels will all get to 100% opacity. Mathematically speaking, this shouldn't happen, but since pixels can't tell where lines start or end within them, they can't tell it's always the same area being covered and the result "overflows".
 
 Floating point precision can also be an issue when dealing with big shapes, unaligned and angled boundaries, etc.

@@ -28,8 +28,9 @@ const defaultMixMode = MixOver
 // this doesn't do anything in gtxt, only ebiten needs it
 func convertAlphaImageToGlyphMask(i *image.Alpha) GlyphMask { return i }
 
-// The default glyph drawing function used in renderers. Rarely needed
-// unless you are pairing it with Traverse*.
+// The default glyph drawing function used in renderers. Do not confuse with
+// the main Draw() function. DefaultDrawFunc is rarely needed directly unless
+// pairing it with Traverse*.
 func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ GlyphIndex) {
 	if mask == nil { return } // spaces and empty glyphs will be nil
 

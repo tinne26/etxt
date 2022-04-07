@@ -33,5 +33,3 @@ done
 
 # clear temp files
 rm tmp_doc_head tmp_doc_body tmp_doc_tail
-
-#cp docs/reference_etxt.html docs/reference_emask.html

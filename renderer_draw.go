@@ -16,7 +16,7 @@ import "github.com/tinne26/etxt/emask"
 //   usage to Traverse* and other functions, instead of spamming with all the
 //   Draw(Fract)?(Each)?(Glyphs)? variants.
 
-// Draw the given text with the current configuration (font, size, color,
+// Draws the given text with the current configuration (font, size, color,
 // target, etc). The position at which the text will be drawn depends on
 // the given pixel coordinates and the renderer's align (see SetAlign rules).
 //
@@ -54,7 +54,8 @@ func (self *Renderer) DrawFract(text string, x, y fixed.Int26_6) fixed.Point26_6
 		})
 }
 
-// Low-level function used with Traverse* or Feed* operations.
+// Low-level function typically used with Traverse* when drawing glyph
+// masks manually.
 //
 // LoadGlyphMask loads the mask for the given glyph at the given fractional
 // pixel position. The renderer's cache handler, font, size, rasterizer and

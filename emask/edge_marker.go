@@ -3,16 +3,14 @@ package emask
 import "math"
 
 // An alternative to vector.Rasterizer that provides access to the result
-// of the first rasterization step, which is to mark the outline boundaries
-// that cross the raster image vertically.
+// of the first rasterization step. This first step consists in marking
+// the outline boundaries that cross the raster image vertically, but
+// without actually filling them yet.
 //
-// The point of this EdgeMarker is to provide a more focused and readable
-// alternative to vector.Rasterizer that users of etxt can adapt if
-// desired (e.g: higher-quality rasterization effects, alternative scan
-// directions, sparse representations, fixed point implementations, etc).
-// It's still a very low-level tool that almost no user of etxt will be
-// interested in touching. The docs include an [explanation] of the
-// algorithms and code.
+// EdgeMarker is intended to provide a simpler and more readable alternative
+// to vector.Rasterizer that users of etxt can adapt if desired. It's still
+// a very low-level tool that almost no user of etxt will be interested in
+// touching. The docs include an [explanation] of the algorithms and code.
 //
 // NOTICE: this code still has some issues that make the results not great.
 //
@@ -37,7 +35,7 @@ type EdgeMarker struct {
 func (self *EdgeMarker) Resize(width, height int) {
 	// check init flags
 	if self.initFlags & 1 == 0 { self.SetCurveThreshold(0.3) }
-	if self.initFlags & 2 == 0 { self.SetMaxCurveSplits(8)  }
+	if self.initFlags & 2 == 0 { self.SetMaxCurveSplits(  8) }
 
 	if width <= 0 || height <= 0 { panic("width or height <= 0") }
 	self.Width  = width

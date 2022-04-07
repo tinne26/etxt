@@ -6,12 +6,10 @@ import "golang.org/x/image/math/fixed"
 import "golang.org/x/image/font/sfnt"
 
 
-// Rasterizer is an interface for vector graphics rasterization to an
-// alpha mask, allowing anyone to target it when writing a custom text
-// renderer.
-//
-// This is interface is offered as an open alternative to Golang's
-// concrete x/image/vector.Rasterizer type (as used by opentype).
+// Rasterizer is an interface for 2D vector graphics rasterization to an
+// alpha mask. This interface is offered as an open alternative to Golang's
+// concrete x/image/vector.Rasterizer type (as used by opentype), allowing
+// anyone to target it and use its own rasterizer for text rendering.
 //
 // Mask rasterizers can't be used concurrently and must tolerate
 // coordinates out of bounds.
@@ -27,11 +25,11 @@ type Rasterizer interface {
 
 	// The cache signature returns an uint64 that can be used with glyph
 	// caches in order to tell rasterizers apart. When using multiple
-	// mask rasterizers within a single cache, you should make sure their
-	// cache signatures are different if that's required. As a practical
-	// standard, implementers of mask rasterizers are encouraged to leave
-	// at least the 8 highest bits to be configurable by users through
-	// the UserCfgCacheSignature interface.
+	// mask rasterizers with a single cache, you normally want to make sure
+	// that their cache signatures are different. As a practical standard,
+	// implementers of mask rasterizers are encouraged to leave at least
+	// the 8 highest bits to be configurable by users through the 
+	// UserCfgCacheSignature interface.
 	CacheSignature() uint64
 
 	// Sets the function to be called when the Rasterizer configuration

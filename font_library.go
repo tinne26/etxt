@@ -48,6 +48,14 @@ func (self *FontLibrary) HasFont(name string) bool {
 }
 
 // Returns the font with the given name, or nil if not found.
+//
+// If you don't know what are the names of your fonts, there are a few
+// ways to figure it out:
+//  - Load the fonts into the library and print their names with EachFont
+//    (fontLib.EachFont(func(name string, _ *etxt.Font){ fmt.Println(name) }))
+//  - Use the FontName() function directly on a *Font object.
+//  - Open a font with the OS's default font viewer; the name is usually
+//    on the title and/or first line of text.
 func (self *FontLibrary) GetFont(name string) *Font {
 	font, found := self.fonts[name]
 	if found { return font }

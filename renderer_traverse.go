@@ -7,7 +7,7 @@ import "github.com/tinne26/etxt/efixed"
 // Returns a Feed object linked to the Renderer.
 //
 // Feeds are the lowest level mechanism to draw text in etxt, as they
-// expose and allow to modify the drawing position manually.
+// expose and allow one to modify the drawing position manually.
 //
 // Unlike Traverse* methods, though, Feeds can't automatically align
 // text because the content to work with isn't known ahead of time.
