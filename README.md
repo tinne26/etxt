@@ -3,7 +3,7 @@
 
 **etxt** is a package for font management and text rendering in Golang designed to be used with the [**Ebiten**](https://github.com/hajimehoshi/ebiten) game engine.
 
-While Ebiten already provides the [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package that makes *getting some text drawn on screen* easy enough, **etxt** aims to help you actually understand what you are doing, doing it in a structured way, and giving you much more control over it.
+While Ebiten already provides the [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package that makes *getting some text drawn on screen* easy enough, **etxt** aims to help you actually understand what you are doing, doing it in a structured way and giving you much more control over it.
 
 As a quick summary of what this package provides:
 - Structured font management and usage through the `FontLibrary` and `Renderer` types; because having to create and manage new `font.Face`s just to change text size is *not* ok.
@@ -27,8 +27,8 @@ type Game struct { txtRenderer *etxt.Renderer }
 func (self *Game) Layout(int, int) (int, int) { return 400, 400 }
 func (self *Game) Update() error { return nil }
 func (self *Game) Draw(screen *ebiten.Image) {
-	millis := time.Now().UnixMilli() // don't do this in actual games ;)
-	blue := (millis/16)%512
+	millis := time.Now().UnixMilli() // (you should usually avoid using time)
+	blue := (millis/16) % 512
 	if blue >= 256 { blue = 511 - blue }
 	changingColor := color.RGBA{ 0, 255, uint8(blue), 255 }
 
@@ -71,10 +71,13 @@ func main() {
 	if err != nil { log.Fatal(err) }
 }
 
-// helper used after loading fonts
+// helper function used with FontLibrary.EachFont to make sure
+// all loaded fonts contain the characters / alphabet we want
 func checkMissingRunes(name string, font *etxt.Font) error {
-	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,;:!?-()[]"
-	missing, err := etxt.GetMissingRunes(font, alphabet)
+	const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	const symbols = "0123456789 .,;:!?-()[]{}_&#@"
+
+	missing, err := etxt.GetMissingRunes(font, letters + symbols)
 	if err != nil { return err }
 	if len(missing) > 0 {
 		log.Fatalf("Font '%s' missing runes: %s", name, string(missing))
@@ -97,7 +100,6 @@ The main consideration when using **etxt** is that you need to be minimally acqu
 
 ## Any future plans?
 This package is already quite solid, but there are still a few rough edges:
-- Faux-bold heuristic is still not good enough.
 - EdgeMarker is still experimental.
 - Missing a couple important examples (crisp UI and shaders).
 

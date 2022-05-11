@@ -46,10 +46,18 @@ func NewShape(commandsCount int) Shape {
 // Returns whether InvertY is active or inactive. See InvertY.
 func (self *Shape) HasInvertY() bool { return self.invertY }
 
-// Glyphs are typically drawn with the ascenders being in the negative
-// y plane and the descenders taking the positive y plane. This is
-// inversed of what most other contexts use, so you can set this flag
-// to true to invert the coordinates of the new segments you add.
+// Let's say you want to draw a triangle pointing up, similar to an
+// "A". By default, you would move to (0, 0) and then draw lines to
+// (k, 2*k), (2*k, 0) and back to (0, 0).
+//
+// If you set InvertY to true, the previous shape will draw a triangle
+// pointing down instead, similar to a "V". This is a convenient flag
+// that makes it easier to work on different contexts (e.g., font glyphs
+// are defined with the ascenders going into the negative y plane).
+//
+// InvertY can also be used creatively or to switch between clockwise and
+// counter-clockwise directions when drawing symmetrical shapes that have
+// their center at (0, 0).
 func (self *Shape) InvertY(active bool) { self.invertY = active }
 
 // Gets the shape information as sfnt.Segments. The underlying data

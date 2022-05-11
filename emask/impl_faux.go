@@ -11,18 +11,14 @@ import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/efixed"
 
-// configurable constants
-const applyExtraWidthFix = true // bad fixes for bad faux-bold algorithms
-
-// A rasterizer to draw oblique and faux-bold text. Notice that in general
-// you should be using the font's italic and bold versions instead of these
-// fake effects (specially for bold, faux-bold is really bad and has some
-// issues when stems don't reach full opacity).
+// A rasterizer to draw oblique and faux-bold text. For high quality
+// results, please use the font's italic and bold versions directly
+// instead of these fake effects.
 //
 // In 64-bit computers, using the FauxRasterizer without effects performs
 // basically the same as DefaultRasterizer. Using reasonable skew factors
 // for oblique tends to increase the rasterization time around 15%, and
-// using faux-bold increases the rasterization time in ~50%. It depends
+// using faux-bold increases the rasterization time in 60%, but it depends
 // a lot on how extreme the effects are.
 //
 // This rasterizer was created mostly to serve as an example of how to
@@ -256,19 +252,15 @@ func (self *FauxRasterizer) newOutline(outline sfnt.Segments, fract fixed.Point2
 }
 
 // ==== EXTRA WIDTH COMPUTATIONS ====
-// I spent like a whole week trying to figure this **** out and fighting
-// madness at the depths of test-hell. A few times I thought I was finally
-// starting to see the light at the end of the tunnel, but oh boy not so
-// fast, the latest test may now be working BUT ALL THE PREVIOUS ONES BROKE.
-//
-// Today, the code is still bad and miserable. I hate this thing.
+// I got very traumatized trying to figure out all this fake-bold stuff.
 // Just use a proper bold font and leave me alone.
 //
-// More seriously now... Better faux-bold must be done through shape
-// expansion, working directly with the outline points, but that's
-// very tricky to do (e.g: https://github.com/libass/libass/blob/
-// 7bf4bee0fc9a1d6257a105a3c19df6cf08733f8e/libass/ass_outline.c#L499),
-// and even freetype implementations are not "perfect".
+// ...
+//
+// Better faux-bold would have to be done through shape expansion anyway,
+// working directly with the outline points, but that's tricky to do (e.g:
+// github.com/libass/libass/blob/7bf4bee0fc9a1d6257a105a3c19df6cf08733f8e/
+// libass/ass_outline.c#L499)... but even freetype's faux-bold is not perfect.
 
 func (self *FauxRasterizer) applyExtraWidth(pixels []uint8, stride int) {
 	// extra width is applied independently to each row
@@ -279,6 +271,7 @@ func (self *FauxRasterizer) applyExtraWidth(pixels []uint8, stride int) {
 
 func (self *FauxRasterizer) applyRowExtraWidth(row []uint8, pixels []uint8, start int, stride int) {
 	var peakAlpha uint8
+	var twoPixSwap bool // flag for "two-pixel-stem" fix
 
 	// for each row, the idea is to ascend to the biggest alpha
 	// values first, and then when falling apply the extra width,
@@ -286,41 +279,32 @@ func (self *FauxRasterizer) applyRowExtraWidth(row []uint8, pixels []uint8, star
 	for index := 0; index < len(row); {
 		index, peakAlpha = self.extraWidthRowAscend(row, index)
 		if peakAlpha == 0 { return }
-		if applyExtraWidthFix {
-			peakAlpha = self.peakAlphaFix(row, index, pixels, start, stride, peakAlpha)
-		}
-		index = self.extraWidthRowFall(row, index, peakAlpha)
+		peakAlpha, twoPixSwap = self.peakAlphaFix(row, index, pixels, start, stride, peakAlpha)
+		index = self.extraWidthRowFall(row, index, peakAlpha, twoPixSwap)
 	}
 }
 
-func (self *FauxRasterizer) peakAlphaFix(row []uint8, index int, pixels []uint8, start int, stride int, peakAlpha uint8) uint8 {
-	if peakAlpha == 255 { return peakAlpha }
+func (self *FauxRasterizer) peakAlphaFix(row []uint8, index int, pixels []uint8, start int, stride int, peakAlpha uint8) (uint8, bool) {
+	if peakAlpha == 255 || self.xwidthWhole == 0 { return peakAlpha, false }
 
-	// boundaries
-	if index < 2 { return peakAlpha }
-	if index + 1 >= len(row) { return peakAlpha }
+	// check boundaries
+	if index < 2 { return peakAlpha, false }
+	if index + 1 >= len(row) { return peakAlpha, false }
 	aboveIndex := (start + index - 1 - stride)
 	belowIndex := (start + index - 1 + stride)
-	if aboveIndex < 0 || belowIndex > len(pixels) { return peakAlpha }
+	if aboveIndex < 0 || belowIndex > len(pixels) { return peakAlpha, false }
 
 	// "in stem" heuristic
-	upSum := uint16(pixels[aboveIndex - 1]) + uint16(pixels[aboveIndex]) + uint16(pixels[aboveIndex + 1])
-	dwSum := uint16(pixels[belowIndex - 1]) + uint16(pixels[belowIndex]) + uint16(pixels[belowIndex + 1])
-	min := upSum
-	if dwSum < min { min = dwSum }
-	if min > 255 { min = 255 }
-	min8 := uint8(min)
-	if min8 >= peakAlpha {
-		peakAlpha = min8
-		if row[index - 1] > 0 {
-			row[index - 1] = uint8((uint16(peakAlpha) + uint16(row[index - 1]))/2)
-		}
+ 	pixAbove := (pixels[aboveIndex - 1] > 0 || pixels[aboveIndex] > 0 || pixels[aboveIndex + 1] > 0)
+	pixBelow := (pixels[belowIndex - 1] > 0 || pixels[belowIndex] > 0 || pixels[belowIndex + 1] > 0)
+	if !pixAbove || !pixBelow { return peakAlpha, false }
+
+	// handle the edge case of two-pixel stem
+	if index >= 3 && row[index] == 0 && row[index - 2] != 0 && row[index - 3] == 0 {
+		return 255, true // two-pix-stem swap is necessary!
 	}
 
-	// what about taking the values bigger than us, count how many there are,
-	// and apply some normalization based on that? both for the new value,
-	// and the original peak..?
-	return peakAlpha
+	return 255, false
 }
 
 // Returns the first index after the alpha peak, along with the peak value.
@@ -339,29 +323,45 @@ func (self *FauxRasterizer) extraWidthRowAscend(row []uint8, index int) (int, ui
 
 // The tricky part. As mentioned before, the main idea is to
 // keep-max-of-last-n-alpha-values, but... *trauma intensifies*
-func (self *FauxRasterizer) extraWidthRowFall(row []uint8, index int, peakAlpha uint8) int {
+func (self *FauxRasterizer) extraWidthRowFall(row []uint8, index int, peakAlpha uint8, twoPixSwap bool) int {
 	// apply the whole width part...
 	whole := self.xwidthWhole
 	if whole == 0 { // ...unless there's no whole part, I guess
 		return self.extraWidthRowFractFall(row, index, peakAlpha)
 	}
 
+	peakAlphaIndex := index - 1
+	realPeakAlpha  := row[peakAlphaIndex]
 	for n := uint16(0); n < whole; n++ {
 		currAlpha := row[index]
-		if currAlpha >= peakAlpha { return index }
+		if currAlpha >= peakAlpha {
+			row[peakAlphaIndex] = peakAlpha
+			return index
+		}
 		row[index] = peakAlpha
 		self.xwidthTail[n] = currAlpha
 		index += 1
+	}
+
+	// two-pixel-stem swap correction
+	if twoPixSwap {
+		row[peakAlphaIndex] = peakAlpha
+		row[index - 1] = realPeakAlpha
+		self.xwidthTail[0] = realPeakAlpha
+		peakAlpha = realPeakAlpha
 	}
 
 	// we are done with the whole width peak part. now... what's this?
 	mod := self.xwidthTailMod
 	if whole > 1 { self.backfixTail(whole) }
 
-	// propagate the tail
+	// prepare variables to propagate the tail
 	tailIndex   := uint16(0)
 	prevAlpha   := peakAlpha
 	prevTailAdd := peakAlpha
+	if twoPixSwap { tailIndex = 1 }
+
+	// propagate the tail
 	for index < len(row) {
 		tailAlpha := self.xwidthTail[tailIndex]
 		newAlpha  := self.interpolateForExtraWidth(prevAlpha, tailAlpha)
@@ -392,7 +392,7 @@ func (self *FauxRasterizer) extraWidthRowFall(row []uint8, index int, peakAlpha 
 // this and normalizes the tail to their max possible values.
 // expects the tail to start at index = 0.
 func (self *FauxRasterizer) backfixTail(whole uint16) {
-	// do you see the shape of this code? it's obscene.
+	// this code is so ugly
 	i := whole - 1
 	max := self.xwidthTail[i]
 	i -= 1
