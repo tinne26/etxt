@@ -2,41 +2,34 @@ package emask
 
 import "math"
 
-// An alternative to vector.Rasterizer that provides access to the result
-// of the first rasterization step. This first step consists in marking
-// the outline boundaries that cross the raster image vertically, but
-// without actually filling them yet.
+// edgeMarker implements a simplified and more readable version of the
+// algorithm used by vector.Rasterizer, providing access to the result of
+// the first rasterization step. The final accumulation process can be
+// seen in EdgeMarkerRasterizer's Rasterize() method too.
 //
-// EdgeMarker is intended to provide a simpler and more readable alternative
-// to vector.Rasterizer that users of etxt can adapt if desired. It's still
-// a very low-level tool that almost no user of etxt will be interested in
-// touching. The docs include an [explanation] of the algorithms and code.
+// The algorithms are documented and contextualized here:
+// >> https://github.com/tinne26/etxt/blob/main/docs/rasterize-outlines.md
 //
-// NOTICE: this code still has some issues that make the results not great.
-//
-// [explanation]: https://github.com/tinne26/etxt/blob/main/docs/rasterize-outlines.md
-type EdgeMarker struct {
+// The zero value is usable, but curves will not be segmented smoothly.
+// You should manually SetCurveThreshold() and SetMaxCurveSplits() to
+// the desired values.
+type edgeMarker struct {
 	x float64 // current drawing point position
 	y float64 // current drawing point position
 	Width int  // canvas width, in pixels
 	Height int // canvas height, in pixels
-	Buffer []float64 // be *very* careful if you touch this directly.
+	Buffer []float64 // be very careful if you touch this directly.
 	// ^ Negative values are used for counter-clockwise segments,
 	//   positive values are used for clockwise segments.
 
-	curveThreshold float64 // expressed as threshold^2
-	maxCurveSplits int // prevent infinite loops
-	initFlags uint8 // stores whether curveThreshold and maxCurveSplits
-	                // have been initialized with bits 0b01 and 0x10
+	curveThreshold float32 // threshold to decide if a segment approximates
+	                       // a bézier curve well enough or we should split
+	maxCurveSplits uint8   // a cutoff for curve segmentation
 }
 
 // Sets a new Width and Height and resizes the underlying buffer if
 // necessary. The buffer contents are cleared too.
-func (self *EdgeMarker) Resize(width, height int) {
-	// check init flags
-	if self.initFlags & 1 == 0 { self.SetCurveThreshold(0.3) }
-	if self.initFlags & 2 == 0 { self.SetMaxCurveSplits(  8) }
-
+func (self *edgeMarker) Resize(width, height int) {
 	if width <= 0 || height <= 0 { panic("width or height <= 0") }
 	self.Width  = width
 	self.Height = height
@@ -58,12 +51,12 @@ func (self *EdgeMarker) Resize(width, height int) {
 }
 
 // Fills the internal buffer with zeros.
-func (self *EdgeMarker) ClearBuffer() {
+func (self *edgeMarker) ClearBuffer() {
 	fastFillFloat64(self.Buffer, 0)
 }
 
 // Moves the current position to the given coordinates.
-func (self *EdgeMarker) MoveTo(x, y float64) {
+func (self *edgeMarker) MoveTo(x, y float64) {
 	self.x = x
 	self.y = y
 }
@@ -74,19 +67,16 @@ func (self *EdgeMarker) MoveTo(x, y float64) {
 // While the 'LineTo' name is used to stay consistent with other similar
 // interfaces, don't think in terms of "drawing lines"; we are defining
 // the boundaries of an outline.
-func (self *EdgeMarker) LineTo(x, y float64) {
-	// TODO: this implementation is very clear and intended to be as educative
-	//       as possible. that said, while there's nothing terribly inefficient
-	//       in it and I generally expect other parts of the code to be more
-	//       critical in terms of performance, I'd have to write an optimized
-	//       version and benchmark to see how much I actually left on the table.
+func (self *edgeMarker) LineTo(x, y float64) {
+	// This method is the core of edgeMarker. Additional context
+	// and explanations are available at docs/rasterize-outlines.md.
 
 	// changes in y equal or below this threshold are considered 0.
 	// this is bigger than 0 in order to account for floating point
 	// division unstability
 	const HorizontalityThreshold = 0.000001
 
-	// when we are done, set the new current position
+	// make sure to set the new current position at the end
 	defer self.MoveTo(x, y)
 
 	// get position increases in both axes
@@ -142,51 +132,71 @@ func (self *EdgeMarker) LineTo(x, y float64) {
 	//          horizontal and vertical advances from a whole position,
 	//          once we re-add that difference we will reach the whole
 	//          position again if that's what has to happen.
+	// *note 2: notice that there are many optimizations that are not
+	//          being applied here. for example, vector.Rasterizer treats
+	//          the buffer as a continuous space instead of using rows
+	//          as boundaries, which allows for faster buffer accumulation
+	//          at a later stage (also using SIMD instructions). Many
+	//          other small optimizations are possible if you don't mind
+	//          hurting readability. using float32 instead of float64 can
+	//          also speed up things. allocations could also be reduced.
+	//          see also CubeTo for curve optimizations.
 }
 
 // Creates a boundary from the current position to the given target
 // as a quadratic Bézier curve through the given control point and
 // moves the current position to the new one.
-func (self *EdgeMarker) QuadTo(ctrlX, ctrlY, x, y float64) {
+func (self *edgeMarker) QuadTo(ctrlX, ctrlY, x, y float64) {
+	// Once we managed to draw straight lines, it's time to draw curves.
+	// The idea is simple: just split the curves into straight lines.
+	// If you aren't familiar with Bézier curves, have a look at
+	// https://javascript.info/bezier-curve.
+	//
+	// The method used here to do curve segmentation is simply to keep
+	// partitioning a curve in smaller segments until we hit a hard cutoff
+	// (maxCurveSplits) or we find that the current segment approximates
+	// the curve well enough (the distance between the next potential split
+	// point and the current straight line is equal or below the threshold
+	// (curveThreshold)).
+
 	// o and f are the start and end points of the curve
 	ox, oy, fx, fy := self.x, self.y, x, y
 
 	// create a slice to store curve targets and make the
 	// algorithm iterative instead of recursive
-	type curveTarget struct{ x, y, t float64 }
-	nextTargets := make([]curveTarget, 0, self.maxCurveSplits + 1)
-	nextTargets  = append(nextTargets, curveTarget{ x, y, 1.0 })
+	type curveTarget struct{ x, y, t float64; depth uint8 }
+	nextTargets := make([]curveTarget, 0, self.maxCurveSplits)
+	target := curveTarget { fx, fy, 1.0, 0 }
 
 	// during the process we need line equations in ABC form
 	// in order to compute distances between a line and a point,
 	// and we can reuse some of them, so we keep helper vars
-	a, b, c, a2b2 := toLinearFormABC(ox, oy, fx, fy)
+	a, b, c := toLinearFormABC(ox, oy, fx, fy)
 
 	// keep splitting the curve until segments are within the
-	// "flatness" threshold and we can draw them as straight lines
+	// curve threshold and we can draw them as straight lines
 	tReached := 0.0 // our progress in segmenting the curve
-	splitBudget := self.maxCurveSplits
 	for {
-		// get next target and interpolate curve at the current t
-		target := nextTargets[len(nextTargets) - 1]
-		t := (target.t - tReached)/2
+		// interpolate curve at the next split point
+		t := tReached + (target.t - tReached)/2
 		ix, iy := interpQuadBezier(ox, oy, fx, fy, ctrlX, ctrlY, t)
+		depth := target.depth
 
-		// see if the interpolated point is within the configurable
-		// threshold. if it is, we use a straight line
-		if splitBudget <= 0 || self.withinCurveThreshold(a, b, c, a2b2, ix, iy) {
-			lx, ly := self.x, self.y // (memorize, needed later)
+		// see if the interpolated point is within the threshold
+		if depth == self.maxCurveSplits || self.withinCurveThreshold(a, b, c, ix, iy) {
+			// use a linear segment to interpolate
 			self.LineTo(target.x, target.y) // self x/y is advanced with this too
-			if len(nextTargets) == 1 { return } // last target reached, stop
+			if len(nextTargets) == 0 { return } // last target reached, stop
 
 			// update our variables for the next iteration
+			tReached = target.t // increase reached t
+			target = nextTargets[len(nextTargets) - 1]
 			nextTargets = nextTargets[:len(nextTargets) - 1]
-			tReached    = t // increase reached t
-			a, b, c, a2b2 = toLinearFormABC(lx, ly, target.x, target.y)
-			splitBudget += 1
+			a, b, c = toLinearFormABC(self.x, self.y, target.x, target.y)
 		} else { // sub-split required
-			nextTargets = append(nextTargets, curveTarget{ ix, iy, t })
-			splitBudget -= 1
+			target.depth += 1
+			nextTargets = append(nextTargets, target)
+			target = curveTarget{ ix, iy, t, depth + 1 }
 		}
 	}
 }
@@ -194,32 +204,34 @@ func (self *EdgeMarker) QuadTo(ctrlX, ctrlY, x, y float64) {
 // Creates a boundary from the current position to the given target
 // as a cubic Bézier curve through the given control points and
 // moves the current position to the new one.
-func (self *EdgeMarker) CubeTo(cx1, cy1, cx2, cy2, x, y float64) {
-	// go and read QuadTo implementation. this is the same, but
+func (self *edgeMarker) CubeTo(cx1, cy1, cx2, cy2, x, y float64) {
+	// go and read QuadTo's implementation. this is the same, but
 	// without documentation and using interpCubeBezier. that's it.
+	//
+	// performance notes: reducing to 1 split can cut rasterization
+	// times in 15%. vector.Rasterizer's approach is also more
+	// direct and could cut rasterization time a bit.
 	ox, oy, fx, fy := self.x, self.y, x, y
-	type curveTarget struct{ x, y, t float64 }
-	nextTargets := make([]curveTarget, 0, self.maxCurveSplits + 1)
-	nextTargets  = append(nextTargets, curveTarget{ x, y, 1.0 })
-	a, b, c, a2b2 := toLinearFormABC(ox, oy, fx, fy)
-
+	type curveTarget struct{ x, y, t float64; depth uint8 }
+	nextTargets := make([]curveTarget, 0, self.maxCurveSplits)
+	target := curveTarget { fx, fy, 1.0, 0 }
+	a, b, c := toLinearFormABC(ox, oy, fx, fy)
 	tReached := 0.0
-	splitBudget := self.maxCurveSplits
 	for {
-		target := nextTargets[len(nextTargets) - 1]
-		t := (target.t - tReached)/2
+		t := tReached + (target.t - tReached)/2
 		ix, iy := interpCubeBezier(ox, oy, fx, fy, cx1, cy1, cx2, cy2, t)
-		if splitBudget <= 0 || self.withinCurveThreshold(a, b, c, a2b2, ix, iy) {
-			lx, ly := self.x, self.y
+		depth := target.depth
+		if depth == self.maxCurveSplits || self.withinCurveThreshold(a, b, c, ix, iy) {
 			self.LineTo(target.x, target.y)
-			if len(nextTargets) == 1 { return }
+			if len(nextTargets) == 0 { return }
+			tReached = target.t
+			target = nextTargets[len(nextTargets) - 1]
 			nextTargets = nextTargets[:len(nextTargets) - 1]
-			tReached    = t
-			a, b, c, a2b2 = toLinearFormABC(lx, ly, target.x, target.y)
-			splitBudget += 1
-		} else { // sub-split
-			nextTargets = append(nextTargets, curveTarget{ ix, iy, t })
-			splitBudget -= 1
+			a, b, c = toLinearFormABC(self.x, self.y, target.x, target.y)
+		} else {
+			target.depth += 1
+			nextTargets = append(nextTargets, target)
+			target = curveTarget{ ix, iy, t, depth + 1 }
 		}
 	}
 }
@@ -229,26 +241,37 @@ func (self *EdgeMarker) CubeTo(cx1, cy1, cx2, cy2, x, y float64) {
 // the threshold value, the curve will be split. Otherwise, the linear
 // segment will be used to approximate it. The default value is 0.3.
 //
-// If the threshold is too low (typically <= 0.1), the algorithms
-// may enter infinite loops only prevented by MaxCurveSplits.
-func (self *EdgeMarker) SetCurveThreshold(dist float64) {
-	self.curveThreshold = dist*dist // we store it squared already
-	self.initFlags |= 1
+// Values very close to zero could prevent the algorithm from converging
+// due to floating point instability, but MaxCurveSplits will prevent
+// infinite looping anyway.
+func (self *edgeMarker) SetCurveThreshold(dist float32) {
+	self.curveThreshold = dist
 }
 
-// Sets the maximum amount of curve splits. When thresholds are low,
-// they may not be enough to prevent the algorithms from entering
-// infinite curve splitting loops, so setting a hard max is necessary.
+// Sets the maximum amount of times a curve can be recursively split
+// into subsegments while trying to approximate it (QuadTo / CubeTo).
 //
-// The default value is 8.
-func (self *EdgeMarker) SetMaxCurveSplits(maxCurveSplits int) {
-	self.maxCurveSplits = maxCurveSplits
-	self.initFlags |= 2
+// The maximum number of segments that will approximate a curve is
+// 2^maxCurveSplits. The default value of maxCurveSplits is 6.
+//
+// This value is typically used as a cutoff to prevent low curve thresholds
+// from making the curve splitting process too slow, but it can also be used
+// creatively to get jaggy results instead of smooth curves.
+//
+// Values outside the [0, 255] range will be silently clamped.
+func (self *edgeMarker) SetMaxCurveSplits(maxCurveSplits int) {
+	if maxCurveSplits < 0 {
+		self.maxCurveSplits = 0
+	} else if maxCurveSplits > 255 {
+		self.maxCurveSplits = 255
+	} else {
+		self.maxCurveSplits = uint8(maxCurveSplits)
+	}
 }
 
 // --- helper functions ---
 
-func (self *EdgeMarker) markBoundary(x, y, horzAdvance, vertAdvance float64) {
+func (self *edgeMarker) markBoundary(x, y, horzAdvance, vertAdvance float64) {
 	// find the pixel position on which we have to mark the boundary
 	col := intFloorOfSegment(x, horzAdvance)
 	row := intFloorOfSegment(y, vertAdvance)
@@ -289,14 +312,14 @@ func (self *EdgeMarker) markBoundary(x, y, horzAdvance, vertAdvance float64) {
 	}
 }
 
-// given the A, B and C coefficients of a line equation in ABC form
-// and a point, and returns true if the given line and the point (px, py)
-// are close enough (configurable threshold)
-func (self *EdgeMarker) withinCurveThreshold(a, b, c, a2b2, px, py float64) bool {
+// given the A, B and C coefficients of a line equation in the form
+// Ax + By + C = 0 and a point, and returns true if the given line and
+// the point (px, py) are close enough (configurable threshold)
+func (self *edgeMarker) withinCurveThreshold(a, b, c, px, py float64) bool {
 	// https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_an_equation
 	// dist = |a*x + b*y + c| / sqrt(a^2 + b^2)
 	n := a*px + b*py + c
-	return n*n <= self.curveThreshold*a2b2
+	return n*n <= float64(self.curveThreshold)*float64(self.curveThreshold)*(a*a + b*b)
 }
 
 func hasReachedTarget(current float64, limit float64, deltaSign float64) bool {
@@ -335,25 +358,27 @@ func interpolateAt(a, b float64, t float64) float64 { return a + t*(b - a) }
 
 // interpolate the quadratic bézier curve at the given t [0, 1].
 // see https://youtu.be/YATikPP2q70?t=205 for a visual explanation
-func interpQuadBezier(ax, ay, bx, by, ctrlX, ctrlY, t float64) (float64, float64) {
-	acx, acy := lerp(ax, ay, ctrlX, ctrlY, t)
-	cbx, cby := lerp(ctrlX, ctrlY, bx, by, t)
-	return lerp(acx, acy, cbx, cby, t)
+func interpQuadBezier(ox, oy, fx, fy, ctrlX, ctrlY, t float64) (float64, float64) {
+	ocx, ocy := lerp(ox, oy, ctrlX, ctrlY, t)
+	cfx, cfy := lerp(ctrlX, ctrlY, fx, fy, t)
+	return lerp(ocx, ocy, cfx, cfy, t)
 }
 
-func interpCubeBezier(ax, ay, bx, by, cx1, cy1, cx2, cy2, t float64) (float64, float64) {
-	ac2x, ac2y := interpQuadBezier(ax, ay, cx2, cy2, cx1, cy1, t)
-	c1bx, c1by := interpQuadBezier(cx1, cy1, bx, by, cx2, cy2, t)
-	return lerp(ac2x, ac2y, c1bx, c1by, t)
+func interpCubeBezier(ox, oy, fx, fy, cx1, cy1, cx2, cy2, t float64) (float64, float64) {
+	oc2x, oc2y := interpQuadBezier(ox, oy, cx2, cy2, cx1, cy1, t)
+	c1fx, c1fy := interpQuadBezier(cx1, cy1, fx, fy, cx2, cy2, t)
+	return lerp(oc2x, oc2y, c1fx, c1fy, t)
 }
 
-func toLinearFormABC(ox, oy, fx, fy float64) (float64, float64, float64, float64) {
+// Given two points of a line, it returns its A, B and C
+// coefficients from the form "Ax + Bx + C = 0".
+func toLinearFormABC(ox, oy, fx, fy float64) (float64, float64, float64) {
 	a, b, c := fy - oy, -(fx - ox), (fx - ox)*oy - (fy - oy)*ox
-	return a, b, c, a*a + b*b
+	return a, b, c
 }
 
 // Around 9 times as fast as using a regular for loop.
-// This can trivially made generic, and can also be adapted
+// This can trivially be made generic, and can also be adapted
 // to fill buffers with patterns (for example to fill
 // images with a specific color).
 func fastFillFloat64(buffer []float64, value float64) {

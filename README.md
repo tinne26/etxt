@@ -88,7 +88,7 @@ func checkMissingRunes(name string, font *etxt.Font) error {
 
 This example focuses on the mundane usage of the main **etxt** `FontLibrary` and `Renderer` types, with abundant checks to fail fast if anything seems out of place.
 
-If you want flashier examples, we have [many more](https://github.com/tinne26/etxt/tree/main/examples) in the project, so check them out!
+If you want flashier examples there are [many more](https://github.com/tinne26/etxt/tree/main/examples) in the project, so check them out!
 
 ## Can I use this package without Ebiten?
 Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time stuff. In particular, be careful to not accidentally use `gtxt` with Ebiten (they are compatible in many cases, but performance will die).
