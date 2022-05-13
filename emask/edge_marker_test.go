@@ -252,7 +252,7 @@ func TestCompareEdgeAndStdRasts(t *testing.T) {
 	stdRasterizer  := &DefaultRasterizer{}
 	edgeRasterizer := NewStdEdgeMarkerRasterizer()
 
-	for n := 0; n < 10; n++ {
+	for n := 0; n < 30; n++ {
 		// create random shape
 		shape := randomShape(rng, 16, canvasWidth, canvasHeight)
 		segments := shape.Segments()
@@ -281,14 +281,9 @@ func TestCompareEdgeAndStdRasts(t *testing.T) {
 			}
 
 			totalDiff += int(diff)
-			// Note: individual pixel comparisons are reasonable when there are
-			//       only straight segments, and not bad when there are quadratic
-			//       curves, but when adding cubic curves it gets a bit too
-			//       crazy. multiple curves can be drawn on top of each other
-			//       and cause some weird situations
-			// if diff > pixCmpTolerance {
-			// 	t.Fatalf("iter %d, stdMask.Pix[%d] = %d, edgeMask.Pix[%d] = %d", n, i, stdValue, i, edgeValue)
-			// }
+			// Note: we could compare pixel values individually here, but
+			//       different thresholds and curve segmentation methods
+			//       can cause severe value differences in some cases.
 		}
 
 		avgDiff := float64(totalDiff)/(canvasWidth*canvasHeight)
@@ -296,15 +291,6 @@ func TestCompareEdgeAndStdRasts(t *testing.T) {
 			exportTest("cmp_rasts_" + strconv.Itoa(n) + "_edge.png", edgeMask)
 			exportTest("cmp_rasts_" + strconv.Itoa(n) + "_rast.png", stdMask)
 			t.Fatalf("iter %d, totalDiff = %d average tolerance is too big (%f) (written files for visual debug)", n, totalDiff, avgDiff)
-			// TODO: this test fails often. There's most definitely something
-			//       going on, but I haven't explored it in depth yet. Maybe
-			//       I can use only cubic curves to test, and make bigger
-			//       images and print the full data for shapes so I can reproduce
-			//       manually... but it's hard. I know it only happens with
-			//       cubic curves. And it may also be vector.Rasterizer's fault,
-			//       which uses far more tricks for optimization. Or use
-			//       vector.Rasterizer's code for cubic curves temporarily and
-			//       see what's up.
 		}
 	}
 }
@@ -347,11 +333,8 @@ func randomShape(rng *rand.Rand, lines, w, h int) Shape {
 			shape.QuadToFract(cx, cy, x, y)
 		case 2: // CubeTo
 			cx1, cy1 := makeXY()
-			shape.QuadToFract(cx1, cy1, x, y)
-			// TODO: cubic curves disabled in testing until I figure
-			//       out exactly why they differ from vector.Rasterizer
-			// cx2, cy2 := makeXY()
-			// shape.CubeToFract(cx1, cy1, cx2, cy2, x, y)
+			cx2, cy2 := makeXY()
+			shape.CubeToFract(cx1, cy1, cx2, cy2, x, y)
 		}
 	}
 	shape.LineToFract(startX, startY)

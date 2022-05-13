@@ -19,7 +19,6 @@ func makeRng() *rand.Rand {
 func BenchmarkStdRast(b *testing.B) {
 	rng := makeRng()
 	rast := &DefaultRasterizer{}
-	// b.ReportAllocs() // around 24 allocs/op
 	for n := 0; n < b.N; n++ {
 		for size := 16; size <= 512; size *= 2 {
 			shape := randomShape(rng, 16, size, size)
@@ -33,7 +32,6 @@ func BenchmarkStdRast(b *testing.B) {
 func BenchmarkEdgeRast(b *testing.B) {
 	rng := makeRng()
 	rast := NewStdEdgeMarkerRasterizer()
-	// b.ReportAllocs() // around 88 allocs/op
 	for n := 0; n < b.N; n++ {
 		for size := 16; size <= 512; size *= 2 {
 			shape := randomShape(rng, 16, size, size)

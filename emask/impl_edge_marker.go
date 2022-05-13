@@ -6,20 +6,17 @@ import "image"
 import "golang.org/x/image/math/fixed"
 import "golang.org/x/image/font/sfnt"
 
-// NOTICE: there's still a bug with cubic curves where in some
-// edge cases results end up being quite different.
-//
-// An alternative to vector.Rasterizer. Results are very
-// similar, but performance is almost 3 times worse.
+// An alternative to vector.Rasterizer. Results are very similar, but
+// performance is almost 3 times worse.
 //
 // The purpose of this rasterizer is to offer a simpler, more
 // readable and [well-documented] version of the algorithm used by
 // vector.Rasterizer that anyone can edit, adapt or learn from.
 //
-// The zero-value is usable but will not produce smooth results, as the curve
-// splitting parameters are not configured. Use NewStdEdgeMarkerRasterizer()
-// if you prefer a pre-configured rasterizer, or manually configure it yourself
-// through SetCurveThreshold() and SetMaxCurveSplits().
+// The zero-value is usable but will produce jaggy results, as curve
+// segmentation parameters are not configured. Use NewStdEdgeMarkerRasterizer()
+// if you prefer a pre-configured rasterizer. You may also configure the
+// rasterizer manually through SetCurveThreshold() and SetMaxCurveSplits().
 //
 // [well-documented]: https://github.com/tinne26/etxt/blob/main/docs/rasterize-outlines.md
 type EdgeMarkerRasterizer struct {
@@ -37,7 +34,7 @@ type EdgeMarkerRasterizer struct {
 
 func NewStdEdgeMarkerRasterizer() *EdgeMarkerRasterizer {
 	rast := &EdgeMarkerRasterizer{}
-	rast.SetCurveThreshold(0.1)
+	rast.SetCurveThreshold(0.2)
 	rast.SetMaxCurveSplits(8) // this is excessive for most glyph rendering
 	return rast
 }
@@ -51,14 +48,14 @@ func (self *EdgeMarkerRasterizer) SetHighByte(value uint8) {
 // Sets the threshold distance to use when splitting Bézier curves into
 // linear segments. If a linear segment misses the curve by more than
 // the threshold value, the curve will be split. Otherwise, the linear
-// segment will be used to approximate it. The default value is 0.3.
+// segment will be used to approximate it.
 //
 // Values very close to zero could prevent the algorithm from converging
 // due to floating point instability, but the MaxCurveSplits cutoff will
 // prevent infinite looping anyway.
 //
 // Reasonable values range from 0.01 to 1.0. NewStdEdgeMarkerRasterizer()
-// uses 0.1 by default.
+// uses 0.2 by default.
 func (self *EdgeMarkerRasterizer) SetCurveThreshold(threshold float32) {
 	self.rasterizer.SetCurveThreshold(threshold)
 	bits := math.Float32bits(threshold)
@@ -139,22 +136,15 @@ func (self *EdgeMarkerRasterizer) Rasterize(outline sfnt.Segments, fract fixed.P
 	// process outline
 	processOutline(self, outline)
 
-	// rasterize
-	const drawRawBuffer = false
-	if drawRawBuffer {
-		for i := 0; i < w*h; i++ {
-			mask.Pix[i] = absToUint8(self.rasterizer.Buffer[i]*255)
-		}
-	} else { // normal buffer accumulation
-		// (this takes around 40% of the time of the process)
-		index := 0
-		for y := 0; y < h; y++ {
-			accumulator := float64(0)
-			for x := 0; x < w; x++ {
-				accumulator += self.rasterizer.Buffer[index]
-				mask.Pix[index] = absToUint8(accumulator*255)
-				index += 1
-			}
+	// rasterize applying buffer accumulation
+	// (this takes around 40% of the time of the process)
+	index := 0
+	for y := 0; y < h; y++ {
+		accumulator := float64(0)
+		for x := 0; x < w; x++ {
+			accumulator += self.rasterizer.Buffer[index]
+			mask.Pix[index] = absToUint8(accumulator*255)
+			index += 1
 		}
 	}
 

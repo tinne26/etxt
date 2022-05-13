@@ -4,9 +4,9 @@ This document aims to give a general overview of the rasterization algorithms us
 While this package focuses on glyph rendering, these algorithms are suitable for general 2D vector graphics. That said, they are CPU-based processes best suited for small shapes; in the case of big shapes, GPU algorithms based on triangulation and [spline curve rendering](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-25-rendering-vector-art-gpu) may be a better choice.
 
 ## The problem
-Given a vectorial outline, we want to rasterize it (convert the outline to a raster image, which is a grid of square pixels). Here's a visual example:
+Given a vectorial outline, we want to rasterize it (convert the outline to a raster image, which is a grid of square pixels). Here's an example of outlines and raster:
 
-TODO: add image (zhe, ElMessiri, fontForge).
+![](https://github.com/tinne26/etxt/blob/main/docs/img/outline_vs_raster.png?raw=true)
 
 We will call the resulting raster image a *mask*, as it only contains information about the opacity of each pixel, not about their colors. Colors can be chosen and applied later, at a separate step.
 
@@ -48,11 +48,11 @@ There are multiple answers to each of these questions:
 ## Marking outline boundaries
 Let's say we have a glyph like this:
 
-TODO: image (black/white char, e.g 楽).
+![](https://github.com/tinne26/etxt/blob/main/docs/img/glyph_filled.png?raw=true)
 
 Now, starting from the left side, we start going to the right, and each time we cross an outline boundary, we mark it. The result would be something like this:
 
-TODO: image (black borders).
+![](https://github.com/tinne26/etxt/blob/main/docs/img/glyph_edges.png?raw=true)
 
 Well, that's the core idea that will help us solve our problem. Each time we issue a `LineTo` command to define a boundary segment for a contour, we will follow the line, see which pixels it crosses, and somehow store that information.
 
@@ -64,7 +64,7 @@ First, to account for clockwise and counter-clockwise directions and make "holes
 
 If we use cyan for positive changes and magenta for negative ones, the result would now look like this:
 
-TODO: image (cyan/magenta borders)
+![](https://github.com/tinne26/etxt/blob/main/docs/img/glyph_sign.png?raw=true)
 
 The important part is that different directions result in values of opposite sign (e.g.: you could make "up" be negative and "down" positive instead).
 
@@ -81,6 +81,11 @@ To illustrate the concept more practically, let's imagine we have a mask with a 
 I'd explain more, but at this point you have enough context and jumping directly [into the code](https://github.com/tinne26/etxt/blob/main/emask/edge_marker.go) may be the best next step.
 
 ## Limitations
-This algorithm works decently in general, but notice that what happens inside a pixel can only be balanced, not distinguished. For example, if we define a 1x1 square in the middle of four pixels, we will get 25% opacity from each pixel. That's the best we can do, ok... but if you repeat the process 4 times, the 4 pixels will all get to 100% opacity. Mathematically speaking, this shouldn't happen, but since pixels can't tell where lines start or end within them, they can't tell it's always the same area being covered and the result "overflows".
+This algorithm works decently in general, but notice that what happens inside a pixel can only be balanced, not distinguished. For example, if we define a 1x1 square in the middle of four pixels, we will get 25% opacity from each pixel. That's the best we can do, ok... but if you repeat the process 4 times, the 4 pixels will all get to 100% opacity. This wouldn't happen in a continuous space, but since pixels can't tell where lines start or end within them (discrete space), they can't tell it's always the same area being covered and the result "overflows".
 
 Floating point precision can also be an issue when dealing with big shapes, unaligned and angled boundaries, etc.
+
+## Further references
+Curve segmentation and optimizations haven't been discussed, but are mentioned here and there through the code.
+
+You will also be interested in Raph Levien's [blogpost](https://medium.com/@raphlinus/inside-the-fastest-font-renderer-in-the-world-75ae5270c445) explaining the [font-rs](https://github.com/raphlinus/font-rs) font renderer, which in turn serves as a base for Golang's `vector.Rasterizer` [implementation](https://cs.opensource.google/go/x/image/+/70e8d0d3:vector/raster_floating.go;l=31).

@@ -88,7 +88,7 @@ func checkMissingRunes(name string, font *etxt.Font) error {
 
 This example focuses on the mundane usage of the main **etxt** `FontLibrary` and `Renderer` types, with abundant checks to fail fast if anything seems out of place.
 
-If you want flashier examples there are [many more](https://github.com/tinne26/etxt/tree/main/examples) in the project, so check them out!
+If you want flashier examples there are still [many more](https://github.com/tinne26/etxt/tree/main/examples) in the project, make sure to check them out!
 
 ## Can I use this package without Ebiten?
 Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time stuff. In particular, be careful to not accidentally use `gtxt` with Ebiten (they are compatible in many cases, but performance will die).
@@ -99,8 +99,8 @@ If you are only dealing with text rendering incidentally and **ebiten/text** doe
 The main consideration when using **etxt** is that you need to be minimally acquainted with how fonts work. [FreeType glyph conventions](https://freetype.org/freetype2/docs/glyphs/index.html) is the go to reference that you *really should be reading* (up to section IV or V).
 
 ## Any future plans?
-This package is already quite solid, but there are still a few rough edges:
-- EdgeMarker is still experimental.
+This package is already quite solid, there are only a few points left to improve:
+- Adding a few more effects (hollow text, shaders, etc).
 - Missing a couple important examples (crisp UI and shaders).
 
 If I get really bored, I'd also like to look into:

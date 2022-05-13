@@ -146,94 +146,47 @@ func (self *edgeMarker) LineTo(x, y float64) {
 // Creates a boundary from the current position to the given target
 // as a quadratic Bézier curve through the given control point and
 // moves the current position to the new one.
-func (self *edgeMarker) QuadTo(ctrlX, ctrlY, x, y float64) {
-	// Once we managed to draw straight lines, it's time to draw curves.
-	// The idea is simple: just split the curves into straight lines.
-	// If you aren't familiar with Bézier curves, have a look at
-	// https://javascript.info/bezier-curve.
-	//
-	// The method used here to do curve segmentation is simply to keep
-	// partitioning a curve in smaller segments until we hit a hard cutoff
-	// (maxCurveSplits) or we find that the current segment approximates
-	// the curve well enough (the distance between the next potential split
-	// point and the current straight line is equal or below the threshold
-	// (curveThreshold)).
+func (self *edgeMarker) QuadTo(ctrlX, ctrlY, fx, fy float64) {
+	self.recursiveQuadTo(ctrlX, ctrlY, fx, fy, 0)
+}
 
-	// o and f are the start and end points of the curve
-	ox, oy, fx, fy := self.x, self.y, x, y
-
-	// create a slice to store curve targets and make the
-	// algorithm iterative instead of recursive
-	type curveTarget struct{ x, y, t float64; depth uint8 }
-	nextTargets := make([]curveTarget, 0, self.maxCurveSplits)
-	target := curveTarget { fx, fy, 1.0, 0 }
-
-	// during the process we need line equations in ABC form
-	// in order to compute distances between a line and a point,
-	// and we can reuse some of them, so we keep helper vars
-	a, b, c := toLinearFormABC(ox, oy, fx, fy)
-
-	// keep splitting the curve until segments are within the
-	// curve threshold and we can draw them as straight lines
-	tReached := 0.0 // our progress in segmenting the curve
-	for {
-		// interpolate curve at the next split point
-		t := tReached + (target.t - tReached)/2
-		ix, iy := interpQuadBezier(ox, oy, fx, fy, ctrlX, ctrlY, t)
-		depth := target.depth
-
-		// see if the interpolated point is within the threshold
-		if depth == self.maxCurveSplits || self.withinCurveThreshold(a, b, c, ix, iy) {
-			// use a linear segment to interpolate
-			self.LineTo(target.x, target.y) // self x/y is advanced with this too
-			if len(nextTargets) == 0 { return } // last target reached, stop
-
-			// update our variables for the next iteration
-			tReached = target.t // increase reached t
-			target = nextTargets[len(nextTargets) - 1]
-			nextTargets = nextTargets[:len(nextTargets) - 1]
-			a, b, c = toLinearFormABC(self.x, self.y, target.x, target.y)
-		} else { // sub-split required
-			target.depth += 1
-			nextTargets = append(nextTargets, target)
-			target = curveTarget{ ix, iy, t, depth + 1 }
-		}
+func (self *edgeMarker) recursiveQuadTo(ctrlX, ctrlY, fx, fy float64, depth uint8) {
+	if depth >= self.maxCurveSplits || self.withinThreshold(self.x, self.y, fx, fy, ctrlX, ctrlY) {
+		self.LineTo(fx, fy)
+		return
 	}
+
+	ocx, ocy := lerp(self.x, self.y, ctrlX, ctrlY, 0.5) // origin to control
+	cfx, cfy := lerp(ctrlX, ctrlY, fx, fy, 0.5)         // control to end
+	ix , iy  := lerp(ocx, ocy, cfx, cfy, 0.5)           // interpolated point
+	self.recursiveQuadTo(ocx, ocy, ix, iy, depth + 1)
+	self.recursiveQuadTo(cfx, cfy, fx, fy, depth + 1)
 }
 
 // Creates a boundary from the current position to the given target
 // as a cubic Bézier curve through the given control points and
 // moves the current position to the new one.
-func (self *edgeMarker) CubeTo(cx1, cy1, cx2, cy2, x, y float64) {
-	// go and read QuadTo's implementation. this is the same, but
-	// without documentation and using interpCubeBezier. that's it.
-	//
+func (self *edgeMarker) CubeTo(cx1, cy1, cx2, cy2, fx, fy float64) {
 	// performance notes: reducing to 1 split can cut rasterization
 	// times in 15%. vector.Rasterizer's approach is also more
-	// direct and could cut rasterization time a bit.
-	ox, oy, fx, fy := self.x, self.y, x, y
-	type curveTarget struct{ x, y, t float64; depth uint8 }
-	nextTargets := make([]curveTarget, 0, self.maxCurveSplits)
-	target := curveTarget { fx, fy, 1.0, 0 }
-	a, b, c := toLinearFormABC(ox, oy, fx, fy)
-	tReached := 0.0
-	for {
-		t := tReached + (target.t - tReached)/2
-		ix, iy := interpCubeBezier(ox, oy, fx, fy, cx1, cy1, cx2, cy2, t)
-		depth := target.depth
-		if depth == self.maxCurveSplits || self.withinCurveThreshold(a, b, c, ix, iy) {
-			self.LineTo(target.x, target.y)
-			if len(nextTargets) == 0 { return }
-			tReached = target.t
-			target = nextTargets[len(nextTargets) - 1]
-			nextTargets = nextTargets[:len(nextTargets) - 1]
-			a, b, c = toLinearFormABC(self.x, self.y, target.x, target.y)
-		} else {
-			target.depth += 1
-			nextTargets = append(nextTargets, target)
-			target = curveTarget{ ix, iy, t, depth + 1 }
-		}
+	// direct and could slightly cut rasterization time.
+	self.recursiveCubeTo(cx1, cy1, cx2, cy2, fx, fy, 0)
+}
+
+func (self *edgeMarker) recursiveCubeTo(cx1, cy1, cx2, cy2, fx, fy float64, depth uint8) {
+	if depth >= self.maxCurveSplits || (self.withinThreshold(self.x, self.y, cx2, cy2, cx1, cy1) && self.withinThreshold(cx1, cy1, fx, fy, cx2, cy2)) {
+		self.LineTo(fx, fy)
+		return
 	}
+
+	oc1x , oc1y  := lerp(self.x, self.y, cx1, cy1, 0.5) // origin to control 1
+	c1c2x, c1c2y := lerp(cx1, cy1, cx2, cy2, 0.5)       // control 1 to control 2
+	c2fx , c2fy  := lerp(cx2, cy2, fx, fy, 0.5)         // control 2 to end
+	iox  , ioy   := lerp(oc1x, oc1y, c1c2x, c1c2y, 0.5) // first interpolation from origin
+	ifx  , ify   := lerp(c1c2x, c1c2y, c2fx, c2fy, 0.5) // second interpolation to end
+	ix   , iy    := lerp(iox, ioy, ifx, ify, 0.5)       // cubic interpolation
+	self.recursiveCubeTo(oc1x, oc1y, iox, ioy, ix, iy, depth + 1)
+	self.recursiveCubeTo(ifx, ify, c2fx, c2fy, fx, fy, depth + 1)
 }
 
 // Sets the threshold distance to use when splitting Bézier curves into
@@ -312,12 +265,10 @@ func (self *edgeMarker) markBoundary(x, y, horzAdvance, vertAdvance float64) {
 	}
 }
 
-// given the A, B and C coefficients of a line equation in the form
-// Ax + By + C = 0 and a point, and returns true if the given line and
-// the point (px, py) are close enough (configurable threshold)
-func (self *edgeMarker) withinCurveThreshold(a, b, c, px, py float64) bool {
+func (self *edgeMarker) withinThreshold(ox, oy, fx, fy, px, py float64) bool {
 	// https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_an_equation
 	// dist = |a*x + b*y + c| / sqrt(a^2 + b^2)
+	a, b, c := toLinearFormABC(ox, oy, fx, fy)
 	n := a*px + b*py + c
 	return n*n <= float64(self.curveThreshold)*float64(self.curveThreshold)*(a*a + b*b)
 }
@@ -356,22 +307,8 @@ func lerp(ax, ay, bx, by float64, t float64) (float64, float64) {
 // interpolate a and b at the given t, which must be in [0, 1]
 func interpolateAt(a, b float64, t float64) float64 { return a + t*(b - a) }
 
-// interpolate the quadratic bézier curve at the given t [0, 1].
-// see https://youtu.be/YATikPP2q70?t=205 for a visual explanation
-func interpQuadBezier(ox, oy, fx, fy, ctrlX, ctrlY, t float64) (float64, float64) {
-	ocx, ocy := lerp(ox, oy, ctrlX, ctrlY, t)
-	cfx, cfy := lerp(ctrlX, ctrlY, fx, fy, t)
-	return lerp(ocx, ocy, cfx, cfy, t)
-}
-
-func interpCubeBezier(ox, oy, fx, fy, cx1, cy1, cx2, cy2, t float64) (float64, float64) {
-	oc2x, oc2y := interpQuadBezier(ox, oy, cx2, cy2, cx1, cy1, t)
-	c1fx, c1fy := interpQuadBezier(cx1, cy1, fx, fy, cx2, cy2, t)
-	return lerp(oc2x, oc2y, c1fx, c1fy, t)
-}
-
 // Given two points of a line, it returns its A, B and C
-// coefficients from the form "Ax + Bx + C = 0".
+// coefficients from the form "Ax + By + C = 0".
 func toLinearFormABC(ox, oy, fx, fy float64) (float64, float64, float64) {
 	a, b, c := fy - oy, -(fx - ox), (fx - ox)*oy - (fy - oy)*ox
 	return a, b, c
