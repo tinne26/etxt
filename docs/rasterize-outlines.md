@@ -1,5 +1,5 @@
 # Rasterizing outlines
-This document aims to give a general overview of the rasterization algorithms used by [`vector.Rasterizer`](https://pkg.go.dev/golang.org/x/image/vector) and [`emask.EdgeMarker`](https://pkg.go.dev/github.com/tinne26/etxt/emask#EdgeMarkerRasterizer).
+This document aims to give a general overview of the rasterization algorithms used by [`vector.Rasterizer`](https://pkg.go.dev/golang.org/x/image/vector) and [`emask.EdgeMarkerRasterizer`](https://pkg.go.dev/github.com/tinne26/etxt/emask#EdgeMarkerRasterizer).
 
 While this package focuses on glyph rendering, these algorithms are suitable for general 2D vector graphics. That said, they are CPU-based processes best suited for small shapes; in the case of big shapes, GPU algorithms based on triangulation and [spline curve rendering](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-25-rendering-vector-art-gpu) may be a better choice.
 
@@ -14,7 +14,7 @@ Outlines are defined using two primitive operations:
 - Moving the "pen position" to a specific coordinate.
 - Adding a straight segment from the current "pen position" to a new position.
 
-While quadratic and cubic Bézier curves are also allowed in `vector.Rasterizer` and `emask.EdgeMarker`, those aren't primitives; curves are internally converted to multiple straight lines before processing.
+While quadratic and cubic Bézier curves are also allowed in `vector.Rasterizer` and `emask.EdgeMarkerRasterizer`, those aren't primitives; curves are internally converted to multiple straight lines before processing.
 
 Notice also that while we often talk about lines and pen positions and outlines, it's best that you think in terms of "boundaries" and "delimiting segments". Boundaries have no width, what matters is the areas they delimit.
 
