@@ -243,7 +243,7 @@ func TestEdgeSinglePixel(t *testing.T) {
 }
 
 func TestCompareEdgeAndStdRasts(t *testing.T) {
-	const avgCmpTolerance = 1.0 // alpha value per 255
+	const avgCmpTolerance = 2.0 // alpha value per 255
 	const canvasWidth  = 80
 	const canvasHeight = 80
 
@@ -315,7 +315,7 @@ func exportTest(filename string, mask *image.Alpha) {
 }
 
 func randomShape(rng *rand.Rand, lines, w, h int) Shape {
-	fsw, fsh := float64(w)*32, float64(h)*32
+	fsw, fsh := float64(w)*64, float64(h)*64
 	var makeXY = func() (fixed.Int26_6, fixed.Int26_6) {
 		return fixed.Int26_6(rng.Float64()*fsw), fixed.Int26_6(rng.Float64()*fsh)
 	}

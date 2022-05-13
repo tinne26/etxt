@@ -14,7 +14,8 @@ import "github.com/tinne26/etxt/emask"
 // An example of how to use emask.Shape in isolation. This has nothing
 // to do with fonts, but it can still come in handy in games. There's
 // actually another, more practical and simpler example of emask.Shape
-// within examples/ebiten/shaking.
+// within examples/ebiten/shaking. There's also a crazier random shape
+// generator in examples/ebiten/rng_shape.
 
 func main() {
 	// create a new shape, preallocating a buffer with capacity
