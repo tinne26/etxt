@@ -1,5 +1,5 @@
 # Rasterizing outlines
-This document aims to give a general overview of the rasterization algorithms used by [`vector.Rasterizer`](https://pkg.go.dev/golang.org/x/image/vector) and [`emask.EdgeMarker`](https://pkg.go.dev/github.com/tinne26/etxt/emask#EdgeMarker).
+This document aims to give a general overview of the rasterization algorithms used by [`vector.Rasterizer`](https://pkg.go.dev/golang.org/x/image/vector) and [`emask.EdgeMarker`](https://pkg.go.dev/github.com/tinne26/etxt/emask#EdgeMarkerRasterizer).
 
 While this package focuses on glyph rendering, these algorithms are suitable for general 2D vector graphics. That said, they are CPU-based processes best suited for small shapes; in the case of big shapes, GPU algorithms based on triangulation and [spline curve rendering](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-25-rendering-vector-art-gpu) may be a better choice.
 
@@ -50,7 +50,7 @@ Let's say we have a glyph like this:
 
 ![](https://github.com/tinne26/etxt/blob/main/docs/img/glyph_filled.png?raw=true)
 
-Now, starting from the left side, we start going to the right, and each time we cross an outline boundary, we mark it. The result would be something like this:
+Now, starting from the left side, we start going towards the right and each time we cross an outline boundary, we mark it. The result would be something like this:
 
 ![](https://github.com/tinne26/etxt/blob/main/docs/img/glyph_edges.png?raw=true)
 
@@ -62,7 +62,7 @@ We are making progress now, but there are still a few loose ends...
 
 First, to account for clockwise and counter-clockwise directions and make "holes" possible, we will make positive y changes (upward lines) set positive crossing values, and negative y changes (downward lines) set negative crossing values.
 
-If we use cyan for positive changes and magenta for negative ones, the result would now look like this:
+If we use different colors for positive and negative changes, the result would now look like this:
 
 ![](https://github.com/tinne26/etxt/blob/main/docs/img/glyph_sign.png?raw=true)
 
