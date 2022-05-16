@@ -2,6 +2,7 @@ package main
 
 import "os"
 import "log"
+import "fmt"
 import "strconv"
 import "strings"
 import "image"
@@ -15,16 +16,19 @@ import "github.com/hajimehoshi/ebiten/v2/ebitenutil"
 import "github.com/tinne26/etxt/emask"
 import "golang.org/x/image/math/fixed"
 
-// Yeah, this has very little to do with etxt, but...
-// One day I was testing the results of vector.Rasterizer against
-// emask.EdgeMarkerRasterizer and I went for random tests. After
-// having some trouble and exporting the images for visual comparison,
-// I realized they were pretty cool. Imagine, writing tests leading
-// to fancier results than when I try intentionally!
+// One day I was checking the results of emask.EdgeMarkerRasterizer
+// and I decided to compare them with vector.Rasterizer. I made tests
+// be randomized so I could be more confident that everything was
+// good... but after having some trouble matching the results of the
+// two, I exported the images for visual comparison and found out
+// they were actually really cool!
 //
-// And then I decided to build a bigger example to play with.
-// Unlike other examples, the code is very raw, but feel free to
-// have fun with it!
+// Imagine, writing tests leading to fancier results than when I
+// intentionally try to make something look good >.<
+//
+// And that's the story of how this example was born. Does it have
+// anything to do with etxt? Not really, but it's cool. I even added
+// symmetries for extra fun!
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -32,7 +36,7 @@ func init() {
 
 var keys = []ebiten.Key {
 	ebiten.KeySpace, ebiten.KeyArrowUp, ebiten.KeyArrowDown,
-	ebiten.KeyE, ebiten.KeyN, ebiten.KeyD, ebiten.KeyH, ebiten.KeyF,
+	ebiten.KeyE, ebiten.KeyM, ebiten.KeyH, ebiten.KeyF,
 }
 
 type Game struct {
@@ -40,11 +44,9 @@ type Game struct {
 	rasterizer *emask.EdgeMarkerRasterizer
 	shape emask.Shape
 	size int
-	margin int
 	hideShortcuts bool
 	segments int
-	symmetryDir int // 0 = right, 1 = bottom right, 2 = down, ...,
-	symmetryCount int // 0, 1, 2
+	symmetryMode int // 0 = none, 1 = mirror, 2 = x2, 3 = diag.x2
 	originalImg *image.Alpha
 	symmetryImg *image.Alpha
 	ebiImg *ebiten.Image
@@ -67,11 +69,7 @@ func (self *Game) Update() error {
 				if err != nil { return err }
 			case ebiten.KeyArrowUp:
 				slow := ebiten.IsKeyPressed(ebiten.KeyShiftLeft)
-				if ebiten.IsKeyPressed(ebiten.KeyZ) {
-					change := 5
-					if slow { change = 1 }
-					self.margin += change
-				} else if ebiten.IsKeyPressed(ebiten.KeyS) {
+				if ebiten.IsKeyPressed(ebiten.KeyS) {
 					self.segments += 1
 				} else {
 					change := 20
@@ -80,12 +78,7 @@ func (self *Game) Update() error {
 				}
 			case ebiten.KeyArrowDown:
 				slow := ebiten.IsKeyPressed(ebiten.KeyShiftLeft)
-				if ebiten.IsKeyPressed(ebiten.KeyZ) {
-					change := 5
-					if slow { change = 1 }
-					self.margin -= change
-					if self.margin < 0 { self.margin = 0 }
-				} else if ebiten.IsKeyPressed(ebiten.KeyS) {
+				if ebiten.IsKeyPressed(ebiten.KeyS) {
 					self.segments -= 1
 					if self.segments < 3 { self.segments = 3 }
 				} else {
@@ -94,12 +87,9 @@ func (self *Game) Update() error {
 					self.size -= change
 					if self.size < 50 { self.size = 50 }
 				}
-			case ebiten.KeyN: // increase symmetry num
-				self.symmetryCount += 1
-				if self.symmetryCount == 2 { self.symmetryCount = 0 } // TODO: go up to == 3
-				self.refreshSymmetry()
-			case ebiten.KeyD:
-				self.symmetryDir = (self.symmetryDir + 1)%8
+			case ebiten.KeyM: // increase symmetry num
+				self.symmetryMode += 1
+				if self.symmetryMode == 4 { self.symmetryMode = 0 }
 				self.refreshSymmetry()
 			case ebiten.KeyE:
 				// export image
@@ -129,7 +119,7 @@ func (self *Game) Update() error {
 				if err != nil { return err }
 				err = file.Close()
 				if err != nil { return err }
-				log.Printf("exported shape data")
+				fmt.Printf("Exported shape data successfully!")
 			default:
 				panic(key)
 			}
@@ -149,8 +139,8 @@ func (self *Game) newImage() error {
 	self.shape.InvertY(true)
 
 	// trick to expand bounds
-	self.shape.MoveTo(-self.margin, -self.margin)
-	self.shape.MoveTo(self.size + self.margin, self.size + self.margin)
+	self.shape.MoveTo(0, 0)
+	self.shape.MoveTo(self.size, self.size)
 
 	// actual shape generation
 	self.shape.MoveToFract(startX, startY)
@@ -178,86 +168,41 @@ func (self *Game) newImage() error {
 
 func (self *Game) refreshSymmetry() {
 	bounds := self.originalImg.Bounds()
-	margin := bounds.Min.X
-	w, h := bounds.Dx() + margin*2, bounds.Dy() + margin*2
+	w, h := bounds.Dx(), bounds.Dy()
 	if w != h { panic("what?") }
 
 	self.symmetryImg = image.NewAlpha(bounds)
 	copy(self.symmetryImg.Pix, self.originalImg.Pix)
 
-	switch self.symmetryCount {
+	switch self.symmetryMode {
 	case 0:
 		// nothing to do here
-	case 1:
-		// doubling the image
-		switch self.symmetryDir {
-		case 0: // right
-			xStart, yStart, xEnd, yEnd := 0, 0, w/2, h
-			pix := getImgQuad(self.originalImg, xStart, yStart, xEnd, yEnd)
-			xStart, xEnd = w, w - w/2
-			setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
-		case 2: // down
-			xStart, yStart, xEnd, yEnd := 0, 0, w, h/2
-			pix := getImgQuad(self.originalImg, xStart, yStart, xEnd, yEnd)
-			yStart, yEnd = h, h - h/2
-			setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
-		case 4: // left
-			xStart, yStart, xEnd, yEnd := w/2, 0, w, h
-			pix := getImgQuad(self.originalImg, xStart, yStart, xEnd, yEnd)
-			xStart, xEnd = w - w/2, 0
-			setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
-		case 6: // up
-			xStart, yStart, xEnd, yEnd := 0, 0, w, h/2
-			pix := getImgQuad(self.originalImg, xStart, yStart, xEnd, yEnd)
-			yStart, yEnd = h, h - h/2
-			setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
-		case 1: // diagonal right-down
-			xStart, yStart := 0, 0
-			pix := getImgHorzTri(self.originalImg, xStart, yStart, w)
-			xStart, yStart = w, h
-			setImgVertTri(self.symmetryImg, xStart, yStart, w, pix)
-
-			xStart, yStart = 0, 0
-			pix = getImgVertTri(self.originalImg, xStart, yStart, w)
-			xStart, yStart = w, h
-			setImgHorzTri(self.symmetryImg, xStart, yStart, w, pix)
-		case 3: // diagonal down-left
-			xStart, yStart := 0, 0
-			pix := getImgHorzTri(self.originalImg, xStart, yStart, w)
-			xStart, yStart = 0, 0
-			setImgVertTri(self.symmetryImg, xStart, yStart, w, pix)
-
-			xStart, yStart = w, 0
-			pix = getImgVertTri(self.originalImg, xStart, yStart, w)
-			xStart, yStart = 0, h
-			setImgHorzTri(self.symmetryImg, xStart, yStart, w, pix)
-		case 5: // diagonal left-up
-			xStart, yStart := w, h
-			pix := getImgHorzTri(self.originalImg, xStart, yStart, w)
-			xStart, yStart = 0, 0
-			setImgVertTri(self.symmetryImg, xStart, yStart, w, pix)
-
-			xStart, yStart = w, 0
-			pix = getImgVertTri(self.originalImg, xStart, yStart, w)
-			xStart, yStart = w, 0
-			setImgHorzTri(self.symmetryImg, xStart, yStart, w, pix)
-		case 7: // diagonal up-right
-			xStart, yStart := w, h
-			pix := getImgHorzTri(self.originalImg, xStart, yStart, w)
-			xStart, yStart = w, h
-			setImgVertTri(self.symmetryImg, xStart, yStart, w, pix)
-
-			xStart, yStart = 0, 0
-			pix = getImgVertTri(self.originalImg, xStart, yStart, w)
-			xStart, yStart = 0, 0
-			setImgHorzTri(self.symmetryImg, xStart, yStart, w, pix)
-		}
-	case 2:
-		// double symmetry (x4)
-		// TODO...
+	case 1: // mirror
+		xStart, yStart, xEnd, yEnd := 0, 0, w/2, h
+		pix := getImgQuad(self.originalImg, xStart, yStart, xEnd, yEnd)
+		xStart, xEnd = w - 1, w - w/2 - 1
+		setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
+	case 2: // x2
+		xStart, yStart, xEnd, yEnd := 0, 0, w/2 + 1, h/2 + 1
+		pix := getImgQuad(self.originalImg, xStart, yStart, xEnd, yEnd)
+		xStart, xEnd = w, w - w/2 - 1
+		setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
+		yStart, yEnd = h - 1, h - h/2 - 1
+		setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
+		xStart, xEnd = 0, w/2 + 1
+		setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
+	case 3: // diag. x2
+		xStart, yStart := 0, 0
+		pix := getImgHorzTri(self.originalImg, xStart, yStart, w)
+		xStart, yStart = w, h
+		setImgHorzTri(self.symmetryImg, xStart, yStart, w, pix)
+		xStart, yStart = w, h
+		setImgVertTri(self.symmetryImg, xStart, yStart, w, pix)
+		xStart, yStart = 0, 0
+		setImgVertTri(self.symmetryImg, xStart, yStart, w, pix)
 	}
 
-	self.ebiImg = ebiten.NewImage(bounds.Dx(), bounds.Dy())
+	self.ebiImg = ebiten.NewImage(w, h)
 	self.ebiImg.Fill(color.Black)
 	img := ebiten.NewImageFromImage(self.symmetryImg)
 	self.ebiImg.DrawImage(img, nil)
@@ -274,17 +219,23 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	screen.DrawImage(self.ebiImg, opts)
 
 	if !self.hideShortcuts {
-		content := "hide menu [H]\nexport [E]\ngenerate [SPACE]\nsize "
-		content += strconv.Itoa(self.size) + " [UP/DOWN](+shift)\nmargin "
-		content += strconv.Itoa(self.margin) + " [Z + UP/DOWN]\nsymmetry x"
-		content += strconv.Itoa(self.symmetryCount) + " [N]\nsymmetry dir "
-		content += strconv.Itoa(self.symmetryDir + 1) + "/8 [D]\nsegments "
+		content := "export [E]\ngenerate [SPACE]\nsize "
+		content += strconv.Itoa(self.size) + " [UP/DOWN](+shift)\n"
+		switch self.symmetryMode {
+		case 0: content += "no"
+		case 1: content += "mirror"
+		case 2: content += "x2"
+		case 3: content += "diag.x2"
+		}
+		content += " symmetry [M]\nsegments "
 		content += strconv.Itoa(self.segments) + " [S + UP/DOWN]"
 		ebitenutil.DebugPrint(screen, content)
 	}
 }
 
 func main() {
+	fmt.Print("Instructions can be hidden with [H]\n")
+	fmt.Print("Fullscreen can be switched with [F]\n")
 	ebiten.SetWindowTitle("rng shapes")
 	ebiten.SetWindowResizable(true)
 	ebiten.SetWindowSize(640, 480)
@@ -293,8 +244,7 @@ func main() {
 		keyPressed: make(map[ebiten.Key]bool),
 		size: 476,
 		segments: 16,
-		margin: 2,
-		symmetryCount: 1,
+		symmetryMode: 1,
 	}
 	err := game.newImage()
 	if err != nil { log.Fatal(err) }
@@ -340,25 +290,6 @@ func getImgHorzTri(img *image.Alpha, xStart, yStart, size int) []color.Alpha {
 		y := rows
 		if yStart != 0 { y = size - rows - 1 }
 		for x := xStart + rows*xChange; x != xEnd - rows*xChange; x += xChange {
-			result = append(result, img.AlphaAt(x, y))
-		}
-	}
-	return result
-}
-
-func getImgVertTri(img *image.Alpha, xStart, yStart, size int) []color.Alpha {
-	result := make([]color.Alpha, 0, (size*size)/4)
-	yChange := 1
-	yEnd := size
-	if yStart != 0 {
-		yChange = -1
-		yEnd = 0
-	}
-
-	for cols := 0; cols != size/2; cols += 1 {
-		x := cols
-		if xStart != 0 { x = size - cols - 1 }
-		for y := yStart + cols*yChange; y != yEnd - cols*yChange; y += yChange {
 			result = append(result, img.AlphaAt(x, y))
 		}
 	}

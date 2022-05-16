@@ -6,8 +6,8 @@ import "image"
 import "golang.org/x/image/math/fixed"
 import "golang.org/x/image/font/sfnt"
 
-// An alternative to vector.Rasterizer. Results are very similar, but
-// performance is almost 3 times worse.
+// An alternative to vector.Rasterizer. Results are visually
+// very similar, but performance is 3 times worse.
 //
 // The purpose of this rasterizer is to offer a simpler, more
 // readable and [well-documented] version of the algorithm used by
