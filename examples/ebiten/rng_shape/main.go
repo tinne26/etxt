@@ -119,7 +119,7 @@ func (self *Game) Update() error {
 				if err != nil { return err }
 				err = file.Close()
 				if err != nil { return err }
-				fmt.Printf("Exported shape data successfully!")
+				fmt.Print("Exported shape data successfully!\n")
 			default:
 				panic(key)
 			}
@@ -179,27 +179,24 @@ func (self *Game) refreshSymmetry() {
 		// nothing to do here
 	case 1: // mirror
 		xStart, yStart, xEnd, yEnd := 0, 0, w/2, h
-		pix := getImgQuad(self.originalImg, xStart, yStart, xEnd, yEnd)
+		pix := getImgRect(self.originalImg, xStart, yStart, xEnd, yEnd)
 		xStart, xEnd = w - 1, w - w/2 - 1
-		setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
+		setImgRect(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
 	case 2: // x2
-		xStart, yStart, xEnd, yEnd := 0, 0, w/2 + 1, h/2 + 1
-		pix := getImgQuad(self.originalImg, xStart, yStart, xEnd, yEnd)
-		xStart, xEnd = w, w - w/2 - 1
-		setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
-		yStart, yEnd = h - 1, h - h/2 - 1
-		setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
-		xStart, xEnd = 0, w/2 + 1
-		setImgQuad(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
+		odd := (w % 2)
+		xStart, yStart, xEnd, yEnd := 0, 0, w/2 + odd, h/2 + odd
+		pix := getImgRect(self.originalImg, xStart, yStart, xEnd, yEnd)
+		xStart, xEnd = w - 1, w - w/2 - 1 - odd
+		setImgRect(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
+		yStart, yEnd = h - 1, h - h/2 - 1 - odd
+		setImgRect(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
+		xStart, xEnd = 0, w/2 + odd
+		setImgRect(self.symmetryImg, xStart, yStart, xEnd, yEnd, pix)
 	case 3: // diag. x2
-		xStart, yStart := 0, 0
-		pix := getImgHorzTri(self.originalImg, xStart, yStart, w)
-		xStart, yStart = w, h
-		setImgHorzTri(self.symmetryImg, xStart, yStart, w, pix)
-		xStart, yStart = w, h
-		setImgVertTri(self.symmetryImg, xStart, yStart, w, pix)
-		xStart, yStart = 0, 0
-		setImgVertTri(self.symmetryImg, xStart, yStart, w, pix)
+		pix := getImgTopToCenterTriangle(self.originalImg)
+		setImgBottomToCenterTriangle(self.symmetryImg, pix)
+		setImgLeftToCenterTriangle(self.symmetryImg, pix)
+		setImgRightToCenterTriangle(self.symmetryImg, pix)
 	}
 
 	self.ebiImg = ebiten.NewImage(w, h)
@@ -254,82 +251,110 @@ func main() {
 
 // --- lots of helper functions for symmetries ---
 
-func getImgQuad(img *image.Alpha, xStart, yStart, xEnd, yEnd int) []color.Alpha {
+// Precondition: xStart <= xEnd, yStart <= yEnd
+// Returns the colors of the given rect for the given image (xEnd and yEnd
+// not included) as a single slice, from the top left to the bottom right.
+func getImgRect(img *image.Alpha, xStart, yStart, xEnd, yEnd int) []color.Alpha {
 	result := make([]color.Alpha, 0, (xEnd - xStart)*(yEnd - yStart))
-	for y := yStart; y != yEnd; y += 1 {
-		for x := xStart; x != xEnd; x += 1 {
+	for y := yStart; y < yEnd; y += 1 {
+		for x := xStart; x < xEnd; x += 1 {
 			result = append(result, img.AlphaAt(x, y))
 		}
 	}
 	return result
 }
 
-func setImgQuad(img *image.Alpha, xStart, yStart, xEnd, yEnd int, pix []color.Alpha) {
+// Sets the colors of the given rect on the given image with the contents
+// of pix (xEnd and yEnd not included). xStart and yStart may be smaller
+// than xEnd and yEnd, respectively, and the iteration direction will be
+// changed.
+func setImgRect(img *image.Alpha, xStart, yStart, xEnd, yEnd int, pix []color.Alpha) {
 	xChange, yChange := 1, 1
 	if xEnd < xStart { xChange = -1 }
 	if yEnd < yStart { yChange = -1 }
-	i := 0
+	index := 0
 	for y := yStart; y != yEnd; y += yChange {
 		for x := xStart; x != xEnd; x += xChange {
-			img.SetAlpha(x, y, pix[i])
-			i += 1
+			img.SetAlpha(x, y, pix[index])
+			index += 1
 		}
 	}
+	if index != len(pix) { panic("incorrect pix len") }
 }
 
-func getImgHorzTri(img *image.Alpha, xStart, yStart, size int) []color.Alpha {
-	result := make([]color.Alpha, 0, (size*size)/4)
-	xChange := 1
-	xEnd := size
-	if xStart != 0 {
-		xChange = -1
-		xEnd = 0
-	}
+// Returns the colors of the triangle that goes from the top corners of
+// the given image to its center, as a single slice, from left to right,
+// top to bottom.
+func getImgTopToCenterTriangle(img *image.Alpha) []color.Alpha {
+	bounds := img.Bounds()
+	height := bounds.Dy()
+	xStart, xEnd := bounds.Min.X, bounds.Max.X
+	yStart, yEnd := bounds.Min.Y, bounds.Min.Y + height/2
 
-	for rows := 0; rows != size/2; rows += 1 {
-		y := rows
-		if yStart != 0 { y = size - rows - 1 }
-		for x := xStart + rows*xChange; x != xEnd - rows*xChange; x += xChange {
+	result := make([]color.Alpha, 0, (height*height)/4)
+	offset := 0 // increased for each triangle row
+	for y := yStart; y < yEnd; y += 1 {
+		for x := xStart + offset; x < xEnd - offset; x += 1 {
 			result = append(result, img.AlphaAt(x, y))
 		}
+		offset += 1
 	}
 	return result
 }
 
-func setImgHorzTri(img *image.Alpha, xStart, yStart, size int, pix []color.Alpha) {
-	xChange := 1
-	xEnd := size
-	if xStart != 0 {
-		xChange = -1
-		xEnd = 0
-	}
+// Sets the colors of the triangle that goes from the bottom corners of
+// the given image to its center, from right to left and bottom to top.
+func setImgBottomToCenterTriangle(img *image.Alpha, pix []color.Alpha) {
+	bounds := img.Bounds()
+	xStart, xEnd := bounds.Min.X, bounds.Max.X - 1
+	yStart, yEnd := bounds.Max.Y - 1, bounds.Max.Y - bounds.Dy()/2
 
-	i := 0
-	for rows := 0; rows != size/2; rows += 1 {
-		y := rows
-		if yStart != 0 { y = size - rows - 1 }
-		for x := xStart + rows*xChange; x != xEnd - rows*xChange; x += xChange {
-			img.SetAlpha(x, y, pix[i])
-			i += 1
+	index  := 0 // pix index
+	offset := 0 // increased for each triangle row
+	for y := yStart; y >= yEnd; y -= 1 {
+		for x := xEnd - offset; x >= xStart + offset; x -= 1 {
+			img.SetAlpha(x, y, pix[index])
+			index += 1
 		}
+		offset += 1
 	}
+	if index != len(pix) { panic("incorrect pix len") }
 }
 
-func setImgVertTri(img *image.Alpha, xStart, yStart, size int, pix []color.Alpha) {
-	yChange := 1
-	yEnd := size
-	if yStart != 0 {
-		yChange = -1
-		yEnd = 0
-	}
+// Sets the colors of the triangle that goes from the left corners of
+// the given image to its center, from top to bottom and left to right.
+func setImgLeftToCenterTriangle(img *image.Alpha, pix []color.Alpha) {
+	bounds := img.Bounds()
+	xStart, xEnd := bounds.Min.X, bounds.Min.X + bounds.Dx()/2
+	yStart, yEnd := bounds.Min.Y, bounds.Max.Y
 
-	i := 0
-	for cols := 0; cols != size/2; cols += 1 {
-		x := cols
-		if xStart != 0 { x = size - cols - 1 }
-		for y := yStart + cols*yChange; y != yEnd - cols*yChange; y += yChange {
-			img.SetAlpha(x, y, pix[i])
-			i += 1
+	index  := 0 // pix index
+	offset := 0 // increased for each triangle column
+	for x := xStart; x < xEnd; x += 1 {
+		for y := yStart + offset; y < yEnd - offset; y += 1 {
+			img.SetAlpha(x, y, pix[index])
+			index += 1
 		}
+		offset += 1
 	}
+	if index != len(pix) { panic("incorrect pix len") }
+}
+
+// Sets the colors of the triangle that goes from the right corners of
+// the given image to its center, from bottom to top and right to left.
+func setImgRightToCenterTriangle(img *image.Alpha, pix []color.Alpha) {
+	bounds := img.Bounds()
+	xStart, xEnd := bounds.Max.X - 1, bounds.Max.X - bounds.Dx()/2
+	yStart, yEnd := bounds.Max.Y - 1, bounds.Min.Y
+
+	index  := 0 // pix index
+	offset := 0 // increased for each triangle column
+	for x := xStart; x >= xEnd; x -= 1 {
+		for y := yStart - offset; y >= yEnd + offset; y -= 1 {
+			img.SetAlpha(x, y, pix[index])
+			index += 1
+		}
+		offset += 1
+	}
+	if index != len(pix) { panic("incorrect pix len") }
 }
