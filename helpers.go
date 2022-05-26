@@ -33,13 +33,13 @@ type GlyphIndex = sfnt.GlyphIndex
 // You rarely need to use GlyphMasks directly unless using advanced
 // functions.
 //
-// Without Ebiten (gtxt version), GlyphMask defaults to *image.Alpha.
+// Without Ebitengine (gtxt version), GlyphMask defaults to *image.Alpha.
 // The image bounds are adjusted to allow drawing the glyph at its
 // intended position. In particular, bounds.Min.Y is typically
 // negative, with y = 0 corresponding to the glyph's baseline, y < 0
 // to the ascending portions and y > 0 to the descending ones.
 //
-// With Ebiten, GlyphMask defaults to a struct with the following fields:
+// With Ebitengine, GlyphMask defaults to a struct with the following fields:
 //   Image *ebiten.Image // the actual glyph image
 //   XOffset int         // horizontal drawing offset
 //   YOffset int         // vertical drawing offset

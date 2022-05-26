@@ -1,5 +1,5 @@
 // etxt is a package for font management and text rendering in Golang
-// designed to be used mainly with the Ebiten game engine.
+// designed to be used mainly with the Ebitengine game engine.
 //
 // While the API surface can look slightly intimidating at the beginning,
 // common usage depends only on a couple types and a few functions...

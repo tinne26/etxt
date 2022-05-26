@@ -9,16 +9,16 @@ import "golang.org/x/image/math/fixed"
 import "github.com/hajimehoshi/ebiten/v2"
 import "github.com/tinne26/etxt/internal"
 
-// Alias to allow compiling the package without Ebiten (gtxt version).
+// Alias to allow compiling the package without Ebitengine (gtxt version).
 //
-// Without Ebiten, TargetImage defaults to draw.Image.
+// Without Ebitengine, TargetImage defaults to draw.Image.
 type TargetImage = *ebiten.Image
 
 // Mix modes specify how to compose colors when drawing glyphs
 // on the renderer's target:
-//  - Without Ebiten, the mix modes can be MixOver, MixReplace,
+//  - Without Ebitengine, the mix modes can be MixOver, MixReplace,
 //    MixAdd, MixSub, MixMultiply, MixCut and MixFiftyFifty.
-//  - With Ebiten, mix modes are Ebiten's composite modes.
+//  - With Ebitengine, mix modes are Ebitengine's composite modes.
 //
 // I only ever change mix modes to make cutout text, but there's a
 // lot of weird people out there, what can I say.

@@ -1,9 +1,9 @@
 # etxt
 [![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt.svg)](https://pkg.go.dev/github.com/tinne26/etxt)
 
-**etxt** is a package for font management and text rendering in Golang designed to be used with the [**Ebiten**](https://github.com/hajimehoshi/ebiten) game engine.
+**etxt** is a package for font management and text rendering in Golang designed to be used with the [**Ebitengine**](https://github.com/hajimehoshi/ebiten) game engine.
 
-While Ebiten already provides the [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package that makes *getting some text drawn on screen* easy enough, **etxt** aims to help you actually understand what you are doing, doing it in a structured way and giving you much more control over it.
+While Ebitengine already provides the [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package that makes *getting some text drawn on screen* easy enough, **etxt** aims to help you actually understand what you are doing, doing it in a structured way and giving you much more control over it.
 
 As a quick summary of what this package provides:
 - Structured font management and usage through the `FontLibrary` and `Renderer` types; because having to create and manage new `font.Face`s just to change text size is *not* ok.
@@ -90,8 +90,8 @@ This example focuses on the mundane usage of the main **etxt** `FontLibrary` and
 
 If you want flashier examples you will find [many more](https://github.com/tinne26/etxt/tree/main/examples) in the project, make sure to check them out!
 
-## Can I use this package without Ebiten?
-Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time stuff. In particular, be careful to not accidentally use `gtxt` with Ebiten (they are compatible in many cases, but performance will die).
+## Can I use this package without Ebitengine?
+Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time stuff. In particular, be careful to not accidentally use `gtxt` with Ebitengine (they are compatible in many cases, but performance will die).
 
 ## Should I bother learning to use etxt?
 If you are only dealing with text rendering incidentally and **ebiten/text** does the job well enough for you, feel free to stay with that.
@@ -106,4 +106,4 @@ This package is already quite solid, there are only a few points left to improve
 If I get really bored, I'd also like to look into:
 - Contributing to Golang's **sfnt** to [expose more tables](https://github.com/golang/go/issues/45325) and allow the creation of minimal packages to do basic [text shaping](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) in arabic or other complex scripts.
 - Add outline expansion. Freetype and libASS do this, and it would be quite nice to get high quality outlines and better faux-bolds... but it's also *hard*; I don't really know if I want to go there.
-- Triangulation and GPU rendering of Bézier curves are also interesting for Ebiten (although they probably don't belong in this package).
+- Triangulation and GPU rendering of Bézier curves are also interesting for Ebitengine (although they probably don't belong in this package).

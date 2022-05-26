@@ -7,7 +7,7 @@ Random bits of trivia and advice:
 - If you have a complex UI system, it's advisable to work with color palettes, font sets and sizes at an abstract level (e.g: main, background and highlight colors, main and title font, heading, normal and detail sizes, etc.) instead of passing all that information manually to the renderer. While the `etxt.Renderer` is easy to use directly, in many cases you will want to use it as building block, not as the "definitive" abstraction. It's not and it doesn't try to be.
 
 ## Drawing UI at full resolution
-To get crisp text at big sizes, it's important that you keep in mind what's your game screen size. When working with Ebiten, it's very common to use a fixed, small screen size, draw your pixel art there, and then forget that if you also draw your text and UI at that small size it will look terrible when it's scaled up.
+To get crisp text at big sizes, it's important that you keep in mind what's your game screen size. When working with Ebitengine, it's very common to use a fixed, small screen size, draw your pixel art there, and then forget that if you also draw your text and UI at that small size it will look terrible when it's scaled up.
 
 To get this right, you can do the following:
 - Make your `Game.Layout` function return the full screen size (or even higher than that if you are supporting [high-DPI](https://github.com/hajimehoshi/ebiten/blob/main/examples/highdpi/main.go)).

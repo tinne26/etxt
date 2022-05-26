@@ -116,7 +116,7 @@ func main() {
 	mask, err := emask.Rasterize(shape.Segments(), renderer.GetRasterizer(), pixelAligned)
 	if err != nil { log.Fatal(err) }
 	parentImg := ebiten.NewImageFromImage(mask) // *
-	// * Notice that Ebiten won't preserve the mask bounds, so we won't be
+	// * Notice that Ebitengine won't preserve the mask bounds, so we won't be
 	//   able to use them to position the image... we will do it by hand.
 
 	// create the kid, which is the same but smaller

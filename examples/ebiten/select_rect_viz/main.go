@@ -9,7 +9,7 @@ import "fmt"
 import "github.com/hajimehoshi/ebiten/v2"
 import "github.com/tinne26/etxt"
 
-// This example allows you to interactively write text in an Ebiten
+// This example allows you to interactively write text in an Ebitengine
 // program and see how the SelectionRect for the text changes. You
 // can use backspace to remove characters, and enter to create line
 // breaks.
