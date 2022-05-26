@@ -77,16 +77,16 @@ func TestEdgeAlignedRects(t *testing.T) {
 	}
 
 	emarker := edgeMarker{}
-	emarker.Resize(5, 4)
+	emarker.Buffer.Resize(5, 4)
 	for n, test := range tests {
 		emarker.MoveTo(test.in[0], test.in[1])
 		for i := 2; i < len(test.in); i += 2 {
 			emarker.LineTo(test.in[i], test.in[i + 1])
 		}
-		if !similarFloat64Slices(test.out, emarker.Buffer) {
-			t.Fatalf("test#%d, on input %v, expected %v, got %v", n, test.in, test.out, emarker.Buffer)
+		if !similarFloat64Slices(test.out, emarker.Buffer.Values) {
+			t.Fatalf("test#%d, on input %v, expected %v, got %v", n, test.in, test.out, emarker.Buffer.Values)
 		}
-		emarker.ClearBuffer()
+		emarker.Buffer.Clear()
 	}
 }
 
@@ -143,16 +143,16 @@ func TestEdgeAlignedTriangles(t *testing.T) {
 	}
 
 	emarker := edgeMarker{}
-	emarker.Resize(4, 4)
+	emarker.Buffer.Resize(4, 4)
 	for n, test := range tests {
 		emarker.MoveTo(test.in[0], test.in[1])
 		for i := 2; i < len(test.in); i += 2 {
 			emarker.LineTo(test.in[i], test.in[i + 1])
 		}
-		if !similarFloat64Slices(test.out, emarker.Buffer) {
-			t.Fatalf("test#%d, on input %v, expected %v, got %v", n, test.in, test.out, emarker.Buffer)
+		if !similarFloat64Slices(test.out, emarker.Buffer.Values) {
+			t.Fatalf("test#%d, on input %v, expected %v, got %v", n, test.in, test.out, emarker.Buffer.Values)
 		}
-		emarker.ClearBuffer()
+		emarker.Buffer.Clear()
 	}
 }
 
@@ -200,16 +200,16 @@ func TestEdgeUnalignedRects(t *testing.T) {
 	}
 
 	emarker := edgeMarker{}
-	emarker.Resize(4, 4)
+	emarker.Buffer.Resize(4, 4)
 	for n, test := range tests {
 		emarker.MoveTo(test.in[0], test.in[1])
 		for i := 2; i < len(test.in); i += 2 {
 			emarker.LineTo(test.in[i], test.in[i + 1])
 		}
-		if !similarFloat64Slices(test.out, emarker.Buffer) {
-			t.Fatalf("test#%d, on input %v, expected %v, got %v", n, test.in, test.out, emarker.Buffer)
+		if !similarFloat64Slices(test.out, emarker.Buffer.Values) {
+			t.Fatalf("test#%d, on input %v, expected %v, got %v", n, test.in, test.out, emarker.Buffer.Values)
 		}
-		emarker.ClearBuffer()
+		emarker.Buffer.Clear()
 	}
 }
 
@@ -229,16 +229,16 @@ func TestEdgeSinglePixel(t *testing.T) {
 	}
 
 	emarker := edgeMarker{}
-	emarker.Resize(2, 1)
+	emarker.Buffer.Resize(2, 1)
 	for n, test := range tests {
 		emarker.MoveTo(test.in[0], test.in[1])
 		for i := 2; i < len(test.in); i += 2 {
 			emarker.LineTo(test.in[i], test.in[i + 1])
 		}
-		if !similarFloat64Slices(test.out, emarker.Buffer) {
-			t.Fatalf("test#%d, on input %v, expected %v, got %v", n, test.in, test.out, emarker.Buffer)
+		if !similarFloat64Slices(test.out, emarker.Buffer.Values) {
+			t.Fatalf("test#%d, on input %v, expected %v, got %v", n, test.in, test.out, emarker.Buffer.Values)
 		}
-		emarker.ClearBuffer()
+		emarker.Buffer.Clear()
 	}
 }
 
@@ -288,6 +288,10 @@ func TestCompareEdgeAndStdRasts(t *testing.T) {
 
 		avgDiff := float64(totalDiff)/(canvasWidth*canvasHeight)
 		if avgDiff > avgCmpTolerance {
+			// Notice: this actually fails sometimes. Different curve segmentation
+			//         methods are responsible for it, as far as I have seen. Look
+			//         at the results yourself if this ever fails for you. I may
+			//         relax avgCmpTolerance in the future.
 			exportTest("cmp_rasts_" + strconv.Itoa(n) + "_edge.png", edgeMask)
 			exportTest("cmp_rasts_" + strconv.Itoa(n) + "_rast.png", stdMask)
 			t.Fatalf("iter %d, totalDiff = %d average tolerance is too big (%f) (written files for visual debug)", n, totalDiff, avgDiff)

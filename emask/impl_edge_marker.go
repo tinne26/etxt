@@ -6,6 +6,11 @@ import "image"
 import "golang.org/x/image/math/fixed"
 import "golang.org/x/image/font/sfnt"
 
+// TODO: actually, the default value won't have the cache signature
+//       set properly. Don't recommend using the zero value, and
+//       use NewEdgeMarkerRasterizer instead... unless you explicitly
+//       set the curve threshold and the max splits.
+
 // An alternative to vector.Rasterizer. Results are visually
 // very similar, but performance is 3 times worse.
 //
@@ -34,7 +39,7 @@ type EdgeMarkerRasterizer struct {
 
 func NewStdEdgeMarkerRasterizer() *EdgeMarkerRasterizer {
 	rast := &EdgeMarkerRasterizer{}
-	rast.SetCurveThreshold(0.2)
+	rast.SetCurveThreshold(0.1)
 	rast.SetMaxCurveSplits(8) // this is excessive for most glyph rendering
 	return rast
 }
@@ -55,9 +60,9 @@ func (self *EdgeMarkerRasterizer) SetHighByte(value uint8) {
 // prevent infinite looping anyway.
 //
 // Reasonable values range from 0.01 to 1.0. NewStdEdgeMarkerRasterizer()
-// uses 0.2 by default.
+// uses 0.1 by default.
 func (self *EdgeMarkerRasterizer) SetCurveThreshold(threshold float32) {
-	self.rasterizer.SetCurveThreshold(threshold)
+	self.rasterizer.CurveSegmenter.SetThreshold(threshold)
 	bits := math.Float32bits(threshold)
 	self.cacheSignature &= 0xFFFFFFFF00000000
 	self.cacheSignature |= uint64(bits)
@@ -77,9 +82,10 @@ func (self *EdgeMarkerRasterizer) SetCurveThreshold(threshold float32) {
 // Values outside the [0, 255] range will be silently clamped. Reasonable
 // values range from 0 to 10. NewStdEdgeMarkerRasterizer() uses 8 by default.
 func (self *EdgeMarkerRasterizer) SetMaxCurveSplits(maxCurveSplits int) {
-	self.rasterizer.SetMaxCurveSplits(maxCurveSplits)
+	segmenter := &self.rasterizer.CurveSegmenter
+	segmenter.SetMaxSplits(maxCurveSplits)
 	self.cacheSignature &= 0xFFFFFF00FFFFFFFF
-	self.cacheSignature |= uint64(self.rasterizer.maxCurveSplits) << 32
+	self.cacheSignature |= uint64(segmenter.maxCurveSplits) << 32
 	if self.onChange != nil { self.onChange(self) }
 }
 
@@ -127,26 +133,16 @@ func (self *EdgeMarkerRasterizer) Rasterize(outline sfnt.Segments, fract fixed.P
 	// prepare rasterizer
 	var size image.Point
 	size, self.normOffset, self.rectOffset = figureOutBounds(outline.Bounds(), fract)
-	self.rasterizer.Resize(size.X, size.Y)
-
-	// allocate glyph mask
-	w, h := self.rasterizer.Width, self.rasterizer.Height
-	mask := image.NewAlpha(image.Rect(0, 0, w, h))
+	buffer := &self.rasterizer.Buffer
+	buffer.Resize(size.X, size.Y)
 
 	// process outline
 	processOutline(self, outline)
 
-	// rasterize applying buffer accumulation
-	// (this takes around 40% of the time of the process)
-	index := 0
-	for y := 0; y < h; y++ {
-		accumulator := float64(0)
-		for x := 0; x < w; x++ {
-			accumulator += self.rasterizer.Buffer[index]
-			mask.Pix[index] = absToUint8(accumulator*255)
-			index += 1
-		}
-	}
+	// allocate glyph mask and apply buffer accumulation
+	// (this takes around 50% of the time of the process)
+	mask := image.NewAlpha(image.Rect(0, 0, buffer.Width, buffer.Height))
+	buffer.AccumulateUint8(mask.Pix)
 
 	// translate the mask to its final position
 	mask.Rect = mask.Rect.Add(self.rectOffset)
@@ -157,10 +153,4 @@ func (self *EdgeMarkerRasterizer) fixedToFloat64Coords(point fixed.Point26_6) (f
 	x := float64(point.X + self.normOffset.X)/64
 	y := float64(point.Y + self.normOffset.Y)/64
 	return x, y
-}
-
-func absToUint8(acc float64) uint8 {
-	if acc < 0 { acc = -acc }
-	if acc > 255 { acc = 255 }
-	return uint8(acc)
 }
