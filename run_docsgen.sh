@@ -3,6 +3,9 @@
 # Generates docs/reference_pkg.html files for each package, slightly nicer
 # than what godoc generates by default. Requires having godoc installed.
 
+# You can open the results after running the script with:
+# >> xdg-open docs/reference_etxt.html
+
 headhtml="<!DOCTYPE html><html><head><title>etxt/godoc</title><link href="https://godoc.org/-/bootstrap.min.css" rel="stylesheet"><style>body { max-width: 840px; margin: 20px auto; font-size: 16px; }</style></head><body>"
 tailhtml="</body></html>"
 packages="emask efixed esizer ecache etxt"

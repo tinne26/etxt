@@ -72,7 +72,7 @@ func main() {
 }
 
 // helper function used with FontLibrary.EachFont to make sure
-// all loaded fonts contain the characters / alphabet we want
+// all loaded fonts contain the characters or alphabet we want
 func checkMissingRunes(name string, font *etxt.Font) error {
 	const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	const symbols = "0123456789 .,;:!?-()[]{}_&#@"
@@ -88,7 +88,7 @@ func checkMissingRunes(name string, font *etxt.Font) error {
 
 This example focuses on the mundane usage of the main **etxt** `FontLibrary` and `Renderer` types, with abundant checks to fail fast if anything seems out of place.
 
-If you want flashier examples you can find [many more](https://github.com/tinne26/etxt/tree/main/examples) in the project, make sure to check them out!
+If you want flashier examples you will find [many more](https://github.com/tinne26/etxt/tree/main/examples) in the project, make sure to check them out!
 
 ## Can I use this package without Ebiten?
 Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time stuff. In particular, be careful to not accidentally use `gtxt` with Ebiten (they are compatible in many cases, but performance will die).
