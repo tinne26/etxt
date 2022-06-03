@@ -2,63 +2,6 @@ package emask
 
 import "math"
 
-type outlineSegment struct {
-	// starting position
-	ox float64
-	oy float64
-	fx float64
-	fy float64
-
-	// coefficients for line equations in the form Ax + By + C = 0
-	a  float64 // a1 and a2 are the same, lines are parallel
-	b  float64 // b1 and b2 are the same, lines are parallel
-	c1 float64
-	c2 float64
-}
-
-func (self *outlineSegment) Fill(buffer *buffer, prevSegment, nextSegment outlineSegment) {
-	pa, pb, pc1, pc2 := prevSegment.a, prevSegment.b, prevSegment.c1, prevSegment.c2
-	px, py := prevSegment.ox, prevSegment.oy
-	oxOut, oyOut, oxIn, oyIn := intersectPaths(pa, pb, pc1, pc2, self.a, self.b, self.c1, self.c2, px, py, self.fx, self.fy)
-	na, nb, nc1, nc2 := nextSegment.a, nextSegment.b, nextSegment.c1, nextSegment.c2
-	nx, ny := nextSegment.fx, nextSegment.fy
-	fxOut, fyOut, fxIn, fyIn := intersectPaths(self.a, self.b, self.c1, self.c2, na, nb, nc1, nc2, self.ox, self.oy, nx, ny)
-	buffer.FillConvexQuad(oxOut, oyOut, oxIn, oyIn, fxOut, fyOut, fxIn, fyIn)
-}
-
-func (self *outlineSegment) CutHead(buffer *buffer, prevSegment outlineSegment) {
-	pa, pb, pc1, pc2 := prevSegment.a, prevSegment.b, prevSegment.c1, prevSegment.c2
-	px, py := prevSegment.ox, prevSegment.oy
-	oxOut, oyOut, oxIn, oyIn := intersectPaths(pa, pb, pc1, pc2, self.a, self.b, self.c1, self.c2, px, py, self.fx, self.fy)
-	a, b, oc := perpendicularABC(self.a, self.b, self.ox, self.oy)
-	xdiv := a*self.b - self.a*b
-	ox1, oy1 := shortCramer(xdiv, a, b, oc, self.a, self.b, self.c1)
-	ox2, oy2 := shortCramer(xdiv, a, b, oc, self.a, self.b, self.c2)
-	buffer.FillConvexQuad(oxOut, oyOut, oxIn, oyIn, ox1, oy1, ox2, oy2)
-}
-
-func (self *outlineSegment) CutTail(buffer *buffer, nextSegment outlineSegment) {
-	a, b, oc := perpendicularABC(self.a, self.b, self.ox, self.oy)
-	xdiv := a*self.b - self.a*b
-	ox1, oy1 := shortCramer(xdiv, a, b, oc, self.a, self.b, self.c1)
-	ox2, oy2 := shortCramer(xdiv, a, b, oc, self.a, self.b, self.c2)
-	na, nb, nc1, nc2 := nextSegment.a, nextSegment.b, nextSegment.c1, nextSegment.c2
-	nx, ny := nextSegment.fx, nextSegment.fy
-	fxOut, fyOut, fxIn, fyIn := intersectPaths(self.a, self.b, self.c1, self.c2, na, nb, nc1, nc2, self.ox, self.oy, nx, ny)
-	buffer.FillConvexQuad(ox1, oy1, ox2, oy2, fxOut, fyOut, fxIn, fyIn)
-}
-
-func (self *outlineSegment) Cut(buffer *buffer) {
-	a, b, oc := perpendicularABC(self.a, self.b, self.ox, self.oy)
-	xdiv := a*self.b - self.a*b
-	ox1, oy1 := shortCramer(xdiv, a, b, oc, self.a, self.b, self.c1)
-	ox2, oy2 := shortCramer(xdiv, a, b, oc, self.a, self.b, self.c2)
-	fc := -(a*self.fx + b*self.fy) // ax + by + c = 0
-	fx1, fy1 := shortCramer(xdiv, a, b, fc, self.a, self.b, self.c1)
-	fx2, fy2 := shortCramer(xdiv, a, b, fc, self.a, self.b, self.c2)
-	buffer.FillConvexQuad(ox1, oy1, ox2, oy2, fx1, fy1, fx2, fy2)
-}
-
 type outliner struct {
 	x float64
 	y float64
@@ -140,11 +83,11 @@ func (self *outliner) LineTo(x, y float64) {
 	self.openSegmentCount += 1
 	switch self.openSegmentCount {
 	case 3: // fill segment 1
-		self.segments[1].Fill(&self.Buffer, self.segments[0], self.segments[2])
+		self.segments[1].Fill(&self.Buffer, &self.segments[0], &self.segments[2])
 	case 4: // fill segment 2
-		self.segments[2].Fill(&self.Buffer, self.segments[1], self.segments[3])
+		self.segments[2].Fill(&self.Buffer, &self.segments[1], &self.segments[3])
 	case 5: // fill one segment and remove another old one
-		self.segments[3].Fill(&self.Buffer, self.segments[2], self.segments[4])
+		self.segments[3].Fill(&self.Buffer, &self.segments[2], &self.segments[4])
 		self.segments[2] = self.segments[3]
 		self.segments[3] = self.segments[4]
 		self.openSegmentCount = 4
@@ -179,8 +122,8 @@ func (self *outliner) CutPath() {
 		self.segments[0].Cut(&self.Buffer)
 	default: // cut start tail, cut end head
 		sc := self.openSegmentCount
-		self.segments[0].CutTail(&self.Buffer, self.segments[1])
-		self.segments[sc - 1].CutHead(&self.Buffer, self.segments[sc - 2])
+		self.segments[0].CutTail(&self.Buffer, &self.segments[1])
+		self.segments[sc - 1].CutHead(&self.Buffer, &self.segments[sc - 2])
 	}
 	self.openSegmentCount = 0
 }
@@ -191,8 +134,8 @@ func (self *outliner) ClosePath() {
 	if sc <= 2 {
 		self.CutPath()
 	} else {
-		self.segments[0].Fill(&self.Buffer, self.segments[sc - 1], self.segments[1])
-		self.segments[sc - 1].Fill(&self.Buffer, self.segments[sc - 2], self.segments[0])
+		self.segments[     0].Fill(&self.Buffer, &self.segments[sc - 1], &self.segments[1])
+		self.segments[sc - 1].Fill(&self.Buffer, &self.segments[sc - 2], &self.segments[0])
 	}
 	self.openSegmentCount = 0
 }

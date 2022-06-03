@@ -76,16 +76,16 @@ func toLinearFormABC(ox, oy, fx, fy float64) (float64, float64, float64) {
 	return a, b, c
 }
 
-// part of the code shared with intersectABC, but with xdiv precomputed
-// and knowing it's not near 0 (equations are not parallel)
+// If we had two line equations like this:
+// >> a1*x + b1*y = c1
+// >> a2*x + b2*y = c2
+// We would apply cramer's rule to solve the system:
+// >> x = (b2*c1 - b1*c2)/(b2*a1 - b1*a2)
+// This function solves this system, but assuming c1 and c2 have
+// a negative sign (ax + by + c = 0), and taking a precomputed
+// xdiv = (b2*a1 - b1*a2) value. xdiv can only be zero if one
+// of the lines is vertical and the other horizontal.
 func shortCramer(xdiv, a1, b1, c1, a2, b2, c2 float64) (float64, float64) {
-	// if we had two line equations like this:
-	// >> a1*x + b1*y = c1
-	// >> a2*x + b2*y = c2
-	// we would apply cramer's rule to solve the system:
-	// x = (b2*c1 - b1*c2)/(b2*a1 - b1*a2)
-	// we only have a different sign for c's
-
 	// ... and we have to account for perpendicular cases
 	if xdiv == 0 {
 		if a1 == 0 {
@@ -143,6 +143,12 @@ func parallelsAtDist(a, b, c float64, dist float64) (float64, float64) {
 	return c1, c2
 }
 
+// Given two paths, each defined by a pair of ax + by + c = 0 equations
+// where only the c coefficient takes two different values, and the
+// central starting point of the first path and the central ending point
+// of the second, the intersecting quad inner and outer points are computed.
+// TODO: this may be better off as a function from one segment to another,
+//       to avoid all the argument passing...
 func intersectPaths(aa, ab, ac1, ac2, ba, bb, bc1, bc2, pax, pay, pbx, pby float64) (float64, float64, float64, float64) {
 	// find 4 intersection points
 	// TODO: see how to handle NaNs here
