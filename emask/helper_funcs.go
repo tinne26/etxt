@@ -1,6 +1,8 @@
 package emask
 
+import "math"
 import "image"
+
 import "golang.org/x/image/math/fixed"
 import "github.com/tinne26/etxt/efixed"
 
@@ -74,39 +76,108 @@ func toLinearFormABC(ox, oy, fx, fy float64) (float64, float64, float64) {
 	return a, b, c
 }
 
-// given two line equations in Ax + By + C = 0 form, finds the
-// intersecting point. If lines are parallel, the returned bool
-// will be false and the returned point will always be (0, 0).
-func intersectABC(a1, b1, c1, a2, b2, c2 float64) (float64, float64, bool) {
-	// we have two line equations:
-	// >> a1*x + b1*y + c1 = 0
-	// >> a2*x + b2*y + c2 = 0
-	// so we apply cramer's rule to solve the system:
+// part of the code shared with intersectABC, but with xdiv precomputed
+// and knowing it's not near 0 (equations are not parallel)
+func shortCramer(xdiv, a1, b1, c1, a2, b2, c2 float64) (float64, float64) {
+	// if we had two line equations like this:
+	// >> a1*x + b1*y = c1
+	// >> a2*x + b2*y = c2
+	// we would apply cramer's rule to solve the system:
 	// x = (b2*c1 - b1*c2)/(b2*a1 - b1*a2)
+	// we only have a different sign for c's
 
-	// first, though, make sure lines are not parallel...
-	xdiv := b2*a1 - b1*a2
-	if xdiv <= 0.00001 && xdiv >= -0.00001 { return 0, 0, false }
-
-	// lines are not parallel, solve x and then y
-	x := (b2*c1 - b1*c2)/xdiv
-	if b1 != 0 {
-		return x, (c1 - a1*x)/b1, true
-	} else { // b2 != 0
-		return x, (c2 - a2*x)/b2, true
+	// ... and we have to account for perpendicular cases
+	if xdiv == 0 {
+		if a1 == 0 {
+			if b2 == 0 { return -c2/a2, -c1/b1 }
+			panic("parallel lines")
+		} else if b1 == 0 {
+			if a2 == 0 { return -c1/a1, -c2/b2 }
+			panic("parallel lines")
+		}
+		panic("parallel lines")
 	}
+
+	// actual application of cramer's rule
+	x := (b2*-c1 - b1*-c2)/xdiv
+	if b1 != 0 { return x, (-c1 - a1*x)/b1 }
+	return x, (-c2 - a2*x)/b2
 }
 
 // given a line equation in Ax + By + C = 0 form and a point, finds
 // the perpendicular ABC line equation that passes through the given
-// point
-func perpendicularABC(a, b, c, x, y float64) (float64, float64, float64) {
+// point. the C is not in the parameters because it's not necessary
+func perpendicularABC(a, b, x, y float64) (float64, float64, float64) {
 	// we have ax + by + c = 0, and we want to find dx + ey + f = 0...
 	// we can use d = b, e = -a and f = -d*x - e*y
 	d := b
 	e := -a
 	f := -d*x - e*y
 	return d, e, f
+}
+
+// given a line equation in the form Ax + By + C = 0, it returns
+// C1 and C2 such that two new line equations can be created that
+// are parallel to the original line, but at distance 'dist' from it
+func parallelsAtDist(a, b, c float64, dist float64) (float64, float64) {
+	var c1, c2 float64
+	if a == 0 { // horizontal line
+		y := -c/b
+		c1 = -(y + dist)*b
+		c2 = -(y - dist)*b
+	} else if b == 0 { // vertical line
+		x := -c/a
+		c1 = -(x + dist)*a
+		c2 = -(x - dist)*a
+	} else {
+		// We use the formula for the distance between a point and a line:
+		// >> dist = |ax + by + c|/sqrt(a*a + b*b)
+		// We assume x = 0 and find the two y possible values.
+		// We use the points (0, y1) and (0, y2) to find the new c1 and c2.
+		f := dist*math.Sqrt(a*a + b*b)
+		y1 := (-c + f)/b
+		y2 := (-c - f)/b
+		c1 = -b*y1
+		c2 = -b*y2
+	}
+	return c1, c2
+}
+
+func intersectPaths(aa, ab, ac1, ac2, ba, bb, bc1, bc2, pax, pay, pbx, pby float64) (float64, float64, float64, float64) {
+	// find 4 intersection points
+	// TODO: see how to handle NaNs here
+	xdiv := bb*aa - ab*ba
+	x11, y11 := shortCramer(xdiv, aa, ab, ac1, ba, bb, bc1)
+	x12, y12 := shortCramer(xdiv, aa, ab, ac1, ba, bb, bc2)
+	x21, y21 := shortCramer(xdiv, aa, ab, ac2, ba, bb, bc1)
+	x22, y22 := shortCramer(xdiv, aa, ab, ac2, ba, bb, bc2)
+
+	// find central intersection point
+	jx := (x11 + x12 + x21 + x22)/4
+	jy := (y11 + y12 + y21 + y22)/4
+
+	// get linear equations from central point to line start/end points
+	jaa, jab, jac := toLinearFormABC(pax, pay, jx, jy)
+	jba, jbb, jbc := toLinearFormABC(pbx, pby, jx, jy)
+
+	// determine which point among the 4 intersection points falls
+	// at each side of ja & jb line equations to determine inner and
+	// outer vertices
+	boa := (jab*pby > -jaa*pbx - jac)
+	bob := (jbb*pay > -jba*pax - jbc)
+	var inX, inY, outX, outY float64
+	for _, p := range []struct{x, y float64}{{x11, y11}, {x12, y12}, {x21, y21}, {x22, y22}} {
+		jaCmp := (jab*p.y > -jaa*p.x - jac)
+		jbCmp := (jbb*p.y > -jba*p.x - jbc)
+		if (boa == jaCmp) == (bob == jbCmp) {
+			if boa == jaCmp {
+				inX, inY = p.x, p.y
+			} else {
+				outX, outY = p.x, p.y
+			}
+		}
+	}
+	return outX, outY, inX, inY
 }
 
 func abs64(value float64) float64 {
