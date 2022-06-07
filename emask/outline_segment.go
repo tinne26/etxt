@@ -22,7 +22,7 @@ func (self *outlineSegment) Fill(buffer *buffer, prevSegment, nextSegment *outli
 
 func (self *outlineSegment) CutHead(buffer *buffer, prevSegment *outlineSegment) {
 	oxOut, oyOut, oxIn, oyIn := prevSegment.intersect(self)
-	a, b, oc := perpendicularABC(self.a, self.b, self.ox, self.oy)
+	a, b, oc := perpendicularABC(self.a, self.b, self.fx, self.fy)
 	xdiv := a*self.b - self.a*b
 	ox1, oy1 := shortCramer(xdiv, a, b, oc, self.a, self.b, self.c1)
 	ox2, oy2 := shortCramer(xdiv, a, b, oc, self.a, self.b, self.c2)

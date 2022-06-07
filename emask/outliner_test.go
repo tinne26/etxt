@@ -1,7 +1,7 @@
 //go:build gtxt
 
 package emask
-import "log"
+
 import "testing"
 
 func TestBufferFillConvexQuad(t *testing.T) {
@@ -91,6 +91,11 @@ func TestBufferFillConvexQuad(t *testing.T) {
 			coords: [8]float64{1, 0.5,   0.5, 1,   1.5, 1,   1, 1.5},
 			out: []float64{0.125, 0.125, 0.125, 0.125},
 		},
+		{ // diagonal shape crossing 4 pixels
+			width: 2, height: 2,
+			coords: [8]float64{0.15, 0.85,   0.85, 0.15,   1.15, 1.85,   1.85, 1.15},
+			out: []float64{0.455, 0.245, 0.245, 0.455},
+		},
 	}
 
 	buffer := &buffer{}
@@ -110,8 +115,7 @@ func TestBufferFillConvexQuad(t *testing.T) {
 	}
 }
 
-func TestOutliner(t *testing.T) {
-	return // TODO: re-enable
+func TestOutlinerCut(t *testing.T) {
 	tests := []struct{
 		thickness float64
 		width int
@@ -120,6 +124,7 @@ func TestOutliner(t *testing.T) {
 		                 // remaining pairs are used for LineTo commands
 		out []float64
 	}{
+		// ---- single lines, axis-aligned ----
 		{ // horizontal line
 			thickness: 1.0, width: 2, height: 1,
 			coords: []float64{0.0, 0.5, 2.0, 0.5},
@@ -140,6 +145,30 @@ func TestOutliner(t *testing.T) {
 			coords: []float64{1.0, 0.0, 1.0, 3.0},
 			out: []float64{1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
 		},
+
+		// ---- single diagonal lines ----
+		{ // 45 deg line
+			thickness: 0.2, width: 1, height: 1,
+			coords: []float64{0.1, 0.1, 0.9, 0.9},
+			out: []float64{0.22627},
+		},
+		{ // some tilted line going through two vertical pixels
+			thickness: 0.2, width: 1, height: 2,
+			coords: []float64{0.25, 0.5, 0.75, 1.5},
+			out: []float64{0.1118033, 0.1118033}, // total = 0.2236
+		},
+		{ // like the previous, but flipped 90 degs
+			thickness: 0.2, width: 2, height: 1,
+			coords: []float64{0.5, 0.25, 1.5, 0.75},
+			out: []float64{0.1118033, 0.1118033}, // total = 0.2236
+		},
+		{ // diagonal going through 4 pixels
+			thickness: 0.5, width: 2, height: 2,
+			coords: []float64{0.5, 0.5, 1.5, 1.5},
+			out: []float64{0.29105, 0.0625, 0.0625, 0.29105},
+		},
+
+		// ---- basic shapes ----
 		{ // L-like shape
 			thickness: 1.0, width: 3, height: 3,
 			coords: []float64{0.5, 0.0, 0.5, 2.5, 3.0, 2.5},
@@ -147,8 +176,25 @@ func TestOutliner(t *testing.T) {
 		},
 		{ // C-like shape
 			thickness: 1.0, width: 3, height: 3,
-			coords: []float64{3.0, 0.5, 0.5, 0.5, 2.5, 0.5, 3.0, 2.5},
+			coords: []float64{3.0, 0.5, 0.5, 0.5, 0.5, 2.5, 3.0, 2.5},
 			out: []float64{1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0},
+		},
+
+		// ---- single lines from multiple segments ----
+		{ // horizontal line lousily drawn in two segments
+			thickness: 1.0, width: 2, height: 1,
+			coords: []float64{0.0, 0.5,   1.0, 0.5,   2.0, 0.5},
+			out: []float64{1.0, 1.0},
+		},
+		{ // vertical line lousily drawn in two segments
+			thickness: 1.0, width: 1, height: 2,
+			coords: []float64{0.5, 0.0,   0.5, 1.0,   0.5, 2.0},
+			out: []float64{1.0, 1.0},
+		},
+		{ // diagonal line lousily drawn in two segments
+			thickness: 1.0, width: 2, height: 2,
+			coords: []float64{0.5, 0.5,   1.0, 1.0,   1.5, 1.5},
+			out: []float64{0.457, 0.25, 0.25, 0.457},
 		},
 	}
 
@@ -156,7 +202,6 @@ func TestOutliner(t *testing.T) {
 	outliner.CurveSegmenter.SetThreshold(1/1024)
 	outliner.CurveSegmenter.SetMaxSplits(8)
 	for n, test := range tests {
-		log.Printf("--- new outliner test ---")
 		if len(test.out) != test.width*test.height {
 			t.Fatalf("malformed test %d", n)
 		}

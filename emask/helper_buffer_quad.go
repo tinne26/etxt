@@ -265,7 +265,7 @@ func (self *buffer) fillRowRectTriangle(startY, yChange, left, right float64, ba
 	if right != alignedRight { // fractional right part
 		xdiff := right - alignedRight
 		ydiff := xdiff*yChange
-		self.Values[baseRowIndex + int(alignedRight)] += math.Abs(ydiff)*xdiff/2.0 + math.Abs(startY - y)
+		self.Values[baseRowIndex + int(alignedRight)] += math.Abs(ydiff)*xdiff/2.0 + xdiff*math.Abs(startY - y)
 		y += ydiff
 	}
 
@@ -300,7 +300,7 @@ func (self *buffer) fillRowRectTriangleRTL(startY, yChange, right, left float64,
 	if left != alignedLeft { // fractional left part
 		xdiff := alignedLeft - left
 		ydiff := xdiff*yChange
-		self.Values[baseRowIndex + int(math.Floor(left))] += math.Abs(ydiff)*xdiff/2.0 + math.Abs(startY - y)
+		self.Values[baseRowIndex + int(math.Floor(left))] += math.Abs(ydiff)*xdiff/2.0 + xdiff*math.Abs(startY - y)
 		y += ydiff
 	}
 

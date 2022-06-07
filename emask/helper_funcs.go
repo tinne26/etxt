@@ -83,20 +83,9 @@ func toLinearFormABC(ox, oy, fx, fy float64) (float64, float64, float64) {
 // >> x = (b2*c1 - b1*c2)/(b2*a1 - b1*a2)
 // This function solves this system, but assuming c1 and c2 have
 // a negative sign (ax + by + c = 0), and taking a precomputed
-// xdiv = (b2*a1 - b1*a2) value. xdiv can only be zero if one
-// of the lines is vertical and the other horizontal.
+// xdiv = (b2*a1 - b1*a2) value
 func shortCramer(xdiv, a1, b1, c1, a2, b2, c2 float64) (float64, float64) {
-	// ... and we have to account for perpendicular cases
-	if xdiv == 0 {
-		if a1 == 0 {
-			if b2 == 0 { return -c2/a2, -c1/b1 }
-			panic("parallel lines")
-		} else if b1 == 0 {
-			if a2 == 0 { return -c1/a1, -c2/b2 }
-			panic("parallel lines")
-		}
-		panic("parallel lines")
-	}
+	if xdiv == 0 { panic("parallel lines") }
 
 	// actual application of cramer's rule
 	x := (b2*-c1 - b1*-c2)/xdiv
@@ -141,49 +130,6 @@ func parallelsAtDist(a, b, c float64, dist float64) (float64, float64) {
 		c2 = -b*y2
 	}
 	return c1, c2
-}
-
-// Given two paths, each defined by a pair of ax + by + c = 0 equations
-// where only the c coefficient takes two different values, and the
-// central starting point of the first path and the central ending point
-// of the second, the intersecting quad inner and outer points are computed.
-// TODO: this may be better off as a function from one segment to another,
-//       to avoid all the argument passing...
-func intersectPaths(aa, ab, ac1, ac2, ba, bb, bc1, bc2, pax, pay, pbx, pby float64) (float64, float64, float64, float64) {
-	// find 4 intersection points
-	// TODO: see how to handle NaNs here
-	xdiv := bb*aa - ab*ba
-	x11, y11 := shortCramer(xdiv, aa, ab, ac1, ba, bb, bc1)
-	x12, y12 := shortCramer(xdiv, aa, ab, ac1, ba, bb, bc2)
-	x21, y21 := shortCramer(xdiv, aa, ab, ac2, ba, bb, bc1)
-	x22, y22 := shortCramer(xdiv, aa, ab, ac2, ba, bb, bc2)
-
-	// find central intersection point
-	jx := (x11 + x12 + x21 + x22)/4
-	jy := (y11 + y12 + y21 + y22)/4
-
-	// get linear equations from central point to line start/end points
-	jaa, jab, jac := toLinearFormABC(pax, pay, jx, jy)
-	jba, jbb, jbc := toLinearFormABC(pbx, pby, jx, jy)
-
-	// determine which point among the 4 intersection points falls
-	// at each side of ja & jb line equations to determine inner and
-	// outer vertices
-	boa := (jab*pby > -jaa*pbx - jac)
-	bob := (jbb*pay > -jba*pax - jbc)
-	var inX, inY, outX, outY float64
-	for _, p := range []struct{x, y float64}{{x11, y11}, {x12, y12}, {x21, y21}, {x22, y22}} {
-		jaCmp := (jab*p.y > -jaa*p.x - jac)
-		jbCmp := (jbb*p.y > -jba*p.x - jbc)
-		if (boa == jaCmp) == (bob == jbCmp) {
-			if boa == jaCmp {
-				inX, inY = p.x, p.y
-			} else {
-				outX, outY = p.x, p.y
-			}
-		}
-	}
-	return outX, outY, inX, inY
 }
 
 func abs64(value float64) float64 {
