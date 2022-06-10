@@ -66,7 +66,6 @@ func main() {
 	} else {
 		fmt.Print("Spacing : Proportional\n")
 	}
-
 	fmt.Printf("\nEm Square   : %d units\n", font.UnitsPerEm())
 
 	const NoHinting = 0
@@ -91,6 +90,32 @@ func main() {
 	if err == nil { fmt.Printf("   Actual 'a' Height : %d units (%s%% em height)\n", ascUn, minFloatFmt2(100*ascent)) }
 	ascUn, ascent, err  = emetric.RuneAscent(font, 'r', &buffer)
 	if err == nil { fmt.Printf("   Actual 'r' Height : %d units (%s%% em height)\n", ascUn, minFloatFmt2(100*ascent)) }
+
+	minKern, maxKern := fixed.Int26_6(0), fixed.Int26_6(0)
+	kernPairs := 0
+	kernEvalCount := font.NumGlyphs()
+	if kernEvalCount > 1000 { kernEvalCount = 1000 }
+	for i := 0; i < kernEvalCount; i++ {
+		for j := 0; j < kernEvalCount; j++ {
+			kern, err := font.Kern(&buffer, etxt.GlyphIndex(i), etxt.GlyphIndex(j), unitSize, NoHinting)
+			if err != nil {
+				if err == sfnt.ErrNotFound { continue }
+				log.Fatal(err)
+			}
+			if kern < minKern { minKern = kern }
+			if kern > maxKern { maxKern = kern }
+			kernPairs += 1
+		}
+	}
+	if minKern == 0 && maxKern == 0 {
+		fmt.Printf("Kerning     : None\n")
+	} else if kernEvalCount < font.NumGlyphs() {
+		pairsRateStr := minFloatFmt2(float64(kernPairs)/10000)
+		fmt.Printf("Kerning     : %s to %s units (%s%% of the first 1k pairs)\n", minFloatFmt2(float64(minKern)/64), minFloatFmt2(float64(maxKern)/64), pairsRateStr)
+	} else {
+		pairsRateStr := minFloatFmt2(float64(kernPairs)*100/float64(font.NumGlyphs()*font.NumGlyphs()))
+		fmt.Printf("Kerning     : %s to %s units (%s%% of the pairs)\n", minFloatFmt2(float64(minKern)/64), minFloatFmt2(float64(maxKern)/64), pairsRateStr)
+	}
 
 	contours, err := font.LoadGlyph(&buffer, 0, unitSize, nil)
 	if err != nil { log.Fatal(err) }
