@@ -7,6 +7,11 @@ import "fmt"
 
 import "github.com/tinne26/etxt"
 
+// Must be compiled with '-tags gtxt'.
+// This example expects a path to a font directory as the first
+// argument, reads the fonts in it and prints their names to the
+// terminal.
+
 func main() {
 	// get font directory path
 	if len(os.Args) != 2 {
