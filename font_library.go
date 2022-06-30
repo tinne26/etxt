@@ -149,7 +149,9 @@ func (self *FontLibrary) ParseEmbedDirFonts(dirName string, embedFileSys *embed.
 	entries, err := embedFileSys.ReadDir(dirName)
 	if err != nil { return 0, 0, err }
 
-	if !strings.HasSuffix(dirName, string(os.PathSeparator)) {
+	if dirName == "." {
+		dirName = ""
+	} else if !strings.HasSuffix(dirName, string(os.PathSeparator)) {
 		dirName += string(os.PathSeparator)
 	}
 
@@ -159,7 +161,7 @@ func (self *FontLibrary) ParseEmbedDirFonts(dirName string, embedFileSys *embed.
 		path := dirName + entry.Name()
 		valid, _ := acceptFontPath(path)
 		if !valid { continue }
-		_, err = self.ParseFontFrom(path)
+		_, err = self.ParseEmbedFontFrom(path, embedFileSys)
 		if err == ErrAlreadyLoaded {
 			skipped += 1
 			continue
