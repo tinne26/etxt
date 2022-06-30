@@ -12,7 +12,7 @@ import "embed"
 import "golang.org/x/image/font/sfnt"
 
 // Parses a font and returns it along its name and any possible
-// error. Supported formats are .ttf, .otf, .ttf.gzip and .otf.gzip.
+// error. Supported formats are .ttf, .otf, .ttf.gz and .otf.gz.
 //
 // This is a low level function; you may prefer to use FontLibrary
 // instead.
@@ -115,7 +115,7 @@ func GzipDirFonts(fontsDir string, outputDir string) error {
 }
 
 // Compresses the given font by gzipping it and storing the result on
-// outDir with the same name as the original but an extra .gzip extension.
+// outDir with the same name as the original but an extra .gz extension.
 //
 // The font size reduction can vary a lot depending on the font and format,
 // but it's typically above 33%, with many .ttf font sizes being halved.
@@ -123,6 +123,10 @@ func GzipDirFonts(fontsDir string, outputDir string) error {
 // If you are wondering why gzip is used instead of supporting .woff formats:
 // gzip has stdlib support, can be applied transparently, and compression rates
 // are very similar to what brotli achieves for .woff files.
+//
+// On linux systems, when working on games, in many cases it's easier to
+// simply compress once with a `gzip -k your_font.ttf` command instead of
+// using this library.
 func GzipFontFile(fontPath string, outDir string) error {
 	// make output dir if it doesn't exist yet
 	info, err := os.Stat(outDir)
@@ -145,7 +149,7 @@ func GzipFontFile(fontPath string, outDir string) error {
 	defer fontFileCloser.Close()
 
 	// create new compressed font file
-	gzipFile, err := os.Create(outDir + filepath.Base(fontPath) + ".gzip")
+	gzipFile, err := os.Create(outDir + filepath.Base(fontPath) + ".gz")
 	if err != nil { return err }
 	gzipFileCloser := onceCloser{ gzipFile, false }
 	defer gzipFileCloser.Close()
@@ -183,9 +187,9 @@ func (self *onceCloser) Close() error {
 // The second indicates if the font is gzipped or not.
 func acceptFontPath(path string) (bool, bool) {
 	gzipped := false
-	if strings.HasSuffix(path, ".gzip") {
+	if strings.HasSuffix(path, ".gz") {
 		gzipped = true
-		path = path[0 : len(path) - 5]
+		path = path[0 : len(path) - 3]
 	}
 
 	validExt := (strings.HasSuffix(path, ".ttf") || strings.HasSuffix(path, ".otf"))

@@ -106,7 +106,7 @@ func TestGzip(t *testing.T) {
 	defer func() {
 		err := os.Remove(TestDirName + "/font.ttf")
 		if err != nil { panic(err) }
-		err  = os.Remove(TestDirName + "/font.ttf.gzip")
+		err  = os.Remove(TestDirName + "/font.ttf.gz")
 		if err != nil { panic(err) }
 		err  = os.Remove(TestDirName)
 		if err != nil { panic(err) }
@@ -116,7 +116,7 @@ func TestGzip(t *testing.T) {
 	err = GzipDirFonts(TestDirName, TestDirName)
 	if err != nil { t.Fatalf("GzipDirFonts failed: %s", err.Error()) }
 
-	_, err = os.Stat(TestDirName + "/font.ttf.gzip")
+	_, err = os.Stat(TestDirName + "/font.ttf.gz")
 	if err != nil {
 		t.Fatalf("Checking the gzipped font failed: %s", err.Error())
 	}
@@ -131,7 +131,7 @@ func TestGzip(t *testing.T) {
 		t.Fatalf("ParseFontFrom error for font: %s", err.Error())
 	}
 
-	_, nameGzip, err := ParseFontFrom(TestDirName + "/font.ttf.gzip")
+	_, nameGzip, err := ParseFontFrom(TestDirName + "/font.ttf.gz")
 	if err != nil {
 		t.Fatalf("ParseFontFrom error for gzipped font: %s", err.Error())
 	}

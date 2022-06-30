@@ -9,8 +9,8 @@ docs/*.html
 fonts/
 *.ttf
 *.otf
-*.ttf.gzip
-*.otf.gzip
+*.ttf.gz
+*.otf.gz
 
 # don't share the dirty secrets
 TODO.txt
