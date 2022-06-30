@@ -32,6 +32,10 @@ type GlyphCacheHandler interface {
 	// Only the _6 decimal bits must be considered.
 	NotifyFractChange(fixed.Point26_6)
 
+	// TODO: I have the suspicion that something is not working properly
+	//       with NotifyFractChange ^, as if quantization is not being
+	//       hanlded properly in caches.
+
 	//NotifyOtherChange(any) // more methods like this could be added
 
 	// --- cache access methods ---

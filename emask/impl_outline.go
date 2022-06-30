@@ -21,14 +21,13 @@ import "github.com/tinne26/etxt/efixed"
 // The algorithm is also quite slow and there's much room for improvement,
 // but I'm still focusing on the baseline implementation.
 //
-// In web api terms, the line cap is "butt" and the line joint is "miter".
+// In web API terms, the line cap is "butt" and the line joint is "miter".
 type OutlineRasterizer struct {
 	rasterizer outliner
 	onChange func(Rasterizer)
 	cacheSignature uint64
 	rectOffset image.Point
 	normOffset fixed.Point26_6
-	marginFactor float64
 }
 
 func NewOutlineRasterizer(outlineThickness float64) *OutlineRasterizer {
@@ -36,7 +35,7 @@ func NewOutlineRasterizer(outlineThickness float64) *OutlineRasterizer {
 	rast.SetThickness(outlineThickness)
 	rast.rasterizer.CurveSegmenter.SetThreshold(1/1024)
 	rast.rasterizer.CurveSegmenter.SetMaxSplits(8) // TODO: store somewhere
-	rast.marginFactor = 128.0
+	rast.SetMarginFactor(2.0)
 	return rast
 }
 
@@ -59,13 +58,11 @@ func (self *OutlineRasterizer) SetThickness(thickness float64) {
 // allows setting a limit, in multiples of 'thickness', to adjust the
 // paths so they don't extend further away than intended.
 //
-// The default value is 2. TODO: document how multiples provide coverage
-// up to different angles. TODO: this is still causing panics.
-// Large values will lead to bigger internal buffers, which should
-// be avoided when possible. Reasonable values range between 1 and 8.
+// The default value is 2. Valid values range from 1 to 16.
+// TODO: document how multiples provide coverage up to different
+// angles. TODO: this is still causing panics.
 func (self *OutlineRasterizer) SetMarginFactor(factor float64) {
-	if factor < 1.0 { panic("outliner margin factor must be >= 1.0")}
-	self.marginFactor = factor
+	self.rasterizer.SetMarginFactor(factor)
 }
 
 // Satisfies the Rasterizer interface.
@@ -112,7 +109,7 @@ func (self *OutlineRasterizer) Rasterize(outline sfnt.Segments, fract fixed.Poin
 	// prepare rasterizer
 	var size image.Point
 	bounds := outline.Bounds()
-	margin := efixed.FromFloat64RoundAwayZero(self.rasterizer.thickness*self.marginFactor)
+	margin := efixed.FromFloat64RoundAwayZero(self.rasterizer.MaxMargin())
 	bounds.Min.X -= margin
 	bounds.Max.X += margin
 	bounds.Min.Y -= margin

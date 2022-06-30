@@ -132,6 +132,15 @@ func parallelsAtDist(a, b, c float64, dist float64) (float64, float64) {
 	return c1, c2
 }
 
+// Returns the distance between two points, squared. The squared value
+// can be used to compare distances, only applying the square root if
+// necessary later with math.Sqrt().
+func dist2(x1, y1, x2, y2 float64) float64 {
+	dx := x1 - x2
+	dy := y1 - y2
+	return dx*dx + dy*dy
+}
+
 func abs64(value float64) float64 {
 	if value >= 0 { return value }
 	return -value

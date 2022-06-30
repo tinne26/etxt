@@ -1,8 +1,8 @@
 # Renderers
 Random bits of trivia and advice:
-- Most small games can do all their text rendering with a single `etxt.Renderer`, by simply changing fonts and sizes as needed. No need for an *army* of renderers.
+- Many small games can do all their text rendering with a single `etxt.Renderer`, by simply changing fonts and sizes as needed. No need for an *army* of renderers.
 - You might still need more than one renderer if you need to draw text concurrently, want to use different caches, want to wrap renderers on custom types for advanced use-cases, or simply to organize your code more naturally.
-- While renderer's aren't too heavy or slow to initialize, you shouldn't create new ones on each frame. If you ever get in the business of pooling them (which should be a last resource, but you do you), make sure to clear the rendering target and the font pointers first.
+- While renderers aren't too heavy or slow to initialize, you shouldn't create new ones on each frame. If you ever get in the business of pooling them (which should be a last resource, but you do you), make sure to clear the rendering target and the font pointers first.
 - Even if drawing text is reasonably performant once glyph masks are cached, it's always good to remember that sometimes you can draw to an offscreen image to avoid doing so much work for text rendering on each frame. That said, drawing to an offscreen also has some downsides when the screen size changes, as you might need to re-render.
 - If you have a complex UI system, it's advisable to work with color palettes, font sets and sizes at an abstract level (e.g: main, background and highlight colors, main and title font, heading, normal and detail sizes, etc.) instead of passing all that information manually to the renderer. While the `etxt.Renderer` is easy to use directly, in many cases you will want to use it as building block, not as the "definitive" abstraction. It's not and it doesn't try to be.
 
