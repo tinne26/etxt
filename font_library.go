@@ -1,6 +1,5 @@
 package etxt
 
-import "os"
 import "io/fs"
 import "embed"
 import "errors"
@@ -151,8 +150,8 @@ func (self *FontLibrary) ParseEmbedDirFonts(dirName string, embedFileSys *embed.
 
 	if dirName == "." {
 		dirName = ""
-	} else if !strings.HasSuffix(dirName, string(os.PathSeparator)) {
-		dirName += string(os.PathSeparator)
+	} else if !strings.HasSuffix(dirName, "/") {
+		dirName += "/"
 	}
 
 	loaded, skipped := 0, 0
