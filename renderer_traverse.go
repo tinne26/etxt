@@ -109,7 +109,7 @@ func (self *Renderer) Traverse(text string, xy fixed.Point26_6, operation func(f
 		// get the glyph index for the current character and traverse it
 		index := self.getGlyphIndex(codePoint)
 		dot = traverseFunc(dot, glyphPair{ index, previousIndex, hasPrevGlyph },
-			func(dot fixed.Point26_6) { operation(dot, codePoint, index) })
+			func(opDot fixed.Point26_6) { operation(opDot, codePoint, index) })
 		hasPrevGlyph = true
 		previousIndex = index
 	}
@@ -145,7 +145,7 @@ func (self *Renderer) TraverseGlyphs(glyphIndices []GlyphIndex, xy fixed.Point26
 	iterator := newGlyphsIterator(glyphIndices, traverseInReverse)
 	index, _ := iterator.Next()
 	dot = traverseFunc(dot, glyphPair{ index, previousIndex, false },
-		func(dot fixed.Point26_6) { operation(dot, index)} )
+		func(opDot fixed.Point26_6) { operation(opDot, index)} )
 	previousIndex = index
 
 	// iterate all remaining glyphs
@@ -170,7 +170,7 @@ func (self *Renderer) quantizeY(y fixed.Int26_6) fixed.Int26_6 {
 }
 
 func (self *Renderer) quantizeX(x fixed.Int26_6, dir Direction) fixed.Int26_6 {
-	if self.quantization == QuantizeNone { return x }
+	if self.quantization != QuantizeFull { return x }
 	if dir == LeftToRight {
 		return efixed.RoundHalfUp(x)
 	} else { // RightToLeft
@@ -233,11 +233,13 @@ func (self *Renderer) traverseGlyphLTR(dot fixed.Point26_6, glyphSeq glyphPair, 
 	if glyphSeq.HasPrevious { // apply kerning
 		prev, curr := glyphSeq.PreviousIndex, glyphSeq.CurrentIndex
 		dot.X += self.sizer.Kern(self.font, prev, curr, self.sizePx)
-		if self.quantization == QuantizeFull {
-			dot.X = efixed.RoundHalfUp(dot.X)
-		} else if self.cacheHandler != nil {
-			self.cacheHandler.NotifyFractChange(dot)
-		}
+	}
+
+	// quantize
+	if self.quantization == QuantizeFull {
+		dot.X = efixed.RoundHalfUp(dot.X)
+	} else if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(dot)
 	}
 
 	// operate

@@ -306,6 +306,45 @@ func TestGtxtMixModes(t *testing.T) {
 	}
 }
 
+func TestAlignBound(t *testing.T) {
+	renderer := NewStdRenderer()
+	renderer.SetFont(testFont)
+	renderer.SetAlign(YCenter, XCenter)
+	horzPadder := &esizer.HorzPaddingSizer{}
+	renderer.SetSizer(horzPadder)
+
+	for size := 7; size < 73; size += 3 {
+		renderer.SetSizePx(size)
+		prevWidth := fixed.Int26_6(0)
+		for i := 0; i < 64; i += 3 {
+			const text = "abcdefghijkl - mnopq0123456789"
+			horzPadder.SetHorzPaddingFract(fixed.Int26_6(i))
+
+			renderer.SetQuantizationMode(QuantizeFull)
+			rect1 := renderer.SelectionRect(text)
+			renderer.SetQuantizationMode(QuantizeVert)
+			rect2 := renderer.SelectionRect(text)
+			renderer.SetQuantizationMode(QuantizeNone)
+			rect3 := renderer.SelectionRect(text)
+
+			if rect1.Height != rect2.Height {
+				t.Fatalf("SelectionRect.Height different for QuantizeFull and QuantizeVert (%d vs %d)", rect1.Height, rect2.Height)
+			}
+			if rect2.Width != rect3.Width {
+				t.Fatalf("SelectionRect.Width different for QuantizeVert and QuantizeNone (%d vs %d)", rect2.Width, rect3.Width)
+			}
+			if rect3.Width <= prevWidth {
+				t.Fatalf("SelectionRect.Width didn't increase")
+			}
+			prevWidth = rect3.Width
+
+			// if rect1.Width == rect2.Width { // uncommon but this can happen legitimately
+			// 	t.Fatalf("SelectionRect.Width uncommon match for QuantizeFull and QuantizeVert (%d vs %d)", rect1.Width, rect2.Width)
+			// }
+		}
+	}
+}
+
 func debugExport(name string, img image.Image) {
 	file, err := os.Create(name)
 	if err != nil { log.Fatal(err) }
