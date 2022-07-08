@@ -6,9 +6,7 @@ import "os"
 import "image"
 import "image/color"
 import "image/png"
-import "errors"
 import "log"
-import "io/fs"
 
 import "testing"
 
@@ -17,16 +15,6 @@ import "golang.org/x/image/math/fixed"
 
 import "github.com/tinne26/etxt/emask"
 import "github.com/tinne26/etxt/esizer"
-
-var testFont *Font
-func init() { // parse test font
-	var err error
-	testFont, _, err = ParseFontFrom("test_font.ttf")
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) { log.Fatal(err) }
-		log.Fatal("etxt requires a test_font.ttf file to run tests")
-	}
-}
 
 func TestSetGet(t *testing.T) {
 	// mostly tests the renderer default values
@@ -318,8 +306,8 @@ func TestGtxtMixModes(t *testing.T) {
 	}
 }
 
-func debugExport(img image.Image) {
-	file, err := os.Create("seewhat.png")
+func debugExport(name string, img image.Image) {
+	file, err := os.Create(name)
 	if err != nil { log.Fatal(err) }
 	err = png.Encode(file, img)
 	if err != nil { log.Fatal(err) }
