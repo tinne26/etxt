@@ -96,6 +96,9 @@ func (self *Renderer) SetFont(font *Font) {
 	//         this renderer still exists... which is almost never.
 	if font == self.font { return }
 	self.font = font
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFontChange(font)
+	}
 
 	// drop cached information
 	self.lineAdvanceIsCached = false
@@ -150,11 +153,16 @@ func (self *Renderer) GetCacheHandler() ecache.GlyphCacheHandler {
 //   textRenderer.SetCacheHandler(cache.NewHandler())
 func (self *Renderer) SetCacheHandler(cacheHandler ecache.GlyphCacheHandler) {
 	self.cacheHandler = cacheHandler
+
+	if cacheHandler == nil {
+		if self.rasterizer != nil { self.rasterizer.SetOnChangeFunc(nil) }
+		return
+	}
+
 	if self.rasterizer != nil {
 		self.rasterizer.SetOnChangeFunc(cacheHandler.NotifyRasterizerChange)
 	}
 
-	if cacheHandler == nil { return }
 	cacheHandler.NotifySizeChange(self.sizePx)
 	if self.font != nil { cacheHandler.NotifyFontChange(self.font) }
 	if self.rasterizer != nil {
