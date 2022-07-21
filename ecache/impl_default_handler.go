@@ -5,28 +5,28 @@ import "golang.org/x/image/math/fixed"
 
 import "github.com/tinne26/etxt/emask"
 
-// A default implementation of GlyphCacheHandler.
+// A default implementation of [GlyphCacheHandler].
 type DefaultCacheHandler struct {
 	cache *DefaultCache
 	activeKey [3]uint64
 }
 
-// Satisfies GlyphCacheHandler.NotifyFontChange(...)
+// Implements [GlyphCacheHandler].NotifyFontChange(...)
 func (self *DefaultCacheHandler) NotifyFontChange(font *Font) {
 	self.activeKey[0] = uint64(uintptr(unsafe.Pointer(font)))
 }
 
-// Satisfies GlyphCacheHandler.NotifyRasterizerChange(...)
+// Implements [GlyphCacheHandler].NotifyRasterizerChange(...)
 func (self *DefaultCacheHandler) NotifyRasterizerChange(rasterizer emask.Rasterizer) {
 	self.activeKey[1] = rasterizer.CacheSignature()
 }
 
-// Satisfies GlyphCacheHandler.NotifySizeChange(...)
+// Implements [GlyphCacheHandler].NotifySizeChange(...)
 func (self *DefaultCacheHandler) NotifySizeChange(size fixed.Int26_6) {
 	self.activeKey[2] = (self.activeKey[2] & ^uint64(0xFFFFFFFF00000000)) | (uint64(size) << 32)
 }
 
-// Satisfies GlyphCacheHandler.NotifyFractChange(...)
+// Implements [GlyphCacheHandler].NotifyFractChange(...)
 func (self *DefaultCacheHandler) NotifyFractChange(fract fixed.Point26_6) {
 	bits := uint64(fract.Y & 0x0000003F) << 16
 	bits |= uint64(fract.X & 0x0000003F) << 22
@@ -47,24 +47,24 @@ func (self *DefaultCacheHandler) NotifyFractChange(fract fixed.Point26_6) {
 // 	self.activeKey[2] = (self.activeKey[2] & ^uint64(0x00000000F0000000)) | (uint64(variant ^ 0x0F) << 28)
 // }
 
-// Satisfies GlyphCacheHandler.GetMask(...)
+// Implements [GlyphCacheHandler].GetMask(...)
 func (self *DefaultCacheHandler) GetMask(index GlyphIndex) (GlyphMask, bool) {
 	self.activeKey[2] = (self.activeKey[2] & ^uint64(0x000000000000FFFF)) | uint64(index)
 	return self.cache.GetMask(self.activeKey)
 }
 
-// Satisfies GlyphCacheHandler.PassMask(...)
+// Implements [GlyphCacheHandler].PassMask(...)
 func (self *DefaultCacheHandler) PassMask(index GlyphIndex, mask GlyphMask) {
 	self.activeKey[2] = (self.activeKey[2] & ^uint64(0x000000000000FFFF)) | uint64(index)
 	self.cache.PassMask(self.activeKey, mask)
 }
 
-// Provides access to DefaultCache.ApproxByteSize().
+// Provides access to [DefaultCache.ApproxByteSize]().
 func (self *DefaultCacheHandler) ApproxCacheByteSize() int {
 	return self.cache.ApproxByteSize()
 }
 
-// Provides access to DefaultCache.PeakSize().
+// Provides access to [DefaultCache.PeakSize]().
 func (self *DefaultCacheHandler) PeakCacheSize() int {
 	return self.cache.PeakSize()
 }

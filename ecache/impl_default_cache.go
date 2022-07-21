@@ -97,8 +97,7 @@ func (self *DefaultCache) removeRandEntry(hotness uint32, instant uint32) uint32
 	return freedSpace
 }
 
-// Stores the given mask with the given key. See GlyphCacheHandler
-// for more details.
+// Stores the given mask with the given key.
 func (self *DefaultCache) PassMask(key [3]uint64, mask GlyphMask) {
 	const MaxMakeRoomAttempts = 2
 
@@ -142,7 +141,7 @@ func (self *DefaultCache) ApproxByteSize() int {
 }
 
 // Returns an approximation of the maximum amount of bytes that the
-// cache has been filled at any point of its life.
+// cache has been filled with at any point of its life.
 //
 // This method can be useful to determine the actual usage of a cache
 // within your application and set its capacity to a reasonable value.

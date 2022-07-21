@@ -66,7 +66,7 @@ func FromFloat64(value float64) (fixed.Int26_6, fixed.Int26_6) {
 	}
 }
 
-// Same as FromFloat64(), but returning a single value.
+// Same as [FromFloat64](), but returning a single value.
 // In case of ties, the result closest to zero is selected.
 func FromFloat64RoundToZero(value float64) fixed.Int26_6 {
 	a, b := FromFloat64(value)
@@ -74,7 +74,7 @@ func FromFloat64RoundToZero(value float64) fixed.Int26_6 {
 	return b // both values are negative, b is the closest to zero
 }
 
-// Same as FromFloat64(), but returning a single value.
+// Same as [FromFloat64](), but returning a single value.
 // In case of ties, the result furthest away from zero is selected.
 func FromFloat64RoundAwayZero(value float64) fixed.Int26_6 {
 	a, b := FromFloat64(value)
@@ -112,7 +112,7 @@ func RoundHalfUp(value fixed.Int26_6) fixed.Int26_6 {
 	return (value + 32) & ^0x3F
 }
 
-// Like RoundHalfUp(), but rounding down. Duh.
+// Like [RoundHalfUp](), but rounding down. Duh.
 func RoundHalfDown(value fixed.Int26_6) fixed.Int26_6 {
 	return (value + 31) & ^0x3F
 }
@@ -123,19 +123,19 @@ func Floor(value fixed.Int26_6) fixed.Int26_6 {
 	return (value & ^0x3F)
 }
 
-// Like RoundHalfUp(), but rounding away from zero.
+// Like [RoundHalfUp](), but rounding away from zero.
 func RoundHalfAwayZero(value fixed.Int26_6) fixed.Int26_6 {
 	if value >= 0 { return RoundHalfUp(value) }
 	return RoundHalfDown(value)
 }
 
-// Like RoundHalfUp(), but directly converting to int.
+// Like [RoundHalfUp](), but directly converting to int.
 func ToIntHalfUp(value fixed.Int26_6) int { return int(value + 32) >> 6 }
 
-// Like RoundHalfDown(), but directly converting to int.
+// Like [RoundHalfDown](), but directly converting to int.
 func ToIntHalfDown(value fixed.Int26_6) int { return int(value + 31) >> 6 }
 
-// Like RoundHalfAwayZero(), but directly converting to int.
+// Like [RoundHalfAwayZero](), but directly converting to int.
 func ToIntHalfAwayZero(value fixed.Int26_6) int {
 	if value >= 0 { return ToIntHalfUp(value) }
 	return ToIntHalfDown(value)
@@ -144,7 +144,8 @@ func ToIntHalfAwayZero(value fixed.Int26_6) int {
 // Conversion is always exact.
 //
 // I only added this as an excuse to remind myself how to debug
-// fixed values with fmt.Printf("%f", efixed.ToFloat64(fixedValue)).
+// fixed values with:
+//   fmt.Printf("%f", efixed.ToFloat64(fixedValue))
 func ToFloat64(value fixed.Int26_6) float64 {
 	return float64(value)/64.0
 }
