@@ -18,13 +18,14 @@ import "github.com/tinne26/etxt/emask"
 
 // Draws the given text with the current configuration (font, size, color,
 // target, etc). The position at which the text will be drawn depends on
-// the given pixel coordinates and the renderer's align (see SetAlign rules).
+// the given pixel coordinates and the renderer's align (see
+// [Renderer.SetAlign] rules).
 //
 // The returned value should be ignored except on advanced use-cases
-// (refer to Traverse's documentation).
+// (refer to [Renderer.Traverse] documentation).
 //
 // Missing glyphs in the current font will cause the renderer to panic.
-// See GetMissingRunes if you need to make your system more robust.
+// See [GetMissingRunes] if you need to make your system more robust.
 //
 // Line breaks encoded as \n will be handled automatically.
 func (self *Renderer) Draw(text string, x, y int) fixed.Point26_6 {
@@ -38,7 +39,7 @@ func (self *Renderer) Draw(text string, x, y int) fixed.Point26_6 {
 // be fractionally aligned by itself, that still depends on the renderer's
 // quantization mode.
 //
-// [fractional pixel] https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
+// [fractional pixel]: https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 func (self *Renderer) DrawFract(text string, x, y fixed.Int26_6) fixed.Point26_6 {
 	// safety checks
 	if self.target == nil { panic("draw called while target == nil (tip: renderer.SetTarget())") }

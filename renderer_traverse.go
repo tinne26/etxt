@@ -4,7 +4,7 @@ import "golang.org/x/image/math/fixed"
 
 import "github.com/tinne26/etxt/efixed"
 
-// Returns a Feed object linked to the Renderer.
+// Returns a [Feed] object linked to the Renderer.
 //
 // Feeds are the lowest level mechanism to draw text in etxt, as they
 // expose and allow one to modify the drawing position manually.
@@ -49,11 +49,11 @@ type glyphPair struct {
 //    be on the left side of the last character drawn.
 //  - If the horizontal align is etxt.XCenter, the returned coordinate will
 //    be on the right side of the last character drawn if the text direction
-//    is LeftToRight, or on the left side otherwise.
+//    is [LeftToRight], or on the left side otherwise.
 //
 // This returned coordinate can be useful when implementing bidirectional
 // text renderers, custom multi-style renderers and similar, though for
-// heterogeneous styling using a Feed is often more appropriate.
+// heterogeneous styling using a [Feed] is often more appropriate.
 func (self *Renderer) Traverse(text string, xy fixed.Point26_6, operation func(fixed.Point26_6, rune, GlyphIndex)) fixed.Point26_6 {
 	// NOTE: the spec says the returned coordinates are unquantized,
 	//       but the y will be quantized if another character has been
@@ -115,7 +115,7 @@ func (self *Renderer) Traverse(text string, xy fixed.Point26_6, operation func(f
 	}
 }
 
-// Like Traverse, but for glyph indices.
+// Like [Renderer.Traverse], but for glyph indices.
 //
 // Since glyph indices are virtually only used when doing [text shaping]
 // —and that's a complex process on itself— I decided to omit most other

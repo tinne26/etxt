@@ -23,8 +23,14 @@ import "github.com/tinne26/etxt/internal"
 // when working with etxt.
 type Font = sfnt.Font
 
-// Support for glyph indices (and not only runes) is important in order
-// to make renderers usable with [text shapers] and complex scripts.
+// Glyph indices are used to specify which font glyph are we working
+// with. Glyph indices are a low level construct that most users of
+// etxt dont't have to deal with, but they are important as they can
+// be used to reference font glyphs that don't have any direct mapping
+// to unicode code points.
+//
+// Support for glyph indices (and not only runes), therefore, is important
+// in order to make renderers usable with [text shapers] and complex scripts.
 //
 // [text shapers]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
 type GlyphIndex = sfnt.GlyphIndex
@@ -33,7 +39,7 @@ type GlyphIndex = sfnt.GlyphIndex
 // You rarely need to use GlyphMasks directly unless using advanced
 // functions.
 //
-// Without Ebitengine (gtxt version), GlyphMask defaults to *image.Alpha.
+// Without Ebitengine (gtxt version), GlyphMask defaults to [*image.Alpha].
 // The image bounds are adjusted to allow drawing the glyph at its
 // intended position. In particular, bounds.Min.Y is typically
 // negative, with y = 0 corresponding to the glyph's baseline, y < 0
@@ -66,7 +72,7 @@ type VertAlign int8
 type HorzAlign int8
 
 // Vertical align constants for renderer operations. See
-// Renderer.SetAlign for additional details.
+// [Renderer.SetAlign] for additional details.
 const (
 	Top      VertAlign = 0
 	YCenter  VertAlign = 1
@@ -75,7 +81,7 @@ const (
 )
 
 // Horizontal align constants for renderer operations. See
-// Renderer.SetAlign for additional details.
+// [Renderer.SetAlign] for additional details.
 const (
 	Left    HorzAlign = 0
 	XCenter HorzAlign = 1
@@ -85,7 +91,7 @@ const (
 // Renderers can have their text direction configured as
 // left-to-right or right-to-left.
 //
-// Directions can be casted directly to [unicode/bidi] directions, e.g:
+// Directions can be casted directly to [unicode/bidi] directions, e.g.:
 //   bidi.Direction(etxt.LeftToRight).
 //
 // [unicode/bidi]: https://pkg.go.dev/golang.org/x/text/unicode/bidi
@@ -100,8 +106,8 @@ const (
 // A handler can only be used with a single Renderer, but you can create
 // multiple handlers for the same underlying cache.
 //
-// Will panic if maxBytes < 1024 or crypto/rand fails. If you want
-// to handle those errors or learn more, see the ecache subpackage.
+// This function will panic if maxBytes < 1024 or crypto/rand fails. If
+// you need to handle those errors, see [ecache.NewDefaultCache] instead.
 func NewDefaultCache(maxBytes int) *ecache.DefaultCache {
 	cache, err := ecache.NewDefaultCache(maxBytes)
 	if err != nil { panic(err) }

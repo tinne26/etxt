@@ -29,8 +29,8 @@ const defaultMixMode = MixOver
 func convertAlphaImageToGlyphMask(i *image.Alpha) GlyphMask { return i }
 
 // The default glyph drawing function used in renderers. Do not confuse with
-// the main Draw() function. DefaultDrawFunc is rarely needed directly unless
-// pairing it with Traverse*.
+// the main [Renderer.Draw]() function. DefaultDrawFunc is rarely needed
+// directly unless pairing it with Traverse* functions.
 func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ GlyphIndex) {
 	if mask == nil { return } // spaces and empty glyphs will be nil
 

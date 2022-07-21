@@ -11,7 +11,7 @@ import "github.com/tinne26/etxt/internal"
 
 // Alias to allow compiling the package without Ebitengine (gtxt version).
 //
-// Without Ebitengine, TargetImage defaults to draw.Image.
+// Without Ebitengine, TargetImage defaults to [image/draw.Image].
 type TargetImage = *ebiten.Image
 
 // Mix modes specify how to compose colors when drawing glyphs
@@ -26,8 +26,8 @@ type MixMode = ebiten.CompositeMode
 const defaultMixMode = ebiten.CompositeModeSourceOver
 
 // The default glyph drawing function used in renderers. Do not confuse with
-// the main Draw() function. DefaultDrawFunc is rarely needed directly unless
-// pairing it with Traverse*.
+// the main [Renderer.Draw]() function. DefaultDrawFunc is rarely needed
+// directly unless pairing it with Traverse* functions.
 func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ GlyphIndex) {
 	if mask == nil { return } // spaces and empty glyphs will be nil
 
@@ -54,7 +54,7 @@ func colorToFloat64(subject color.Color) (float64, float64, float64, float64) {
 	}
 }
 
-// helper function required when working with ebiten images
+// helper function required when working with ebitengine images
 func convertAlphaImageToGlyphMask(alpha *image.Alpha) GlyphMask {
 	if alpha == nil { return nil }
 

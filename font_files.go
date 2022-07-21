@@ -14,7 +14,7 @@ import "golang.org/x/image/font/sfnt"
 // Parses a font and returns it along its name and any possible
 // error. Supported formats are .ttf, .otf, .ttf.gz and .otf.gz.
 //
-// This is a low level function; you may prefer to use FontLibrary
+// This is a low level function; you may prefer to use a [FontLibrary]
 // instead.
 func ParseFontFrom(path string) (*Font, string, error) {
 	// check font path validity
@@ -29,9 +29,9 @@ func ParseFontFrom(path string) (*Font, string, error) {
 	return parseFontFileAndClose(file, gzipped)
 }
 
-// Same as ParseFontFrom, but for embedded filesystems.
+// Same as [ParseFontFrom], but for embedded filesystems.
 //
-// This is a low level function; you may prefer to use FontLibrary
+// This is a low level function; you may prefer to use a [FontLibrary]
 // instead.
 func ParseEmbedFontFrom(path string, embedFileSys *embed.FS) (*Font, string, error) {
 	// check font path validity
@@ -79,7 +79,7 @@ func parseFontFileAndClose(file io.ReadCloser, gzipped bool) (*Font, string, err
 // Same as [sfnt.Parse], but also including the font name.
 // The bytes must not be modified while the font is in use.
 //
-// This is a low level function; you may prefer to use FontLibrary
+// This is a low level function; you may prefer to use a [FontLibrary]
 // instead.
 //
 // [sfnt.Parse]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Parse.
@@ -90,7 +90,7 @@ func ParseFontBytes(bytes []byte) (*Font, string, error) {
 	return newFont, fontName, err
 }
 
-// Applies GzipFontFile to each font of the given directory.
+// Applies [GzipFontFile] to each font of the given directory.
 func GzipDirFonts(fontsDir string, outputDir string) error {
 	absDirPath, err := filepath.Abs(fontsDir)
 	if err != nil { return err }
@@ -121,12 +121,12 @@ func GzipDirFonts(fontsDir string, outputDir string) error {
 // but it's typically above 33%, with many .ttf font sizes being halved.
 //
 // If you are wondering why gzip is used instead of supporting .woff formats:
-// gzip has stdlib support, can be applied transparently, and compression rates
-// are very similar to what brotli achieves for .woff files.
+// gzip has stdlib support, can be applied transparently, and compression
+// rates are very similar to what brotli achieves for .woff files.
 //
-// On linux systems, when working on games, in many cases it's easier to
-// simply compress once with a `gzip -k your_font.ttf` command instead of
-// using this library.
+// When working on games, sometimes you may prefer to compress directly
+// with a command:
+//   gzip --keep --best your_font.ttf
 func GzipFontFile(fontPath string, outDir string) error {
 	// make output dir if it doesn't exist yet
 	info, err := os.Stat(outDir)

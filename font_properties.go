@@ -32,7 +32,7 @@ func FontProperty(font *Font, property sfnt.NameID) (string, error) {
 }
 
 // Returns the family name of the given font. If the information is
-// missing, ErrNotFound will be returned. Other errors are also
+// missing, [ErrNotFound] will be returned. Other errors are also
 // possible (e.g., if the font naming table is invalid).
 func FontFamily(font *Font) (string, error) {
 	value, err := FontProperty(font, sfnt.NameIDFamily)
@@ -41,7 +41,7 @@ func FontFamily(font *Font) (string, error) {
 }
 
 // Returns the subfamily name of the given font. If the information
-// is missing, ErrNotFound will be returned. Other errors are also
+// is missing, [ErrNotFound] will be returned. Other errors are also
 // possible (e.g., if the font naming table is invalid).
 //
 // In most cases, the subfamily value will be one of:
@@ -53,7 +53,7 @@ func FontSubfamily(font *Font) (string, error) {
 }
 
 // Returns the name of the given font. If the information is missing,
-// ErrNotFound will be returned. Other errors are also possible (e.g.,
+// [ErrNotFound] will be returned. Other errors are also possible (e.g.,
 // if the font naming table is invalid).
 func FontName(font *Font) (string, error) {
 	value, err := FontProperty(font, sfnt.NameIDFull)
@@ -62,7 +62,7 @@ func FontName(font *Font) (string, error) {
 }
 
 // Returns the identifier of the given font. If the information is missing,
-// ErrNotFound will be returned. Other errors are also possible (e.g.,
+// [ErrNotFound] will be returned. Other errors are also possible (e.g.,
 // if the font naming table is invalid).
 func FontIdentifier(font *Font) (string, error) {
 	value, err := FontProperty(font, sfnt.NameIDUniqueIdentifier)

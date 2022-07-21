@@ -4,12 +4,12 @@
 // While the API surface can look slightly intimidating at the beginning,
 // common usage depends only on a couple types and a few functions...
 //
-// First, you create a font library and parse the fonts:
+// First, you create a [FontLibrary] and parse the fonts:
 //   fontLib := etxt.NewFontLibrary()
 //   _, _, err := fontLib.ParseDirFonts("path/to/fonts")
 //   if err != nil { ... }
 //
-// Then, you create a renderer:
+// Then, you create a [Renderer]:
 //   txtRenderer := etxt.NewStdRenderer()
 //   txtRenderer.SetFont(fontLib.GetFont("My Font Name"))
 //

@@ -57,13 +57,13 @@ type Renderer struct {
 }
 
 // Creates a new renderer with the default vector rasterizer.
-// See NewRenderer()'s documentation for more details.
+// See [NewRenderer]()'s documentation for more details.
 func NewStdRenderer() *Renderer {
 	return NewRenderer(&emask.DefaultRasterizer{})
 }
 
 // Creates a new Renderer with the given glyph mask rasterizer.
-// For the default rasterizer, see NewStdRenderer() instead.
+// For the default rasterizer, see [NewStdRenderer]() instead.
 //
 // After creating a renderer, you must set at least the font and
 // the target in order to be able to draw. In most cases, you will
@@ -211,22 +211,22 @@ func (self *Renderer) SetRasterizer(rasterizer emask.Rasterizer) {
 // is complicated and can vary a lot between fonts, but
 // to provide a [general reference]:
 //  - A capital latin letter is usually around 70% as tall as
-//    the given size. E.g: at 16px, "A" will be 10-12px tall.
+//    the given size. E.g.: at 16px, "A" will be 10-12px tall.
 //  - A lowercase latin letter is usually around 48% as tall as
-//    the given size. E.g: at 16px, "x" will be 7-9px tall.
+//    the given size. E.g.: at 16px, "x" will be 7-9px tall.
 //
 // [general reference]: https://github.com/tinne26/etxt/blob/main/docs/px-size.md
 func (self *Renderer) SetSizePx(sizePx int) {
 	self.SetSizePxFract(fixed.Int26_6(sizePx << 6))
 }
 
-// Like SetSizePx, but accepting a float64 fractional pixel size.
+// Like [Renderer.SetSizePx], but accepting a float64 fractional pixel size.
 // func (self *Renderer) SetSizePxFloat(sizePx float64) {
 // 	self.SetSizePxFract(efixed.FromFloat64RoundToZero(sizePx))
 // }
 
-// Like SetSizePx, but accepting a fractional pixel size in the
-// form of a [26.6 fixed point] integer.
+// Like [Renderer.SetSizePx], but accepting a fractional pixel size in
+// the form of a [26.6 fixed point] integer.
 //
 // [26.6 fixed point]: https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 func (self *Renderer) SetSizePxFract(sizePx fixed.Int26_6) {
@@ -270,7 +270,8 @@ func (self *Renderer) GetSizePxFract() fixed.Int26_6 {
 // are allowed. If you need negative line heights for some reason,
 // use negative line spacing factors instead.
 //
-// By default, the line height is set to auto (see SetLineHeightAuto).
+// By default, the line height is set to auto (see
+// [Renderer.SetLineHeightAuto]).
 func (self *Renderer) SetLineHeight(heightPx float64) {
 	if heightPx < 0 {
 		panic("negative line height not allowed, use negative line spacing instead")
@@ -284,7 +285,7 @@ func (self *Renderer) SetLineHeight(heightPx float64) {
 // active font and size. This is the default behavior for line
 // height.
 //
-// For manual line height configuration, see SetLineHeight.
+// For manual line height configuration, see [Renderer.SetLineHeight].
 func (self *Renderer) SetLineHeightAuto() {
 	self.lineHeight = -1
 	self.lineAdvanceIsCached = false
@@ -297,7 +298,7 @@ func (self *Renderer) SetLineHeightAuto() {
 // input text to be processed.
 //
 // Notice that line spacing and line height are different things.
-// See SetLineHeight for more details.
+// See [Renderer.SetLineHeight] for more details.
 func (self *Renderer) SetLineSpacing(factor float64) {
 	// Line spacing will be quantized to a multiple of 1/64.
 	// Providing a float64 that already adjusts to that will
@@ -341,13 +342,13 @@ func (self *Renderer) GetLineAdvance() fixed.Int26_6 {
 	return newLineAdvance
 }
 
-// See documentation for SetAlign.
+// See documentation for [Renderer.SetAlign].
 func (self *Renderer) SetVertAlign(vertAlign VertAlign) {
 	if vertAlign < Top || vertAlign > Bottom { panic("bad VertAlign") }
 	self.vertAlign = vertAlign
 }
 
-// See documentation for SetAlign.
+// See documentation for [Renderer.SetAlign].
 func (self *Renderer) SetHorzAlign(horzAlign HorzAlign) {
 	if horzAlign < Left || horzAlign > Right { panic("bad HorzAlign") }
 	self.horzAlign = horzAlign
@@ -357,28 +358,29 @@ func (self *Renderer) SetHorzAlign(horzAlign HorzAlign) {
 //  - If the alignment is set to (etxt.Top, etxt.Left), coordinates
 //    passed to subsequent operations will be interpreted as the
 //    top-left corner of the box in which the text has to be drawn.
-//  - If the alignment is set to (etxt.YCenter, etxt.XCenter), coor-
-//    dinates passed to subsequent operations will be interpreted
+//  - If the alignment is set to (etxt.YCenter, etxt.XCenter), coordinates
+//    passed to subsequent operations will be interpreted
 //    as the center of the box in which the text has to be drawn.
 //
-// See https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_aligns.png
-// for a visual explanation instead.
+// Check out [this image] for a visual explanation instead.
 //
 // By default, the renderer's alignment is (etxt.Baseline, etxt.Left).
+//
+// [this image]: https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_aligns.png
 func (self *Renderer) SetAlign(vertAlign VertAlign, horzAlign HorzAlign) {
 	self.SetVertAlign(vertAlign)
 	self.SetHorzAlign(horzAlign)
 }
 
-// Returns the current align. See SetAlign documentation for more
-// details on text align.
+// Returns the current align. See [Renderer.SetAlign] documentation for
+// more details on text align.
 func (self *Renderer) GetAlign() (VertAlign, HorzAlign) {
 	return self.vertAlign, self.horzAlign
 }
 
 // Sets the text direction to be used on subsequent operations.
 //
-// By default, the direction is LeftToRight.
+// By default, the direction is [LeftToRight].
 func (self *Renderer) SetDirection(dir Direction) {
 	if dir != LeftToRight && dir != RightToLeft { panic("bad direction") }
 	self.direction = dir
@@ -393,8 +395,8 @@ func (self *Renderer) GetSizer() esizer.Sizer {
 
 // Sets the current sizer, which must be non-nil.
 //
-// As GetSizer's documentation explains, you rarely need to care
-// about or even know what sizers are.
+// As [Renderer.GetSizer]'s documentation explains, you rarely
+// need to care about or even know what sizers are.
 func (self *Renderer) SetSizer(sizer esizer.Sizer) {
 	if sizer == nil { panic("nil sizer") }
 	self.sizer = sizer

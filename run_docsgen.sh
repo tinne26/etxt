@@ -6,32 +6,33 @@
 # You can open the results after running the script with:
 # >> xdg-open docs/reference_etxt.html
 
-headhtml="<!DOCTYPE html><html><head><title>etxt/godoc</title><link href="https://godoc.org/-/bootstrap.min.css" rel="stylesheet"><style>body { max-width: 840px; margin: 20px auto; font-size: 16px; }</style></head><body>"
-tailhtml="</body></html>"
-packages="emask efixed esizer ecache etxt"
+pkgname="etxt"
+pkgurl="github.com/tinne26/$pkgname"
+subpkgs="emask efixed esizer ecache"
+docsfolder="docs/"
+docsprefix="reference_"
 
-# main etxt package docs
-godoc -html . > tmp_doc_body
+headhtml="<!DOCTYPE html><html><head><title>$pkgurl/godoc</title><link href="https://godoc.org/-/bootstrap.min.css" rel="stylesheet"><style>body { max-width: 840px; margin: 20px auto; font-size: 16px; }</style></head><body>"
+tailhtml="</body></html>"
 echo "$headhtml" > tmp_doc_head
 echo "$tailhtml" > tmp_doc_tail
-cat tmp_doc_head tmp_doc_body tmp_doc_tail > docs/reference_etxt.html
-for pkg in $packages; do
-	sed -i "s|/pkg/github.com/tinne26/etxt/$pkg/|./reference_$pkg.html|g" docs/reference_etxt.html
-	sed -i "s|/pkg/golang.org/|https://pkg.go.dev/golang.org/|g" docs/reference_etxt.html
+
+# main package docs
+godoc -url pkg/$pkgurl | tail -n +44 > tmp_doc_body
+cat tmp_doc_head tmp_doc_body tmp_doc_tail > $docsfolder$docsprefix$pkgname.html
+for pkg in $subpkgs; do
+	sed -i "s|/pkg/$pkgurl/$pkg/|./$docsprefix$pkg.html|g" "$docsfolder$docsprefix$pkgname.html"
+	sed -i "s|/pkg/golang.org/|https://pkg.go.dev/golang.org/|g" "$docsfolder$docsprefix$pkgname.html"
 done
 
 # subpackage docs
-for pkg in $packages; do
-	if [[ "$pkg" != 'etxt' ]]; then
-		godoc -html "./$pkg" > tmp_doc_body
-		echo "$headhtml" > tmp_doc_head
-		echo "$tailhtml" > tmp_doc_tail
-		cat tmp_doc_head tmp_doc_body tmp_doc_tail > "docs/reference_$pkg.html"
-		for pkg in $packages; do
-			sed -i "s|/pkg/github.com/tinne26/etxt/$pkg/|./reference_$pkg.html|g" "docs/reference_$pkg.html"
-			sed -i "s|/pkg/golang.org/|https://pkg.go.dev/golang.org/|g" "docs/reference_$pkg.html"
-		done
-	fi
+for pkg in $subpkgs; do
+	godoc -url pkg/$pkgurl/$pkg | tail -n +44 > tmp_doc_body
+	cat tmp_doc_head tmp_doc_body tmp_doc_tail > "$docsfolder$docsprefix$pkg.html"
+	for pkg in $packages; do
+		sed -i "s|/pkg/$pkgurl/$pkg/|./$docsprefix$pkg.html|g" "$docsfolder$docsprefix$pkg.html"
+		sed -i "s|/pkg/golang.org/|https://pkg.go.dev/golang.org/|g" "$docsfolder$docsprefix$pkg.html"
+	done
 done
 
 # clear temp files

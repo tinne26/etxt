@@ -2,8 +2,6 @@ package etxt
 
 import "golang.org/x/image/math/fixed"
 
-//import "github.com/tinne26/etxt/emask"
-
 // TODO: add tests comparing with Draw().
 
 // Feeds are the lowest level mechanism to draw text in etxt,
@@ -15,7 +13,7 @@ import "golang.org/x/image/math/fixed"
 // enough control to do what you want. Make sure you are
 // well acquainted with those methods first.
 //
-// Valid Feeds can only be created through Renderer.NewFeed.
+// Valid Feeds can only be created through [Renderer.NewFeed]().
 type Feed struct {
 	renderer *Renderer        // associated renderer
 	Position fixed.Point26_6  // the working position

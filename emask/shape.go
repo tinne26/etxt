@@ -11,10 +11,10 @@ import "golang.org/x/image/math/fixed"
 //       instead of CubeTo(0, 5, 5, 10, 10, 10)
 
 // A helper type to assist the creation of shapes that can later be
-// converted to sfnt.Segments and rasterized with the Rasterize() method.
+// converted to [sfnt.Segments] and rasterized with the [Rasterize]() method.
 // Notice that this is actually unrelated to fonts, but once you have some
 // rasterizers it's nice to have a way to play with them manually. Notice
-// also that since Rasterize() is a CPU process, working with big shapes
+// also that since [Rasterize]() is a CPU process, working with big shapes
 // (based on their bounding rectangle) can be quite expensive.
 //
 // Despite what the names of the methods might lead you to believe,
@@ -29,6 +29,8 @@ import "golang.org/x/image/math/fixed"
 // top-right to bottom right...) the rasterized result will be a single
 // square. If you define them following opposite directions, instead,
 // the result will be the difference between the two squares.
+//
+// [sfnt.Segments]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Segments
 type Shape struct {
 	segments []sfnt.Segment
 	invertY bool // but rasterizers already invert coords, so this is negated
@@ -43,7 +45,7 @@ func NewShape(commandsCount int) Shape {
 	}
 }
 
-// Returns whether InvertY is active or inactive. See InvertY.
+// Returns whether [Shape.InvertY] is active or inactive.
 func (self *Shape) HasInvertY() bool { return self.invertY }
 
 // Let's say you want to draw a triangle pointing up, similar to an
@@ -60,23 +62,23 @@ func (self *Shape) HasInvertY() bool { return self.invertY }
 // their center at (0, 0).
 func (self *Shape) InvertY(active bool) { self.invertY = active }
 
-// Gets the shape information as sfnt.Segments. The underlying data
+// Gets the shape information as [sfnt.Segments]. The underlying data
 // is referenced both by the Shape and the sfnt.Segments, so be
 // careful what you do with it.
+//
+// [sfnt.Segments]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Segments
 func (self *Shape) Segments() sfnt.Segments {
 	return sfnt.Segments(self.segments)
 }
 
 // Moves the current position to (x, y).
-// See [x/image/vector#Rasterizer] operations and [x/image/font/sfnt#Segment].
-//
-// [x/image/vector#Rasterizer]: https://pkg.go.dev/golang.org/x/image/vector#Rasterizer
-// [x/image/font/sfnt#Segment]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Segment
+// See [golang.org/x/image/vector.Rasterizer] operations and
+// [golang.org/x/image/font/sfnt.Segment].
 func (self *Shape) MoveTo(x, y int) {
 	self.MoveToFract(fixed.Int26_6(x << 6), fixed.Int26_6(y << 6))
 }
 
-// Like MoveTo, but with fixed.Int26_6 coordinates.
+// Like [Shape.MoveTo], but with fixed.Int26_6 coordinates.
 func (self *Shape) MoveToFract(x, y fixed.Int26_6) {
 	if !self.invertY { y = -y }
 	self.segments = append(self.segments,
@@ -91,15 +93,13 @@ func (self *Shape) MoveToFract(x, y fixed.Int26_6) {
 }
 
 // Creates a straight boundary from the current position to (x, y).
-// See [x/image/vector#Rasterizer] operations and [x/image/font/sfnt#Segment].
-//
-// [x/image/vector#Rasterizer]: https://pkg.go.dev/golang.org/x/image/vector#Rasterizer
-// [x/image/font/sfnt#Segment]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Segment
+// See [golang.org/x/image/vector.Rasterizer] operations and
+// [golang.org/x/image/font/sfnt.Segment].
 func (self *Shape) LineTo(x, y int) {
 	self.LineToFract(fixed.Int26_6(x << 6), fixed.Int26_6(y << 6))
 }
 
-// Like LineTo, but with fixed.Int26_6 coordinates.
+// Like [Shape.LineTo], but with fixed.Int26_6 coordinates.
 func (self *Shape) LineToFract(x, y fixed.Int26_6) {
 	if !self.invertY { y = -y }
 	self.segments = append(self.segments,
@@ -115,17 +115,15 @@ func (self *Shape) LineToFract(x, y fixed.Int26_6) {
 
 // Creates a quadratic Bézier curve (also known as a conic Bézier curve) to
 // (x, y) with (ctrlX, ctrlY) as the control point.
-// See [x/image/vector#Rasterizer] operations and [x/image/font/sfnt#Segment].
-//
-// [x/image/vector#Rasterizer]: https://pkg.go.dev/golang.org/x/image/vector#Rasterizer
-// [x/image/font/sfnt#Segment]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Segment
+// See [golang.org/x/image/vector.Rasterizer] operations and
+// [golang.org/x/image/font/sfnt.Segment].
 func (self *Shape) QuadTo(ctrlX, ctrlY, x, y int) {
 	self.QuadToFract(
 		fixed.Int26_6(ctrlX << 6), fixed.Int26_6(ctrlY << 6),
 		fixed.Int26_6(x     << 6), fixed.Int26_6(y     << 6))
 }
 
-// Like QuadTo, but with fixed.Int26_6 coordinates.
+// Like [Shape.QuadTo], but with fixed.Int26_6 coordinates.
 func (self *Shape) QuadToFract(ctrlX, ctrlY, x, y fixed.Int26_6) {
 	if !self.invertY { ctrlY, y = -ctrlY, -y }
 	self.segments = append(self.segments,
@@ -141,10 +139,8 @@ func (self *Shape) QuadToFract(ctrlX, ctrlY, x, y fixed.Int26_6) {
 
 // Creates a cubic Bézier curve to (x, y) with (cx1, cy1) and (cx2, cy2)
 // as the control points.
-// See [x/image/vector#Rasterizer] operations and [x/image/font/sfnt#Segment].
-//
-// [x/image/vector#Rasterizer]: https://pkg.go.dev/golang.org/x/image/vector#Rasterizer
-// [x/image/font/sfnt#Segment]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Segment
+// See [golang.org/x/image/vector.Rasterizer] operations and
+// [golang.org/x/image/font/sfnt.Segment].
 func (self *Shape) CubeTo(cx1, cy1, cx2, cy2, x, y int) {
 	self.CubeToFract(
 		fixed.Int26_6(cx1 << 6), fixed.Int26_6(cy1 << 6),
@@ -152,7 +148,7 @@ func (self *Shape) CubeTo(cx1, cy1, cx2, cy2, x, y int) {
 		fixed.Int26_6(x   << 6), fixed.Int26_6(y   << 6))
 }
 
-// Like CubeTo, but with fixed.Int26_6 coordinates.
+// Like [Shape.CubeTo], but with fixed.Int26_6 coordinates.
 func (self *Shape) CubeToFract(cx1, cy1, cx2, cy2, x, y fixed.Int26_6) {
 	if !self.invertY { cy1, cy2, y = -cy1, -cy2, -y }
 	self.segments = append(self.segments,
@@ -167,11 +163,11 @@ func (self *Shape) CubeToFract(cx1, cy1, cx2, cy2, x, y fixed.Int26_6) {
 }
 
 // Resets the shape segments. Be careful to not be holding the segments
-// from Segments() when calling this (they may be overriden soon).
+// from [Shape.Segments]() when calling this (they may be overriden soon).
 func (self *Shape) Reset() { self.segments = self.segments[0 : 0] }
 
 // A helper method to rasterize the current shape with the default
-// rasterizer. You could then export the result to a png file, like:
+// rasterizer. You could then export the result to a png file, e.g.:
 //   file, _ := os.Create("my_ugly_shape.png")
 //   _ = png.Encode(file, shape.Paint(color.White, color.Black))
 //   // ...maybe even checking errors and closing the file ;)

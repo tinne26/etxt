@@ -15,9 +15,9 @@ import "github.com/tinne26/etxt/efixed"
 // results, please use the font's italic and bold versions directly
 // instead of these fake effects.
 //
-// In 64-bit computers, using the FauxRasterizer without effects performs
-// basically the same as DefaultRasterizer. Using reasonable skew factors
-// for oblique tends to increase the rasterization time around 15%, and
+// In general, the performance of FauxRasterizer without effects is very
+// similar to [DefaultRasterizer]. Using reasonable skew factors for
+// oblique text tends to increase the rasterization time around 15%, and
 // using faux-bold increases the rasterization time in 60%, but it depends
 // a lot on how extreme the effects are.
 //
@@ -95,7 +95,8 @@ func (self *FauxRasterizer) GetSkewFactor() float64 { return self.skewing }
 // become wider. If you want to adapt the positioning of the glyphs to
 // account for this widening, you can use an esizer.AdvancePadSizer,
 // link the rasterizer to it through SetAuxOnChangeFunc and update
-// the padding with the value of GetExtraWidth, for example.
+// the padding with the value of [FauxRasterizer.GetExtraWidth](), for
+// example.
 func (self *FauxRasterizer) SetExtraWidth(extraWidth float64) {
 	// normalize and store new skewing factor
 	if extraWidth <= 0 {
@@ -156,16 +157,16 @@ func uint16RoundToNextPow2(value uint16) uint16 {
 // used for the faux-bold style.
 func (self *FauxRasterizer) GetExtraWidth() float64 { return self.xwidth }
 
-// Satisfies the UserCfgCacheSignature interface.
+// Satisfies the [UserCfgCacheSignature] interface.
 func (self *FauxRasterizer) SetHighByte(value uint8) {
 	self.cacheSignature &= 0x00FFFFFFFFFFFFFF
 	self.cacheSignature |= uint64(value) << 56
 	self.notifyChange()
 }
 
-// Satisfies the Rasterizer interface. The cache signature for the
+// Satisfies the [Rasterizer] interface. The cache signature for the
 // faux rasterizer has the following shape:
-//  - 0xFF00000000000000 bits for UserCfgCacheSignature's high byte.
+//  - 0xFF00000000000000 bits for [UserCfgCacheSignature]'s high byte.
 //  - 0x00FF000000000000 bits being 0xFA (self signature byte).
 //  - 0x0000F00000000000 bits being 0x1 if italics are enabled.
 //  - 0x00000F0000000000 bits being 0xB if bold is enabled.
@@ -194,7 +195,7 @@ func (self *FauxRasterizer) fixedToFloat32Coords(point fixed.Point26_6) (float32
 	return float32(x), float32(y)
 }
 
-// Satisfies the Rasterizer interface.
+// Satisfies the [Rasterizer] interface.
 func (self *FauxRasterizer) Rasterize(outline sfnt.Segments, fract fixed.Point26_6) (*image.Alpha, error) {
 	self.newOutline(outline, fract)
 	mask := image.NewAlpha(self.rasterizer.Bounds())
@@ -208,9 +209,9 @@ func (self *FauxRasterizer) Rasterize(outline sfnt.Segments, fract fixed.Point26
 	return mask, nil
 }
 
-// Like SetOnChangeFunc, but not reserved for internal Renderer use.
-// This is provided so you can link a custom Sizer to the Rasterizer and
-// get notified when its configuration changes.
+// Like [FauxRasterizer.SetOnChangeFunc], but not reserved for internal
+// Renderer use. This is provided so you can link a custom esizer.Sizer to
+// the rasterizer and get notified when its configuration changes.
 func (self *FauxRasterizer) SetAuxOnChangeFunc(onChange func(*FauxRasterizer)) {
 	self.auxOnChange = onChange
 }
@@ -459,26 +460,26 @@ func (self *FauxRasterizer) interpolateForExtraWidth(prevAlpha, currAlpha uint8)
 // ==== FROM HERE ON METHODS ARE THE SAME AS DEFAULT RASTERIZER ====
 // (...so you can ignore them, nothing new here)
 
-// Satisfies the vectorTracer interface.
+// See [DefaultRasterizer.MoveTo]().
 func (self *FauxRasterizer) MoveTo(point fixed.Point26_6) {
 	x, y := self.fixedToFloat32Coords(point)
 	self.rasterizer.MoveTo(x, y)
 }
 
-// Satisfies the vectorTracer interface.
+// See [DefaultRasterizer.LineTo]().
 func (self *FauxRasterizer) LineTo(point fixed.Point26_6) {
 	x, y := self.fixedToFloat32Coords(point)
 	self.rasterizer.LineTo(x, y)
 }
 
-// Satisfies the vectorTracer interface.
+// See [DefaultRasterizer.QuadTo]().
 func (self *FauxRasterizer) QuadTo(control, target fixed.Point26_6) {
 	cx, cy := self.fixedToFloat32Coords(control)
 	tx, ty := self.fixedToFloat32Coords(target)
 	self.rasterizer.QuadTo(cx, cy, tx, ty)
 }
 
-// Satisfies the vectorTracer interface.
+// See [DefaultRasterizer.CubeTo]().
 func (self *FauxRasterizer) CubeTo(controlA, controlB, target fixed.Point26_6) {
 	cax, cay := self.fixedToFloat32Coords(controlA)
 	cbx, cby := self.fixedToFloat32Coords(controlB)
@@ -486,7 +487,7 @@ func (self *FauxRasterizer) CubeTo(controlA, controlB, target fixed.Point26_6) {
 	self.rasterizer.CubeTo(cax, cay, cbx, cby, tx, ty)
 }
 
-// Satisfies the Rasterizer interface.
+// Satisfies the [Rasterizer] interface.
 func (self *FauxRasterizer) SetOnChangeFunc(onChange func(Rasterizer)) {
 	self.onChange = onChange
 }

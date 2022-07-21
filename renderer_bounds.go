@@ -47,8 +47,8 @@ func (self *Renderer) SelectionRect(text string) RectSize {
 	return RectSize{ width, self.metrics.Height + fixedAbs(dot.Y) }
 }
 
-// Same as SelectionRect, but taking a slice of glyph indices instead of
-// a string.
+// Same as [Renderer.SelectionRect], but taking a slice of glyph indices
+// instead of a string.
 func (self *Renderer) SelectionRectGlyphs(glyphIndices []GlyphIndex) RectSize {
 	if len(glyphIndices) == 0 { return RectSize{} }
 	vAlign, hAlign := self.tempMeasuringStart()

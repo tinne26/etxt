@@ -50,9 +50,9 @@ func (self *FontLibrary) HasFont(name string) bool {
 //
 // If you don't know what are the names of your fonts, there are a few
 // ways to figure it out:
-//  - Load the fonts into the library and print their names with EachFont
-//    (fontLib.EachFont(func(name string, _ *etxt.Font){ fmt.Println(name) }))
-//  - Use the FontName() function directly on a *Font object.
+//  - Load the fonts into the font library and print their names with
+//    [FontLibrary.EachFont].
+//  - Use the [FontName]() function directly on a [*Font] object.
 //  - Open a font with the OS's default font viewer; the name is usually
 //    on the title and/or first line of text.
 func (self *FontLibrary) GetFont(name string) *Font {
@@ -62,11 +62,13 @@ func (self *FontLibrary) GetFont(name string) *Font {
 }
 
 // Returns false if the font can't be removed due to not being found.
-// There's rarely any need to remove fonts in small games, but you
-// never know.
 //
-// The name given must be the same that ParseFont returned.
-// Font names can also be recovered through EachFont.
+// This function is rarely necessary unless your program also has some
+// mechanism to keep adding more and more fonts without restrictions.
+//
+// The given font name must match the name returned by the original font
+// parsing function. Font names can also be recovered through
+// [FontLibrary.EachFont].
 func (self *FontLibrary) RemoveFont(name string) bool {
 	_, found := self.fonts[name]
 	if !found { return false }
@@ -78,14 +80,14 @@ func (self *FontLibrary) RemoveFont(name string) bool {
 // If error == nil, the font name will be non-empty.
 //
 // If a font with the same name has already been loaded,
-// ErrAlreadyLoaded will be returned.
+// [ErrAlreadyLoaded] will be returned.
 func (self *FontLibrary) ParseFontFrom(path string) (string, error) {
 	font, name, err := ParseFontFrom(path)
 	if err != nil { return name, err }
 	return name, self.addNewFont(font, name)
 }
 
-// Similar to FontLibrary.ParseFontFrom, but taking the font bytes
+// Similar to [FontLibrary.ParseFontFrom], but taking the font bytes
 // directly. The bytes must not be modified while the font is in use.
 func (self *FontLibrary) ParseFontBytes(fontBytes []byte) (string, error) {
 	font, name, err := ParseFontBytes(fontBytes)
@@ -105,6 +107,12 @@ func (self *FontLibrary) addNewFont(font *Font, name string) error {
 //
 // If the given function returns a non-nil error, EachFont will immediately
 // stop and return that error. Otherwise, EachFont will always return nil.
+//
+// Example code to print the names of all the fonts in the library:
+//  fontLib.EachFont(func(name string, _ *etxt.Font) error {
+//      fmt.Println(name)
+//      return nil
+//  })
 func (self *FontLibrary) EachFont(fontFunc func(string, *Font) error) error {
 	for name, font := range self.fonts {
 		err := fontFunc(name, font)
@@ -143,7 +151,7 @@ func (self *FontLibrary) ParseDirFonts(dirName string) (int, int, error) {
 	return loaded, skipped, err
 }
 
-// Same as ParseDirFonts but for embedded filesystems.
+// Same as [FontLibrary.ParseDirFonts] but for embedded filesystems.
 func (self *FontLibrary) ParseEmbedDirFonts(dirName string, embedFileSys *embed.FS) (int, int, error) {
 	entries, err := embedFileSys.ReadDir(dirName)
 	if err != nil { return 0, 0, err }
@@ -171,7 +179,7 @@ func (self *FontLibrary) ParseEmbedDirFonts(dirName string, embedFileSys *embed.
 	return loaded, skipped, nil
 }
 
-// Same as ParseFontFrom but for embedded filesystems.
+// Same as [FontLibrary.ParseFontFrom] but for embedded filesystems.
 func (self *FontLibrary) ParseEmbedFontFrom(path string, embedFileSys *embed.FS) (string, error) {
 	font, name, err := ParseEmbedFontFrom(path, embedFileSys)
 	if err != nil { return name, err }

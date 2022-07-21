@@ -7,9 +7,10 @@ import "golang.org/x/image/font/sfnt"
 
 
 // Rasterizer is an interface for 2D vector graphics rasterization to an
-// alpha mask. This interface is offered as an open alternative to Golang's
-// concrete x/image/vector.Rasterizer type (as used by opentype), allowing
-// anyone to target it and use its own rasterizer for text rendering.
+// alpha mask. This interface is offered as an open alternative to the
+// concrete [golang.org/x/image/vector.Rasterizer] type (as used by
+// [golang.org/x/image/font/opentype]), allowing anyone to target it and
+// use its own rasterizer for text rendering.
 //
 // Mask rasterizers can't be used concurrently and must tolerate
 // coordinates out of bounds.
@@ -28,7 +29,7 @@ type Rasterizer interface {
 	// mask rasterizers with a single cache, you normally want to make sure
 	// that their cache signatures are different. As a practical standard,
 	// implementers of mask rasterizers are encouraged to leave at least
-	// the 8 highest bits to be configurable by users through the 
+	// the 8 highest bits to be configurable by users through the
 	// UserCfgCacheSignature interface.
 	CacheSignature() uint64
 
@@ -44,7 +45,7 @@ type Rasterizer interface {
 	//NotifySizeChange(fixed.Int26_6)
 }
 
-// See emask.Rasterizer's CacheSignature() documentation.
+// See [Rasterizer]'s CacheSignature() documentation.
 type UserCfgCacheSignature interface {
 	// Sets the highest byte of 'signature' to the given value, like:
 	//   signature = (signature & 0x00FFFFFFFFFFFFFF) | (uint64(value) << 56)
@@ -71,18 +72,17 @@ type vectorTracer interface {
 
 // A low level method to rasterize glyph masks.
 //
-// Returned masks have their Rect coordinates adjusted so the mask is
-// drawn at dot origin (0, 0) + the given fractional position. To draw
-// it at a specific dot with a matching fractional position, translate
-// the mask by (dot.X.Floor(), dot.Y.Floor()). If you don't want to
-// adjust the fractional pixel position, you can call Rasterize with
-// the zero-value fixed.Point26_6{}.
+// Returned masks have their coordinates adjusted so the mask is drawn at
+// dot origin (0, 0) + the given fractional position by default. To draw it at
+// a specific dot with a matching fractional position, translate the mask by
+// dot.X.Floor() and dot.Y.Floor(). If you don't want to adjust the fractional
+// pixel position, you can call Rasterize with a zero-value fixed.Point26_6{}.
 //
-// The given drawing coordinate can be the current drawing dot, but as
+// The given drawing coordinate can be your current drawing dot, but as
 // indicated above, only its fractional part will be considered.
 //
 // The image returned will be nil if the segments are empty or do
-// not include any active lines or curves (e.g: space glyphs).
+// not include any active lines or curves (e.g.: space glyphs).
 func Rasterize(outline sfnt.Segments, rasterizer Rasterizer, dot fixed.Point26_6) (*image.Alpha, error) {
 	// return nil if the outline don't include lines or curves
 	somethingToDraw := false

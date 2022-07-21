@@ -7,8 +7,8 @@ import "golang.org/x/image/vector"
 import "golang.org/x/image/math/fixed"
 import "golang.org/x/image/font/sfnt"
 
-// The DefaultRasterizer is a wrapper to make x/image/vector.Rasterizer
-// conform to the emask.Rasterizer interface.
+// The DefaultRasterizer is a wrapper to make [golang.org/x/image/vector.Rasterizer]
+// conform to the [Rasterizer] interface.
 type DefaultRasterizer struct {
 	rasterizer vector.Rasterizer
 	rectOffset image.Point // offset to align the final mask rect to the bounds
@@ -22,42 +22,44 @@ type DefaultRasterizer struct {
 	// positive quadrant, which is why we need so many offsets here.
 }
 
-// Satisfies the UserCfgCacheSignature interface.
+// Satisfies the [UserCfgCacheSignature] interface.
 func (self *DefaultRasterizer) SetHighByte(value uint8) {
 	self.cacheSignature = uint64(value) << 56
 	if self.onChange != nil { self.onChange(self) }
 }
 
-// Satisfies the Rasterizer interface.
+// Satisfies the [Rasterizer] interface.
 func (self *DefaultRasterizer) SetOnChangeFunc(onChange func(Rasterizer)) {
 	self.onChange = onChange
 }
 
-// Satisfies the Rasterizer interface.
+// Satisfies the [Rasterizer] interface.
 func (self *DefaultRasterizer) CacheSignature() uint64 {
 	return self.cacheSignature
 }
 
-// Satisfies the vectorTracer interface.
+// Moves the current position to the given point.
 func (self *DefaultRasterizer) MoveTo(point fixed.Point26_6) {
 	x, y := self.fixedToFloat32Coords(point)
 	self.rasterizer.MoveTo(x, y)
 }
 
-// Satisfies the vectorTracer interface.
+// Creates a straight boundary from the current position to the given point.
 func (self *DefaultRasterizer) LineTo(point fixed.Point26_6) {
 	x, y := self.fixedToFloat32Coords(point)
 	self.rasterizer.LineTo(x, y)
 }
 
-// Satisfies the vectorTracer interface.
+// Creates a quadratic Bézier curve (also known as a conic Bézier curve)
+// to the given target passing through the given control point.
 func (self *DefaultRasterizer) QuadTo(control, target fixed.Point26_6) {
 	cx, cy := self.fixedToFloat32Coords(control)
 	tx, ty := self.fixedToFloat32Coords(target)
 	self.rasterizer.QuadTo(cx, cy, tx, ty)
 }
 
-// Satisfies the vectorTracer interface.
+// Creates a cubic Bézier curve to the given target passing through
+// the given control points.
 func (self *DefaultRasterizer) CubeTo(controlA, controlB, target fixed.Point26_6) {
 	cax, cay := self.fixedToFloat32Coords(controlA)
 	cbx, cby := self.fixedToFloat32Coords(controlB)

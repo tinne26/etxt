@@ -39,7 +39,7 @@ func NewOutlineRasterizer(outlineThickness float64) *OutlineRasterizer {
 	return rast
 }
 
-// Satisfies the UserCfgCacheSignature interface.
+// Satisfies the [UserCfgCacheSignature] interface.
 func (self *OutlineRasterizer) SetHighByte(value uint8) {
 	self.cacheSignature = uint64(value) << 56
 	if self.onChange != nil { self.onChange(self) }
@@ -59,44 +59,44 @@ func (self *OutlineRasterizer) SetThickness(thickness float64) {
 // paths so they don't extend further away than intended.
 //
 // The default value is 2. Valid values range from 1 to 16.
-// TODO: document how multiples provide coverage up to different
-// angles. TODO: this is still causing panics.
 func (self *OutlineRasterizer) SetMarginFactor(factor float64) {
+	// TODO: document how multiples provide coverage up to different
+	// angles. TODO: this is still causing panics.
 	self.rasterizer.SetMarginFactor(factor)
 }
 
-// Satisfies the Rasterizer interface.
+// Satisfies the [Rasterizer] interface.
 func (self *OutlineRasterizer) SetOnChangeFunc(onChange func(Rasterizer)) {
 	self.onChange = onChange
 }
 
-// Satisfies the Rasterizer interface.
+// Satisfies the [Rasterizer] interface.
 func (self *OutlineRasterizer) CacheSignature() uint64 {
 	self.cacheSignature &= 0xFF00FFFFFFFFFFFF
 	self.cacheSignature |= 0x0037000000000000
 	return self.cacheSignature
 }
 
-// Satisfies the vectorTracer interface.
+// Satisfies the unexported vectorTracer interface.
 func (self *OutlineRasterizer) MoveTo(point fixed.Point26_6) {
 	x, y := self.fixedToFloat64Coords(point)
 	self.rasterizer.MoveTo(x, y)
 }
 
-// Satisfies the vectorTracer interface.
+// Satisfies the unexported vectorTracer interface.
 func (self *OutlineRasterizer) LineTo(point fixed.Point26_6) {
 	x, y := self.fixedToFloat64Coords(point)
 	self.rasterizer.LineTo(x, y)
 }
 
-// Satisfies the vectorTracer interface.
+// Satisfies the unexported vectorTracer interface.
 func (self *OutlineRasterizer) QuadTo(control, target fixed.Point26_6) {
 	cx, cy := self.fixedToFloat64Coords(control)
 	tx, ty := self.fixedToFloat64Coords(target)
 	self.rasterizer.QuadTo(cx, cy, tx, ty)
 }
 
-// Satisfies the vectorTracer interface.
+// Satisfies the unexported vectorTracer interface.
 func (self *OutlineRasterizer) CubeTo(controlA, controlB, target fixed.Point26_6) {
 	cax, cay := self.fixedToFloat64Coords(controlA)
 	cbx, cby := self.fixedToFloat64Coords(controlB)
