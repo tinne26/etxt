@@ -86,7 +86,7 @@ func main() {
 			str = applyMirroring(str)
 		}
 		renderer.SetDirection(dir)
-		totalLength += renderer.SelectionRect(str).WidthCeil()
+		totalLength += renderer.SelectionRect(str).Width.Ceil()
 	}
 
 	// create target image and fill it with white

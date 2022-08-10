@@ -81,7 +81,7 @@ func main() {
 	// determine how much space should it take to draw the sentences,
 	// plus a bit of vertical and horizontal padding
 	rect := renderer.SelectionRect(fullText)
-	w, h := rect.WidthCeil() + 8, rect.HeightCeil() + 8
+	w, h := rect.Width.Ceil() + 8, rect.Height.Ceil() + 8
 
 	// create target image and fill it with white
 	outImage := image.NewRGBA(image.Rect(0, 0, w, h))

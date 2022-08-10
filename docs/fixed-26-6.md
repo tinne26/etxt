@@ -12,32 +12,36 @@ To make it easier to interpret:
 ## So, why do we have to work with fixed precision numbers?
 I don't know and I didn't bother to figure out, but the thing is that since font outlines are scalable, sometimes we need to work with coordinates that do not exactly match the pixel grid, and fixed point numbers have been traditionally chosen to take care of this. Both 16.16 and 26.6 fixed point types are common when working with fonts, but only 26.6 is used within **etxt**.
 
-The type used in Golang for fixed 26.6 values is defined in https://pkg.go.dev/golang.org/x/image/math/fixed. **etxt** also has a small [efixed](https://pkg.go.dev/github.com/tinne26/etxt/efixed) package which includes some useful helper functions.
-
 ## In which situations do we need fixed precision numbers?
 - After drawing a glyph, the amount of space we need to advance to prepare for drawing the next glyph may leave us at a fractional pixel coordinate.
 - From the previous point, if you are not quantizing fractional coordinates, you may have to start drawing text at a fractional pixel position. That's why `DrawFract()` exists and why `Traverse*` functions use `fixed.Int26_6` values.
 - Glyph rasterizers need to be able to deal with fractional pixel positions.
 
 ## Practical advice for operating with fixed precision numbers
-Most of the time operating with fixed precision numbers is quite easy and you only need to do one of the following:
-- Use the right rounding function (see [efixed](https://pkg.go.dev/github.com/tinne26/etxt/efixed) helper package).
-- Convert from/to integer coordinates by shifting by 6 (multiplying or dividing by 64).
-- Convert from/to actual `float` coordinates (also by casting and multiplying or dividing by 64).
+There are two key packages to be aware of when dealing with fixed precision numbers:
+- The Golang package where they are defined, [x/image/math/fixed](https://pkg.go.dev/golang.org/x/image/math/fixed).
+- The [etxt/efixed](https://pkg.go.dev/github.com/tinne26/etxt/efixed) subpackage, which contains a few additional helpful functions.
+
+Most of the time, to operate with fixed precision numbers you only need to do one of the following:
+- Use the right rounding function, like [`Ceil()`](https://pkg.go.dev/golang.org/x/image/math/fixed#Int26_6.Ceil), [`Floor()`](https://pkg.go.dev/golang.org/x/image/math/fixed#Int26_6.Floor) and [`efixed.ToIntHalfUp()`](https://pkg.go.dev/github.com/tinne26/etxt/efixed#ToIntHalfUp) and its variants.
+- Convert from/to integer coordinates:
+	- To convert from `int` to `fixed.Int26_6` you can use [`efixed.FromInt()`](https://pkg.go.dev/github.com/tinne26/etxt/efixed#FromInt).
+	- To convert from `fixed.Int26_6` to `int`, you generally round  the `fixed.Int26_6` variable itself with [`Ceil()`](https://pkg.go.dev/golang.org/x/image/math/fixed#Int26_6.Ceil).
+- Convert from/to actual `float64` coordinates:
+	- To convert from `float64` to `fixed.Int26_6` you use [`efixed.FromFloat64()`](https://pkg.go.dev/github.com/tinne26/etxt/efixed#FromFloat64) and its variants.
+	- To convert from `fixed.Int26_6` to `float64` you use [`efixed.ToFloat64()`](https://pkg.go.dev/github.com/tinne26/etxt/efixed#ToFloat64).
 
 Quick sample snipet:
 ```Golang
-// convert from int to fixed26.6 by multiplying by 64
+// convert from int to fixed26.6
 myInt := 100
-fixedValue := fixed.Int26_6(myInt << 6)
+fixedValue := efixed.FromInt(myInt) // == fixed.Int26_6(myInt << 6)
 
 // add 0.5 to the fixed value
 fixedValue += 32 // 64 would add "1", so 32 is half that, 0.5
 
 // convert to float64 and display
-rawFloatValue  := float64(fixedValue)
-normFloatValue := rawFloatValue/64.0 // remember the example of milliseconds!!
-fmt.Printf("value = %f\n", normFloatValue) // prints "value = 100.50000"
+floatValue  := efixed.ToFloat64(fixedValue) // == float64(fixedValue)/64.0
+fmt.Printf("value = %f\n", floatValue) // prints "value = 100.50000"
 ```
 
-You rarely need to do complex operations with fixed point values, so... focus on round, truncate, floor, and multiplying and dividing by 64 to convert between representations, assisted by bit shifts where possible. 95% of the time that's all you need.

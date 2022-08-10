@@ -26,8 +26,8 @@ type MixMode = ebiten.CompositeMode
 const defaultMixMode = ebiten.CompositeModeSourceOver
 
 // The default glyph drawing function used in renderers. Do not confuse with
-// the main [Renderer.Draw]() function. DefaultDrawFunc is rarely needed
-// directly unless pairing it with Traverse* functions.
+// the main [Renderer.Draw]() function. DefaultDrawFunc is a low level function,
+// rarely necessary except when paired with [Renderer.Traverse]*() operations.
 func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ GlyphIndex) {
 	if mask == nil { return } // spaces and empty glyphs will be nil
 

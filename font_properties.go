@@ -10,7 +10,8 @@ var ErrNotFound = errors.New("font property not found or empty")
 // These buffers can't be used concurrently though, so sfntBuffer will only
 // be used if no one else is using it at the moment. We don't bother creating
 // a pool because that would be waaay overkill, and this simple trick already
-// makes calls to FontProperty() fast in 99% use-cases for a very small price.
+// makes calls to FontProperty() fast in 99% use-cases for a reasonably small
+// price.
 var sfntBuffer sfnt.Buffer
 var usingSfntBuffer uint32 = 0
 func getSfntBuffer() *sfnt.Buffer {
@@ -75,7 +76,7 @@ func FontIdentifier(font *Font) (string, error) {
 // contain them multiple times too.
 //
 // If you load fonts dynamically, it is good practice to use this function
-// to make sure that the fonts you have include the glyphs that you need.
+// to make sure that the fonts include all the glyphs that you require.
 func GetMissingRunes(font *Font, text string) ([]rune, error) {
 	buffer := getSfntBuffer()
 	defer releaseSfntBuffer(buffer)

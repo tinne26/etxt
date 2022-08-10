@@ -43,11 +43,11 @@ type glyphPair struct {
 // coordinates are unquantized and haven't had kerning applied (as the
 // next glyph is not known yet). Notice that align and text direction
 // can affect the returned coordinate:
-//  - If the horizontal align is etxt.Left, the returned coordinate will
+//  - If [HorzAlign] is etxt.Left, the returned coordinate will
 //    be on the right side of the last character drawn.
-//  - If the horizontal align is etxt.Right, the returned coordinate will
+//  - If [HorzAlign] is etxt.Right, the returned coordinate will
 //    be on the left side of the last character drawn.
-//  - If the horizontal align is etxt.XCenter, the returned coordinate will
+//  - If [HorzAlign] is etxt.XCenter, the returned coordinate will
 //    be on the right side of the last character drawn if the text direction
 //    is [LeftToRight], or on the left side otherwise.
 //
@@ -115,7 +115,7 @@ func (self *Renderer) Traverse(text string, xy fixed.Point26_6, operation func(f
 	}
 }
 
-// Like [Renderer.Traverse], but for glyph indices.
+// Like [Renderer.Traverse](), but for glyph indices.
 //
 // Since glyph indices are virtually only used when doing [text shaping]
 // —and that's a complex process on itself— I decided to omit most other

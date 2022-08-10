@@ -57,7 +57,7 @@ type Renderer struct {
 }
 
 // Creates a new renderer with the default vector rasterizer.
-// See [NewRenderer]()'s documentation for more details.
+// See [NewRenderer]() documentation for more details.
 func NewStdRenderer() *Renderer {
 	return NewRenderer(&emask.DefaultRasterizer{})
 }
@@ -135,7 +135,7 @@ func (self *Renderer) SetColor(mainColor color.Color) {
 func (self *Renderer) GetColor() color.Color { return self.mainColor }
 
 // Sets the quantization mode to be used on subsequent operations.
-// By default, the renderer's mode is QuantizeFull.
+// By default, the renderer's mode is [QuantizeFull].
 func (self *Renderer) SetQuantizationMode(mode QuantizationMode) {
 	self.quantization = mode
 }
@@ -151,6 +151,10 @@ func (self *Renderer) GetCacheHandler() ecache.GlyphCacheHandler {
 // no cache is used, but you almost always want to set one, e.g.:
 //   cache := etxt.NewDefaultCache(16*1024*1024) // 16MB
 //   textRenderer.SetCacheHandler(cache.NewHandler())
+//
+// A cache handler can only be used with a single renderer, but you
+// can create multiple handlers from the same underlying cache and
+// use them with multiple renderers.
 func (self *Renderer) SetCacheHandler(cacheHandler ecache.GlyphCacheHandler) {
 	self.cacheHandler = cacheHandler
 
@@ -202,7 +206,7 @@ func (self *Renderer) SetRasterizer(rasterizer emask.Rasterizer) {
 	}
 }
 
-// Sets the font size that will be used on subsequent operations.
+// Sets the font size to be used on subsequent operations.
 //
 // Sizes are given in pixels and must be >= 1.
 // By default, the renderer will draw text at a size of 16px.
@@ -271,7 +275,7 @@ func (self *Renderer) GetSizePxFract() fixed.Int26_6 {
 // use negative line spacing factors instead.
 //
 // By default, the line height is set to auto (see
-// [Renderer.SetLineHeightAuto]).
+// [Renderer.SetLineHeightAuto]()).
 func (self *Renderer) SetLineHeight(heightPx float64) {
 	if heightPx < 0 {
 		panic("negative line height not allowed, use negative line spacing instead")
@@ -285,7 +289,7 @@ func (self *Renderer) SetLineHeight(heightPx float64) {
 // active font and size. This is the default behavior for line
 // height.
 //
-// For manual line height configuration, see [Renderer.SetLineHeight].
+// For manual line height configuration, see [Renderer.SetLineHeight]().
 func (self *Renderer) SetLineHeightAuto() {
 	self.lineHeight = -1
 	self.lineAdvanceIsCached = false
@@ -298,7 +302,7 @@ func (self *Renderer) SetLineHeightAuto() {
 // input text to be processed.
 //
 // Notice that line spacing and line height are different things.
-// See [Renderer.SetLineHeight] for more details.
+// See [Renderer.SetLineHeight]() for more details.
 func (self *Renderer) SetLineSpacing(factor float64) {
 	// Line spacing will be quantized to a multiple of 1/64.
 	// Providing a float64 that already adjusts to that will
@@ -308,11 +312,13 @@ func (self *Renderer) SetLineSpacing(factor float64) {
 	self.lineAdvanceIsCached = false
 }
 
-// Returns the result of lineHeight*lineSpacing. You rarely
-// need this unless you are drawing lines one by one and setting
-// their y coordinate manually.
+// Returns the result of lineHeight*lineSpacing. This is a low level
+// function rarely needed unless you are drawing lines one by one and
+// setting their y coordinate manually.
 //
 // The result is always unquantized and cached.
+//
+// For more context, see [Renderer.SetLineHeight]() and [Renderer.SetLineSpacing]().
 func (self *Renderer) GetLineAdvance() fixed.Int26_6 {
 	if self.lineAdvanceIsCached { return self.cachedLineAdvance }
 
@@ -342,19 +348,19 @@ func (self *Renderer) GetLineAdvance() fixed.Int26_6 {
 	return newLineAdvance
 }
 
-// See documentation for [Renderer.SetAlign].
+// See documentation for [Renderer.SetAlign]().
 func (self *Renderer) SetVertAlign(vertAlign VertAlign) {
 	if vertAlign < Top || vertAlign > Bottom { panic("bad VertAlign") }
 	self.vertAlign = vertAlign
 }
 
-// See documentation for [Renderer.SetAlign].
+// See documentation for [Renderer.SetAlign]().
 func (self *Renderer) SetHorzAlign(horzAlign HorzAlign) {
 	if horzAlign < Left || horzAlign > Right { panic("bad HorzAlign") }
 	self.horzAlign = horzAlign
 }
 
-// Configures how Draw* coordinates will be interpreted. For example:
+// Configures how [Renderer.Draw]*() coordinates will be interpreted. For example:
 //  - If the alignment is set to (etxt.Top, etxt.Left), coordinates
 //    passed to subsequent operations will be interpreted as the
 //    top-left corner of the box in which the text has to be drawn.
@@ -372,7 +378,7 @@ func (self *Renderer) SetAlign(vertAlign VertAlign, horzAlign HorzAlign) {
 	self.SetHorzAlign(horzAlign)
 }
 
-// Returns the current align. See [Renderer.SetAlign] documentation for
+// Returns the current align. See [Renderer.SetAlign]() documentation for
 // more details on text align.
 func (self *Renderer) GetAlign() (VertAlign, HorzAlign) {
 	return self.vertAlign, self.horzAlign
@@ -395,7 +401,7 @@ func (self *Renderer) GetSizer() esizer.Sizer {
 
 // Sets the current sizer, which must be non-nil.
 //
-// As [Renderer.GetSizer]'s documentation explains, you rarely
+// As [Renderer.GetSizer]() documentation explains, you rarely
 // need to care about or even know what sizers are.
 func (self *Renderer) SetSizer(sizer esizer.Sizer) {
 	if sizer == nil { panic("nil sizer") }

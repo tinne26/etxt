@@ -68,14 +68,14 @@ func TestSelectionRect(t *testing.T) {
 	renderer.SetDirection(RightToLeft)
 
 	rect := renderer.SelectionRect("hey ho")
-	if rect.WidthCeil() < 32 {
-		t.Fatalf("expected WidthCeil to be at least 32, but got %d", rect.WidthCeil())
+	if rect.Width.Ceil() < 32 {
+		t.Fatalf("expected Width.Ceil to be at least 32, but got %d", rect.Width.Ceil())
 	}
-	if rect.WidthCeil() > 128 {
-		t.Fatalf("expected WidthCeil to be below 128, but got %d", rect.WidthCeil())
+	if rect.Width.Ceil() > 128 {
+		t.Fatalf("expected Width.Ceil to be below 128, but got %d", rect.Width.Ceil())
 	}
-	if rect.HeightCeil() < 8 {
-		t.Fatalf("expected HeightCeil to be at least 8, but got %d", rect.HeightCeil())
+	if rect.Height.Ceil() < 8 {
+		t.Fatalf("expected Height.Ceil to be at least 8, but got %d", rect.Height.Ceil())
 	}
 	imgRect := rect.ImageRect()
 	rect2 := renderer.SelectionRect("hey ho hey ho")
@@ -153,7 +153,7 @@ func TestStringVsGlyph(t *testing.T) {
 	}
 
 	// create target image and fill it with white
-	w, h := rect.WidthCeil()*2 + 8, rect.HeightCeil()*2 + 8
+	w, h := rect.Width.Ceil()*2 + 8, rect.Height.Ceil()*2 + 8
 	outImageA := image.NewRGBA(image.Rect(0, 0, w, h))
 	outImageB := image.NewRGBA(image.Rect(0, 0, w, h))
 	for i := 0; i < w*h*4; i++ { outImageA.Pix[i] = 255 }

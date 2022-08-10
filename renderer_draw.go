@@ -19,13 +19,13 @@ import "github.com/tinne26/etxt/emask"
 // Draws the given text with the current configuration (font, size, color,
 // target, etc). The position at which the text will be drawn depends on
 // the given pixel coordinates and the renderer's align (see
-// [Renderer.SetAlign] rules).
+// [Renderer.SetAlign]() rules).
 //
 // The returned value should be ignored except on advanced use-cases
-// (refer to [Renderer.Traverse] documentation).
+// (refer to [Renderer.Traverse]() documentation).
 //
 // Missing glyphs in the current font will cause the renderer to panic.
-// See [GetMissingRunes] if you need to make your system more robust.
+// See [GetMissingRunes]() if you need to make your system more robust.
 //
 // Line breaks encoded as \n will be handled automatically.
 func (self *Renderer) Draw(text string, x, y int) fixed.Point26_6 {
@@ -33,11 +33,11 @@ func (self *Renderer) Draw(text string, x, y int) fixed.Point26_6 {
 	return self.DrawFract(text, fx, fy)
 }
 
-// Exactly the same as Draw, but accepting [fractional pixel] coordinates.
+// Exactly the same as [Renderer.Draw], but accepting [fractional pixel] coordinates.
 //
 // Notice that passing a fractional coordinate won't make the draw operation
 // be fractionally aligned by itself, that still depends on the renderer's
-// quantization mode.
+// [QuantizationMode].
 //
 // [fractional pixel]: https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 func (self *Renderer) DrawFract(text string, x, y fixed.Int26_6) fixed.Point26_6 {
@@ -55,8 +55,8 @@ func (self *Renderer) DrawFract(text string, x, y fixed.Int26_6) fixed.Point26_6
 		})
 }
 
-// Low-level function typically used with Traverse* when drawing glyph
-// masks manually.
+// Low-level function typically used with [Renderer.Traverse]*() functions when
+// drawing glyph masks manually.
 //
 // LoadGlyphMask loads the mask for the given glyph at the given fractional
 // pixel position. The renderer's cache handler, font, size, rasterizer and

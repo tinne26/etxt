@@ -10,18 +10,24 @@ import "math"
 import "strconv"
 import "golang.org/x/image/math/fixed"
 
+// Converts a value from its fixed.Int26_6 representation to its float64
+// representation. Conversion is always exact.
+func ToFloat64(value fixed.Int26_6) float64 {
+	return float64(value)/64.0
+}
+
 // Converts the given float64 to the nearest fixed.Int26_6.
 // If there's a tie, returned values will be different, and
 // the first will always be smaller than the second.
 //
-// The function will panic if the values are not representable
-// (including Inf, -Inf and NaN).
+// The function will panic if the given float64 is not closely 
+// representable by any fixed.Int26_6 (including Inf, -Inf and NaN).
 func FromFloat64(value float64) (fixed.Int26_6, fixed.Int26_6) {
 	// TODO: overflows may still be possible, and faster conversion
 	//       methods must exist, but go figure
 	candidateA := fixed.Int26_6(value*64)
 	diffA := abs64(float64(candidateA)/64.0 - value)
-	if diffA == 0 { return candidateA, candidateA }
+	if diffA == 0 { return candidateA, candidateA } // fast exact conversion
 
 	// fast path didn't succeed, proceed now to the more complex cases
 
@@ -58,7 +64,7 @@ func FromFloat64(value float64) (fixed.Int26_6, fixed.Int26_6) {
 		if diffA  < diffC { return candidateA, candidateA }
 		return candidateC, candidateC
 	} else if diffB < diffA {
-		if diffB == diffC { panic("didn't think this was possible") }
+		if diffB == diffC { panic(value) } // this shouldn't be possible, but just to be safe
 		if diffB  < diffC { return candidateB, candidateB }
 		return candidateC, candidateC
 	} else { // diffA == diffB
@@ -83,8 +89,10 @@ func FromFloat64RoundAwayZero(value float64) fixed.Int26_6 {
 }
 
 // Handy method to convert int values to their exact fixed.Int26_6
-// representation. fixed.I() also does this, but this has bound checks,
+// representation. [fixed.I]() also does this, but this has bound checks,
 // in case that's important for you.
+//
+// [fixed.I]: https://pkg.go.dev/golang.org/x/image/math/fixed#I
 func FromInt(value int) fixed.Int26_6 {
 	// bound checks
 	if value > 33554431 {
@@ -106,24 +114,30 @@ func FromInt(value int) fixed.Int26_6 {
 //         fact etxt caches will impose lower limits on fixed.Int26_6
 //         magnitudes on their own already.
 
-// Like fixed.Round(), but returns the fixed.Int26_6 instead of an int
-// and is clearly named.
-func RoundHalfUp(value fixed.Int26_6) fixed.Int26_6 {
-	return (value + 32) & ^0x3F
-}
-
-// Like [RoundHalfUp](), but rounding down. Duh.
-func RoundHalfDown(value fixed.Int26_6) fixed.Int26_6 {
-	return (value + 31) & ^0x3F
-}
-
-// Like fixed.Floor(), but returning the fixed.Int26_6 value instead
+// Like [fixed.Floor](), but returning the fixed.Int26_6 value instead
 // of an int.
+//
+// [fixed.Floor]: https://pkg.go.dev/golang.org/x/image/math/fixed#Int26_6.Floor
 func Floor(value fixed.Int26_6) fixed.Int26_6 {
 	return (value & ^0x3F)
 }
 
-// Like [RoundHalfUp](), but rounding away from zero.
+// Like [fixed.Round](), but returns the fixed.Int26_6 instead of an int
+// and is clearly named. For the int result, see [ToIntHalfUp]() instead.
+//
+// [fixed.Round]: https://pkg.go.dev/golang.org/x/image/math/fixed#Int26_6.Round
+func RoundHalfUp(value fixed.Int26_6) fixed.Int26_6 {
+	return (value + 32) & ^0x3F
+}
+
+// Like [RoundHalfUp](), but rounding down. For the int result, see
+// [ToIntHalfDown]() instead.
+func RoundHalfDown(value fixed.Int26_6) fixed.Int26_6 {
+	return (value + 31) & ^0x3F
+}
+
+// Like [RoundHalfUp](), but rounding away from zero. For the int result, see 
+// [ToIntHalfAwayZero]() instead.
 func RoundHalfAwayZero(value fixed.Int26_6) fixed.Int26_6 {
 	if value >= 0 { return RoundHalfUp(value) }
 	return RoundHalfDown(value)
@@ -139,15 +153,6 @@ func ToIntHalfDown(value fixed.Int26_6) int { return int(value + 31) >> 6 }
 func ToIntHalfAwayZero(value fixed.Int26_6) int {
 	if value >= 0 { return ToIntHalfUp(value) }
 	return ToIntHalfDown(value)
-}
-
-// Conversion is always exact.
-//
-// I only added this as an excuse to remind myself how to debug
-// fixed values with:
-//   fmt.Printf("%f", efixed.ToFloat64(fixedValue))
-func ToFloat64(value fixed.Int26_6) float64 {
-	return float64(value)/64.0
 }
 
 // Doesn't care about NaNs and general floating point quirkiness.

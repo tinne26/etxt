@@ -124,8 +124,8 @@ func GzipDirFonts(fontsDir string, outputDir string) error {
 // gzip has stdlib support, can be applied transparently, and compression
 // rates are very similar to what brotli achieves for .woff files.
 //
-// When working on games, sometimes you may prefer to compress directly
-// with a command:
+// When working on games, sometimes you might prefer to compress directly
+// with a single command:
 //   gzip --keep --best your_font.ttf
 func GzipFontFile(fontPath string, outDir string) error {
 	// make output dir if it doesn't exist yet

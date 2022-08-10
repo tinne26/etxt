@@ -51,7 +51,7 @@ type GlyphIndex = sfnt.GlyphIndex
 //   YOffset int         // vertical drawing offset
 type GlyphMask = internal.GlyphMask
 
-// Quantization modes can be used to tell a Renderer whether it should
+// Quantization modes can be used to tell a [Renderer] whether it should
 // operate aligning glyphs to the pixel grid or not. When not following
 // the pixel grid and operating at a fractional pixel level, glyphs can be
 // drawn in up to 64 positions per axis.
@@ -91,7 +91,7 @@ const (
 // Renderers can have their text direction configured as
 // left-to-right or right-to-left.
 //
-// Directions can be casted directly to [unicode/bidi] directions, e.g.:
+// Directions can be casted directly to [unicode/bidi] directions:
 //   bidi.Direction(etxt.LeftToRight).
 //
 // [unicode/bidi]: https://pkg.go.dev/golang.org/x/text/unicode/bidi
@@ -101,13 +101,11 @@ const (
 	RightToLeft
 )
 
-// Creates a new cache for glyphs. You can call NewHandler() on the
-// returned cache to obtain a cache handler to pass to your Renderer.
-// A handler can only be used with a single Renderer, but you can create
-// multiple handlers for the same underlying cache.
+// Creates a new cache for font glyphs. For more details on how to use
+// this new cache with renderers, see [Renderer.SetCacheHandler]() .
 //
 // This function will panic if maxBytes < 1024 or crypto/rand fails. If
-// you need to handle those errors, see [ecache.NewDefaultCache] instead.
+// you need to handle those errors, see [ecache.NewDefaultCache]() instead.
 func NewDefaultCache(maxBytes int) *ecache.DefaultCache {
 	cache, err := ecache.NewDefaultCache(maxBytes)
 	if err != nil { panic(err) }
@@ -115,24 +113,34 @@ func NewDefaultCache(maxBytes int) *ecache.DefaultCache {
 }
 
 // RectSize objects are used to store the results of text sizing operations.
+// If you need to use the fixed.Int26_6 values directly and would like more
+// context on them, read [this document]. Otherwise, you can obtain RectSize
+// dimensions as int values like this:
+//    rect   := txtRenderer.SelectionRect(text)
+//    width  := rect.Width.Ceil()
+//    height := rect.Height.Ceil()
+//
+// [this document]: https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 type RectSize struct { Width fixed.Int26_6 ; Height fixed.Int26_6 }
 
+// Deprecated: prefer RectSize.Width.Ceil() directly instead.
+//
 // Get the RectSize's width in whole pixels.
 func (self RectSize) WidthCeil()  int { return self.Width.Ceil()  }
 
+// Deprecated: prefer RectSize.Width.Ceil() directly instead.
+//
 // Get the RectSize's height in whole pixels.
 func (self RectSize) HeightCeil() int { return self.Height.Ceil() }
 
-// Handy conversion method.
+// Returns the RectSize as an image.Rectangle with origin at (0, 0).
+// 
+// Ebitengine and other projects often expect image.Rectangle objects
+// as arguments in their API calls, so this method is offered as a
+// handy conversion shortcut.
 func (self RectSize) ImageRect() image.Rectangle {
-	return image.Rect(0, 0, self.WidthCeil(), self.HeightCeil())
+	return image.Rect(0, 0, self.Width.Ceil(), self.Height.Ceil())
 }
-// func (self RectSize) RoundedWidth() int {
-// 	return efixed.ToIntHalfUp(self.Width)
-// }
-// func (self RectSize) RoundedHeight() int {
-// 	return efixed.ToIntHalfUp(self.Height)
-// }
 
 // --- misc helpers ---
 

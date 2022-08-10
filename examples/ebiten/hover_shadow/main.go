@@ -23,7 +23,7 @@ func (self *Game) Update() error {
 	// this at every frame, but we are being lazy and wasteful here
 	targetArea := self.txtRenderer.SelectionRect(HoverText)
 	w, h := ebiten.WindowSize()
-	tw, th := targetArea.WidthCeil(), targetArea.HeightCeil()
+	tw, th := targetArea.Width.Ceil(), targetArea.Height.Ceil()
 	tRect := image.Rect(w/2 - tw/2, h/2 - th/2, w/2 + tw/2, h/2 + th/2)
 
 	// determine if we are inside or outside the hover

@@ -50,8 +50,8 @@ func main() {
 		func(fontName string, font *etxt.Font) error {
 			renderer.SetFont(font)
 			rect := renderer.SelectionRect(fontName)
-			height += rect.HeightCeil()
-			if rect.WidthCeil() > width { width = rect.WidthCeil() }
+			height += rect.Height.Ceil()
+			if rect.Width.Ceil() > width { width = rect.Width.Ceil() }
 			names = append(names, fontName)
 			return nil
 		})
@@ -71,7 +71,7 @@ func main() {
 	y := 6
 	for _, name := range names {
 		renderer.SetFont(fontLib.GetFont(name)) // select the proper font
-		h := renderer.SelectionRect(name).HeightCeil()
+		h := renderer.SelectionRect(name).Height.Ceil()
 		y += h/2 // advance half of the line height
 		renderer.Draw(name, width/2, y) // draw font centered
 		y += h - h/2 // advance remaining line height

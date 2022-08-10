@@ -18,7 +18,7 @@ import "github.com/tinne26/etxt/efixed"
 // Notice that spilling (content falling outside the returned rect)
 // is possible. In general it will be non-existent or very minor, but
 // some fancy display or script fonts can really go to crazy places.
-// You may also want to be careful with italics.
+// You should also be careful with italics.
 func (self *Renderer) SelectionRect(text string) RectSize {
 	// (notice that SelectionRect is different from the BoundString() methods
 	// offered by golang/x/image/font or ebiten/text, which give you a tight
@@ -47,7 +47,7 @@ func (self *Renderer) SelectionRect(text string) RectSize {
 	return RectSize{ width, self.metrics.Height + fixedAbs(dot.Y) }
 }
 
-// Same as [Renderer.SelectionRect], but taking a slice of glyph indices
+// Same as [Renderer.SelectionRect](), but taking a slice of glyph indices
 // instead of a string.
 func (self *Renderer) SelectionRectGlyphs(glyphIndices []GlyphIndex) RectSize {
 	if len(glyphIndices) == 0 { return RectSize{} }
@@ -73,7 +73,7 @@ func (self *Renderer) tempMeasuringStart() (VertAlign, HorzAlign) {
 	return v, h
 }
 
-// The counterpart of tempMeasuringStart()
+// The counterpart of tempMeasuringStart().
 func (self *Renderer) tempMeasuringEnd(origVertAlign VertAlign, origHorzAlign HorzAlign) {
 	self.vertAlign = origVertAlign
 	self.horzAlign = origHorzAlign
