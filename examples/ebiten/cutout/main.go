@@ -36,12 +36,7 @@ type Game struct {
 	offscreen *ebiten.Image
 }
 func (self *Game) Layout(w int, h int) (int, int) { return w, h }
-func (self *Game) Update() error { return nil }
-
-func (self *Game) Draw(screen *ebiten.Image) {
-	// dark background
-	screen.Fill(color.RGBA{ 0, 0, 0, 255 })
-
+func (self *Game) Update() error {
 	// update background text
 	randMaxOpen := len(runePool)
 	for _, line := range self.backLines {
@@ -51,6 +46,13 @@ func (self *Game) Draw(screen *ebiten.Image) {
 			}
 		}
 	}
+	
+	return nil
+}
+
+func (self *Game) Draw(screen *ebiten.Image) {
+	// dark background
+	screen.Fill(color.RGBA{ 0, 0, 0, 255 })
 
 	// draw background text
 	// ... the main idea is to draw line by line while positioning
