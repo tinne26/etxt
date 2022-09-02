@@ -152,7 +152,7 @@ func (self *FontLibrary) ParseDirFonts(dirName string) (int, int, error) {
 }
 
 // Same as [FontLibrary.ParseDirFonts] but for embedded filesystems.
-func (self *FontLibrary) ParseEmbedDirFonts(dirName string, embedFileSys *embed.FS) (int, int, error) {
+func (self *FontLibrary) ParseEmbedDirFonts(dirName string, embedFileSys embed.FS) (int, int, error) {
 	entries, err := embedFileSys.ReadDir(dirName)
 	if err != nil { return 0, 0, err }
 
@@ -180,7 +180,7 @@ func (self *FontLibrary) ParseEmbedDirFonts(dirName string, embedFileSys *embed.
 }
 
 // Same as [FontLibrary.ParseFontFrom] but for embedded filesystems.
-func (self *FontLibrary) ParseEmbedFontFrom(path string, embedFileSys *embed.FS) (string, error) {
+func (self *FontLibrary) ParseEmbedFontFrom(path string, embedFileSys embed.FS) (string, error) {
 	font, name, err := ParseEmbedFontFrom(path, embedFileSys)
 	if err != nil { return name, err }
 	return name, self.addNewFont(font, name)

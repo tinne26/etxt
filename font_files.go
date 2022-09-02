@@ -33,7 +33,7 @@ func ParseFontFrom(path string) (*Font, string, error) {
 //
 // This is a low level function; you may prefer to use a [FontLibrary]
 // instead.
-func ParseEmbedFontFrom(path string, embedFileSys *embed.FS) (*Font, string, error) {
+func ParseEmbedFontFrom(path string, embedFileSys embed.FS) (*Font, string, error) {
 	// check font path validity
 	knownFontExt, gzipped := acceptFontPath(path)
 	if !knownFontExt {

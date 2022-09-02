@@ -70,12 +70,12 @@ func TestFontLibrary(t *testing.T) {
 		return nil
 	})
 
-	added, skipped, err = lib.ParseEmbedDirFonts(".", &embedFilesys)
+	added, skipped, err = lib.ParseEmbedDirFonts(".", embedFilesys)
 	if err != nil { panic(err) }
 	if added   != 1 { t.Fatal("expected 1 added font") }
 	if skipped != 0 { t.Fatal("expected 0 skipped fonts") }
 
-	fname, err := lib.ParseEmbedFontFrom("test_font.ttf", &embedFilesys)
+	fname, err := lib.ParseEmbedFontFrom("test_font.ttf", embedFilesys)
 	if err != ErrAlreadyLoaded {
 		t.Fatalf("expected ErrAlreadyLoaded, got '%s'", err.Error())
 	}
