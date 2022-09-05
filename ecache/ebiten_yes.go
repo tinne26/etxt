@@ -2,6 +2,11 @@
 
 package ecache
 
+import "github.com/hajimehoshi/ebiten/v2"
+
+// Same as etxt.GlyphMask.
+type GlyphMask = *ebiten.Image
+
 const constMaskSizeFactor = 192
 
 // Returns an approximation of the GlyphMask's size in bytes.
@@ -11,7 +16,7 @@ const constMaskSizeFactor = 192
 // memory usage. With gtxt, the returned values are precise.
 func GlyphMaskByteSize(mask GlyphMask) uint32 {
 	if mask == nil { return constMaskSizeFactor }
-	w, h := mask.Image.Size()
+	w, h := mask.Size()
 	return maskDimsByteSize(w, h)
 }
 

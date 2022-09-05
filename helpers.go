@@ -7,14 +7,6 @@ import "golang.org/x/image/math/fixed"
 import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/ecache"
-import "github.com/tinne26/etxt/internal"
-
-// TODO: create GlyphMask read-only type with .Image() and Bounds()
-//       and store that on cache directly instead of GlyphMask?
-//       The bounds are not heavy to store compared to the image. The
-//       overhead is not severe, and while the bounds are rarely practical,
-//       they add quite a bit in terms of the completeness for etxt. Also,
-//       since I already need the extra struct for ebiten...
 
 // This file contains many helper types, wrappers, aliases and
 // other minor elements required to make this whole package work.
@@ -34,22 +26,6 @@ type Font = sfnt.Font
 //
 // [text shapers]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
 type GlyphIndex = sfnt.GlyphIndex
-
-// A GlyphMask is the image that results from rasterizing a glyph.
-// You rarely need to use GlyphMasks directly unless using advanced
-// functions.
-//
-// Without Ebitengine (gtxt version), GlyphMask defaults to [*image.Alpha].
-// The image bounds are adjusted to allow drawing the glyph at its
-// intended position. In particular, bounds.Min.Y is typically
-// negative, with y = 0 corresponding to the glyph's baseline, y < 0
-// to the ascending portions and y > 0 to the descending ones.
-//
-// With Ebitengine, GlyphMask defaults to a struct with the following fields:
-//   Image *ebiten.Image // the actual glyph image
-//   XOffset int         // horizontal drawing offset
-//   YOffset int         // vertical drawing offset
-type GlyphMask = internal.GlyphMask
 
 // Quantization modes can be used to tell a [Renderer] whether it should
 // operate aligning glyphs to the pixel grid or not. When not following
@@ -122,16 +98,6 @@ func NewDefaultCache(maxBytes int) *ecache.DefaultCache {
 //
 // [this document]: https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 type RectSize struct { Width fixed.Int26_6 ; Height fixed.Int26_6 }
-
-// Deprecated: prefer RectSize.Width.Ceil() directly instead.
-//
-// Get the RectSize's width in whole pixels.
-func (self RectSize) WidthCeil()  int { return self.Width.Ceil()  }
-
-// Deprecated: prefer RectSize.Width.Ceil() directly instead.
-//
-// Get the RectSize's height in whole pixels.
-func (self RectSize) HeightCeil() int { return self.Height.Ceil() }
 
 // Returns the RectSize as an image.Rectangle with origin at (0, 0).
 // 

@@ -7,12 +7,24 @@ import "image/color"
 
 import "golang.org/x/image/math/fixed"
 import "github.com/hajimehoshi/ebiten/v2"
-import "github.com/tinne26/etxt/internal"
 
 // Alias to allow compiling the package without Ebitengine (gtxt version).
 //
 // Without Ebitengine, TargetImage defaults to [image/draw.Image].
 type TargetImage = *ebiten.Image
+
+// A GlyphMask is the image that results from rasterizing a glyph.
+// You rarely need to use GlyphMasks directly unless using advanced
+// functions.
+//
+// Without Ebitengine (gtxt version), GlyphMask defaults to [*image.Alpha].
+// The image bounds are adjusted to allow drawing the glyph at its
+// intended position. In particular, bounds.Min.Y is typically
+// negative, with y = 0 corresponding to the glyph's baseline, y < 0
+// to the ascending portions and y > 0 to the descending ones.
+//
+// With Ebitengine, GlyphMask defaults to *ebiten.Image.
+type GlyphMask = *ebiten.Image
 
 // Mix modes specify how to compose colors when drawing glyphs
 // on the renderer's target:
@@ -34,10 +46,11 @@ func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ Gly
 	// TODO: switch to DrawTriangles to reduce overhead?
 	// DrawTriangles(vertices []Vertex, indices []uint16, img *Image, options *DrawTrianglesOptions)
 	opts := ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(float64(dot.X.Floor() + mask.XOffset), float64(dot.Y.Floor() + mask.YOffset))
+	srcRect := mask.Bounds()
+	opts.GeoM.Translate(float64(dot.X.Floor() + srcRect.Min.X), float64(dot.Y.Floor() + srcRect.Min.Y))
 	opts.ColorM.Scale(colorToFloat64(self.mainColor))
 	opts.CompositeMode = self.mixMode
-	self.target.DrawImage(mask.Image, &opts)
+	self.target.DrawImage(mask, &opts)
 }
 
 // Convert a color to its float64 [0, 1.0] components.
@@ -71,9 +84,5 @@ func convertAlphaImageToGlyphMask(alpha *image.Alpha) GlyphMask {
 		pixels[index + 3] = value
 		index += 4
 	}
-	return &internal.EbitenGlyphMask{
-		Image  : ebiten.NewImageFromImage(rgba),
-		XOffset: alpha.Rect.Min.X,
-		YOffset: alpha.Rect.Min.Y,
-	}
+	return ebiten.NewImageFromImageWithOptions(rgba, &ebiten.NewImageFromImageOptions{ PreserveBounds: true })
 }

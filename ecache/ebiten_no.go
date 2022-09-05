@@ -2,6 +2,11 @@
 
 package ecache
 
+import "image"
+
+// Same as etxt.GlyphMask.
+type GlyphMask = *image.Alpha
+
 const constMaskSizeFactor = 56
 
 func GlyphMaskByteSize(mask GlyphMask) uint32 {

@@ -8,6 +8,7 @@ import "image/color"
 import "golang.org/x/image/math/fixed"
 
 type TargetImage = draw.Image
+type GlyphMask = *image.Alpha
 
 type MixMode uint8
 
