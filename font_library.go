@@ -88,7 +88,8 @@ func (self *FontLibrary) ParseFontFrom(path string) (string, error) {
 }
 
 // Similar to [FontLibrary.ParseFontFrom], but taking the font bytes
-// directly. The bytes must not be modified while the font is in use.
+// directly. The font bytes may be gzipped. The bytes must not be
+// modified while the font is in use.
 func (self *FontLibrary) ParseFontBytes(fontBytes []byte) (string, error) {
 	font, name, err := ParseFontBytes(fontBytes)
 	if err != nil { return name, err }

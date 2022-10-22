@@ -7,6 +7,7 @@ import "errors"
 import "strings"
 import "path/filepath"
 import "compress/gzip"
+import "bytes"
 import "embed"
 
 import "golang.org/x/image/font/sfnt"
@@ -65,7 +66,7 @@ func parseFontFileAndClose(file io.ReadCloser, gzipped bool) (*Font, string, err
 	}
 
 	// read font bytes
-	bytes, err := io.ReadAll(reader)
+	fontBytes, err := io.ReadAll(reader)
 	if err != nil { return nil, "", err }
 	err = readerCloser.Close()
 	if err != nil { return nil, "", err }
@@ -73,18 +74,32 @@ func parseFontFileAndClose(file io.ReadCloser, gzipped bool) (*Font, string, err
 	if err != nil { return nil, "", err }
 
 	// create font from bytes and get name
-	return ParseFontBytes(bytes)
+	return parseRawFontBytes(fontBytes)
 }
 
-// Same as [sfnt.Parse](), but also including the font name.
-// The bytes must not be modified while the font is in use.
+// Similar to [sfnt.Parse](), but also including the font name
+// in the returned values and accepting gzipped font bytes. The
+// bytes must not be modified while the font is in use.
 //
 // This is a low level function; you may prefer to use a [FontLibrary]
 // instead.
 //
 // [sfnt.Parse]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Parse.
-func ParseFontBytes(bytes []byte) (*Font, string, error) {
-	newFont, err := sfnt.Parse(bytes)
+func ParseFontBytes(fontBytes []byte) (*Font, string, error) {
+	if len(fontBytes) >= 2 && fontBytes[0] == 0x1F && fontBytes[1] == 0x8B {
+		gzipReader, err := gzip.NewReader(bytes.NewReader(fontBytes))
+		if err != nil { return nil, "", err }
+		fontBytes, err = io.ReadAll(gzipReader)
+		if err != nil { return nil, "", err }
+		err = gzipReader.Close()
+		if err != nil { return nil, "", err }
+	}
+	
+	return parseRawFontBytes(fontBytes)
+}
+
+func parseRawFontBytes(fontBytes []byte) (*Font, string, error) {
+	newFont, err := sfnt.Parse(fontBytes)
 	if err != nil { return nil, "", err }
 	fontName, err := FontName(newFont)
 	return newFont, fontName, err

@@ -137,6 +137,16 @@ func TestGzip(t *testing.T) {
 	}
 
 	if nameTTF != nameGzip {
-		t.Fatalf("expected nameTTF == nameGzip (%s == %s)", nameTTF, nameGzip)
+		t.Fatalf("expected nameTTF == nameGzip (%s == %s) [ParseFontFrom]", nameTTF, nameGzip)
+	}
+
+	bytes, err = os.ReadFile(TestDirName + "/font.ttf.gz")
+	if err != nil { panic(err) }
+	_, nameGzip, err = ParseFontBytes(bytes)
+	if err != nil {
+		t.Fatalf("ParseFontBytes error for gzipped font: %s", err.Error())
+	}
+	if nameTTF != nameGzip {
+		t.Fatalf("expected nameTTF == nameGzip (%s == %s) [ParseFontBytes]", nameTTF, nameGzip)
 	}
 }
