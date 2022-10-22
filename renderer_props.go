@@ -361,16 +361,16 @@ func (self *Renderer) SetHorzAlign(horzAlign HorzAlign) {
 }
 
 // Configures how [Renderer.Draw]*() coordinates will be interpreted. For example:
-//  - If the alignment is set to (etxt.Top, etxt.Left), coordinates
+//  - If the alignment is set to (etxt.[Top], etxt.[Left]), coordinates
 //    passed to subsequent operations will be interpreted as the
 //    top-left corner of the box in which the text has to be drawn.
-//  - If the alignment is set to (etxt.YCenter, etxt.XCenter), coordinates
+//  - If the alignment is set to (etxt.[YCenter], etxt.[XCenter]), coordinates
 //    passed to subsequent operations will be interpreted
 //    as the center of the box in which the text has to be drawn.
 //
 // Check out [this image] for a visual explanation instead.
 //
-// By default, the renderer's alignment is (etxt.Baseline, etxt.Left).
+// By default, the renderer's alignment is (etxt.[Baseline], etxt.[Left]).
 //
 // [this image]: https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_aligns.png
 func (self *Renderer) SetAlign(vertAlign VertAlign, horzAlign HorzAlign) {

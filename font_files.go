@@ -29,7 +29,7 @@ func ParseFontFrom(path string) (*Font, string, error) {
 	return parseFontFileAndClose(file, gzipped)
 }
 
-// Same as [ParseFontFrom], but for embedded filesystems.
+// Same as [ParseFontFrom](), but for embedded filesystems.
 //
 // This is a low level function; you may prefer to use a [FontLibrary]
 // instead.
@@ -76,7 +76,7 @@ func parseFontFileAndClose(file io.ReadCloser, gzipped bool) (*Font, string, err
 	return ParseFontBytes(bytes)
 }
 
-// Same as [sfnt.Parse], but also including the font name.
+// Same as [sfnt.Parse](), but also including the font name.
 // The bytes must not be modified while the font is in use.
 //
 // This is a low level function; you may prefer to use a [FontLibrary]
@@ -90,7 +90,7 @@ func ParseFontBytes(bytes []byte) (*Font, string, error) {
 	return newFont, fontName, err
 }
 
-// Applies [GzipFontFile] to each font of the given directory.
+// Applies [GzipFontFile]() to each font of the given directory.
 func GzipDirFonts(fontsDir string, outputDir string) error {
 	absDirPath, err := filepath.Abs(fontsDir)
 	if err != nil { return err }
@@ -121,7 +121,7 @@ func GzipDirFonts(fontsDir string, outputDir string) error {
 // but it's typically above 33%, with many .ttf font sizes being halved.
 //
 // If you are wondering why gzip is used instead of supporting .woff formats:
-// gzip has stdlib support, can be applied transparently, and compression
+// gzip has stdlib support, can be applied transparently and compression
 // rates are very similar to what brotli achieves for .woff files.
 //
 // When working on games, sometimes you might prefer to compress directly

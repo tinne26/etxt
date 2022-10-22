@@ -8,7 +8,7 @@ import "golang.org/x/image/math/fixed"
 // to advance after drawing a glyph or what's the kerning between
 // a specific pair of glyphs.
 //
-// Sizers are the interface that Renderer's use to access that
+// Sizers are the interface that Renderers use to access that
 // information.
 //
 // You rarely need to care about Sizers, but they can be useful

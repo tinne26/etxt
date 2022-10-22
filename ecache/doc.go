@@ -12,7 +12,7 @@
 // only a couple fonts at a few fixed sizes and you want your cache to fit
 // everything. Sometimes you determine your font sizes based on the current
 // screen size and can absolutely not pretend to cache all the masks that
-// the renderers may generate. The [DefaultCache.PeakCacheSize]() function is
+// the renderers may generate. The [DefaultCache.PeakSize]() function is
 // a good tool to assist you, but you will have to figure out your requirements
 // by yourself... or just set an arbitrary cache size like 16MB (16*1024*1024
 // bytes) and see how far does that get you.

@@ -8,7 +8,7 @@ import "golang.org/x/image/math/fixed"
 // allowing the user to issue each glyph draw call individually
 // and modifying positions or configurations in between.
 //
-// As a rule of thumb, you should only resort to Feeds if
+// As a rule of thumb, you should only resort to feeds if
 // neither renderer's Draw* nor Traverse* methods give you
 // enough control to do what you want. Make sure you are
 // well acquainted with those methods first.
@@ -16,10 +16,10 @@ import "golang.org/x/image/math/fixed"
 // Valid Feeds can only be created through [Renderer.NewFeed]().
 type Feed struct {
 	renderer *Renderer        // associated renderer
-	Position fixed.Point26_6  // the working position
-	PrevGlyphIndex GlyphIndex // previous glyph index
+	Position fixed.Point26_6  // the feed's working position
+	PrevGlyphIndex GlyphIndex // previous glyph index. used for kern.
 	HasPrevGlyph bool         // false after line breaks and others. used for kern.
-	LineBreakX fixed.Int26_6  // the x-coord set after a line break
+	LineBreakX fixed.Int26_6  // the x coordinate set after a line break
 }
 
 // Draws the given rune and advances the Feed's position.
