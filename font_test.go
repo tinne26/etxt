@@ -82,6 +82,22 @@ func TestFontLibrary(t *testing.T) {
 	if fname != name {
 		t.Fatalf("expected '%s', got '%s'", name, fname)
 	}
+
+	if !lib.RemoveFont(name) {
+		t.Fatalf("expected font %s to be present and possible to remove", name)
+	}
+
+	lname, err := lib.LoadFont(font)
+	if err != nil {
+		t.Fatalf("unexpected error on LoadFont(): %s", err.Error())
+	}
+	if lname != name {
+		t.Fatalf("expected LoadFont() name return to be '%s', but got '%s' instead", name, lname)
+	}
+
+	if doesNotPanic(func() { lib.LoadFont(nil) }) {
+		t.Fatalf("lib.LoadFont(nil) should have panicked")
+	}
 }
 
 func TestGzip(t *testing.T) {

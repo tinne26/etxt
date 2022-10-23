@@ -61,10 +61,24 @@ func (self *FontLibrary) GetFont(name string) *Font {
 	return nil
 }
 
+// Loads the given font into the library and returns its name and any
+// possible error. If the given font is nil, the method will panic. If
+// another font with the same name was already loaded, [ErrAlreadyLoaded]
+// will be returned as the error.
+//
+// This method is rarely necessary unless the font loading is done
+// by a third-party library. In general, using the FontLibrary.Parse*()
+// functions is preferable.
+func (self *FontLibrary) LoadFont(font *Font) (string, error) {
+	name, err := FontName(font)
+	if err != nil { return "", err }
+	return name, self.addNewFont(font, name)
+}
+
 // Returns false if the font can't be removed due to not being found.
 //
 // This function is rarely necessary unless your program also has some
-// mechanism to keep adding more and more fonts without restrictions.
+// mechanism to keep adding fonts without limit.
 //
 // The given font name must match the name returned by the original font
 // parsing function. Font names can also be recovered through

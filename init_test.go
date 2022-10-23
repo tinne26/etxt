@@ -26,3 +26,10 @@ func init() {
 		log.Fatal("etxt requires a test_font.ttf and test_font2.ttf to be different fonts")
 	}
 }
+
+func doesNotPanic(function func()) (didNotPanic bool) {
+	didNotPanic = true
+	defer func() { didNotPanic = (recover() == nil) }()
+	function()
+	return
+}
