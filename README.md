@@ -16,10 +16,7 @@ Less talk and more code!
 ```Golang
 package main
 
-import "log"
-import "time"
-import "image/color"
-
+import ( "log" ; "time" ; "image/color" )
 import "github.com/hajimehoshi/ebiten/v2"
 import "github.com/tinne26/etxt"
 
@@ -27,7 +24,8 @@ type Game struct { txtRenderer *etxt.Renderer }
 func (self *Game) Layout(int, int) (int, int) { return 400, 400 }
 func (self *Game) Update() error { return nil }
 func (self *Game) Draw(screen *ebiten.Image) {
-	millis := time.Now().UnixMilli() // (you should usually avoid using time)
+	// hacky color computation
+	millis := time.Now().UnixMilli()
 	blue := (millis/16) % 512
 	if blue >= 256 { blue = 511 - blue }
 	changingColor := color.RGBA{ 0, 255, uint8(blue), 255 }
@@ -41,16 +39,19 @@ func (self *Game) Draw(screen *ebiten.Image) {
 func main() {
 	// load font library
 	fontLib := etxt.NewFontLibrary()
-	_, _, err := fontLib.ParseDirFonts("game_dir/assets/fonts")
+	_, _, err := fontLib.ParseDirFonts("game_dir/assets/fonts") // !!
 	if err != nil {
 		log.Fatalf("Error while loading fonts: %s", err.Error())
 	}
 
 	// check that we have the fonts we want
 	// (shown for completeness, you don't need this in most cases)
-	if !fontLib.HasFont("League Gothic Regular") { log.Fatal("missing font 1") }
-	if !fontLib.HasFont("Carter One"           ) { log.Fatal("missing font 2") }
-	if !fontLib.HasFont("Roboto Bold"          ) { log.Fatal("missing font 3") }
+	expectedFonts := []string{ "Roboto Bold", "Carter One" }  // !!
+	for _, fontName := range expectedFonts {
+		if !fontLib.HasFont(fontName) {
+			log.Fatal("missing font: " + fontName)
+		}
+	}
 
 	// check that the fonts have the characters we want
 	// (shown for completeness, you don't need this in most cases)
@@ -61,9 +62,9 @@ func main() {
 	txtRenderer := etxt.NewStdRenderer()
 	glyphsCache := etxt.NewDefaultCache(10*1024*1024) // 10MB
 	txtRenderer.SetCacheHandler(glyphsCache.NewHandler())
-	txtRenderer.SetFont(fontLib.GetFont("League Gothic Regular"))
+	txtRenderer.SetFont(fontLib.GetFont(expectedFonts[0]))
 	txtRenderer.SetAlign(etxt.YCenter, etxt.XCenter)
-	txtRenderer.SetSizePx(72)
+	txtRenderer.SetSizePx(64)
 
 	// run the "game"
 	ebiten.SetWindowSize(400, 400)
