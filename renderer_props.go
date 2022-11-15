@@ -16,15 +16,16 @@ import "github.com/tinne26/etxt/esizer"
 // getter and setter methods. Actual operations are split in other
 // files.
 
-// The Renderer is the main type for drawing text provided by etxt.
+// The [Renderer] is the main type for drawing text provided by etxt.
 //
 // Renderers allow you to control font, text size, color, text
 // alignment and more from a single place.
 //
 // Basic usage goes like this:
-//  - Create and store a renderer.
-//  - Adjust its properties as desired, call Draw as many times
-//    as you need... and keep repeating.
+//  - Create, configure and store a renderer.
+//  - Use [Renderer.SetTarget]() and then [Renderer.Draw]() as many times
+//    as needed.
+//  - Re-adjust the properties of the renderer if needed... and keep drawing!
 //
 // If you need more advice or guidance, check the [renderers document]
 // and the [examples].
@@ -62,7 +63,7 @@ func NewStdRenderer() *Renderer {
 	return NewRenderer(&emask.DefaultRasterizer{})
 }
 
-// Creates a new Renderer with the given glyph mask rasterizer.
+// Creates a new renderer with the given glyph mask rasterizer.
 // For the default rasterizer, see [NewStdRenderer]() instead.
 //
 // After creating a renderer, you must set at least the font and

@@ -8,14 +8,6 @@ import "github.com/tinne26/etxt/emask"
 
 // Drawing functions for the Renderer type.
 
-// Notice:
-//   If golang supported union types, we could have a single function
-//   accepting strings, runes, bytes, glyph indices... and also both integer
-//   or fractional coordinates as fixed.Int26_6. Since that's not happening
-//   yet, I decided to heavily cut the API surface area and leave advanced
-//   usage to Traverse* and other functions, instead of spamming with all the
-//   Draw(Fract)?(Each)?(Glyphs)? variants.
-
 // Draws the given text with the current configuration (font, size, color,
 // target, etc). The position at which the text will be drawn depends on
 // the given pixel coordinates and the renderer's align (see
@@ -33,7 +25,7 @@ func (self *Renderer) Draw(text string, x, y int) fixed.Point26_6 {
 	return self.DrawFract(text, fx, fy)
 }
 
-// Exactly the same as [Renderer.Draw], but accepting [fractional pixel] coordinates.
+// Exactly the same as [Renderer.Draw](), but accepting [fractional pixel] coordinates.
 //
 // Notice that passing a fractional coordinate won't make the draw operation
 // be fractionally aligned by itself, that still depends on the renderer's

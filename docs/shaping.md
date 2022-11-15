@@ -8,7 +8,7 @@ When it comes to complex scripts, Unicode doesn't include code points for all th
 This is a complex process that can vary significantly for each script, requiring lots of specific knowledge and individualized handling. HarfBuzz is one of the most mature text shaping libraries in use nowadays. You can read their own definition of text shaping at https://harfbuzz.github.io/what-is-harfbuzz.html.
 
 ## etxt support for text shaping
-**etxt** doesn't offer any tools to do text shaping, but it allows using the results of a text shaping process —in the form of a slice of [glyph indices](https://pkg.go.dev/golang.org/x/image/font/sfnt#GlyphIndex)— to draw. All the `*Glyph*` methods in **etxt** have been added with complex script support in mind, and are intended to be used only if you are also doing text shaping.
+**etxt** doesn't offer any tools to do text shaping, but it allows using the results of a text shaping process —in the form of a slice of [glyph indices](https://pkg.go.dev/golang.org/x/image/font/sfnt#GlyphIndex)— to draw. All the `*Glyph()` methods in **etxt** have been added with complex script support in mind, and are intended to be used only if you are also doing text shaping.
 
 Sadly, there's a hole in Go's landscape when it comes to text shaping: the most official package for font manipulation in Golang, [**sfnt**](https://pkg.go.dev/golang.org/x/image/font/sfnt), does not expose the GSUB and GPOS font tables required to implement text shaping on your own. This forces Golang programmers to either:
 - Fork or reimplement **sfnt** functionality before being able to work on text shaping (or directly contribute to move https://github.com/golang/go/issues/45325 forward).

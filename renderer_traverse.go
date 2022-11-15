@@ -43,11 +43,11 @@ type glyphPair struct {
 // coordinates are unquantized and haven't had kerning applied (as the
 // next glyph is not known yet). Notice that align and text direction
 // can affect the returned coordinate:
-//  - If [HorzAlign] is etxt.Left, the returned coordinate will
+//  - If [HorzAlign] is etxt.[Left], the returned coordinate will
 //    be on the right side of the last character drawn.
-//  - If [HorzAlign] is etxt.Right, the returned coordinate will
+//  - If [HorzAlign] is etxt.[Right], the returned coordinate will
 //    be on the left side of the last character drawn.
-//  - If [HorzAlign] is etxt.XCenter, the returned coordinate will
+//  - If [HorzAlign] is etxt.[XCenter], the returned coordinate will
 //    be on the right side of the last character drawn if the text direction
 //    is [LeftToRight], or on the left side otherwise.
 //
@@ -115,15 +115,15 @@ func (self *Renderer) Traverse(text string, xy fixed.Point26_6, operation func(f
 	}
 }
 
-// Like [Renderer.Traverse](), but for glyph indices.
+// Same as [Renderer.Traverse](), but taking glyph indices instead of a string.
+// This method can be used as a building block for creating other methods or
+// types that operate with glyphs, as demonstrated by [eglyr.Renderer].
 //
-// Since glyph indices are virtually only used when doing [text shaping]
-// —and that's a complex process on itself— I decided to omit most other
-// simple glyph functions in order to keep the API cleaner. If you are
-// already working with glyphs, implementing your own operations on top
-// of TraverseGlyphs should be fairly simple.
+// This method is only relevant when working with complex scripts and using
+// [text shaping].
 //
 // [text shaping]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
+// [eglyr.Renderer]: https://pkg.go.dev/github.com/tinne26/etxt/eglyr#Renderer
 func (self *Renderer) TraverseGlyphs(glyphIndices []GlyphIndex, xy fixed.Point26_6, operation func(fixed.Point26_6, GlyphIndex)) fixed.Point26_6 {
 	if len(glyphIndices) == 0 { return xy } // empty case
 

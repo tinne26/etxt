@@ -48,7 +48,7 @@ type VertAlign int8
 type HorzAlign int8
 
 // Vertical align constants for renderer operations. See
-// [Renderer.SetAlign] for additional details.
+// [Renderer.SetAlign]() for additional details.
 const (
 	Top      VertAlign = 0
 	YCenter  VertAlign = 1
