@@ -10,15 +10,45 @@ import "golang.org/x/image/math/fixed"
 import "github.com/tinne26/etxt"
 import "github.com/hajimehoshi/ebiten/v2"
 
-// CTRL + F "**" to jump to the explanation of the example.
+// The explanation of the example is displayed in the example itself
+// based on the contents of this string:
+const Content = "This example performs basic text wrapping in order to draw text " +
+                "within a delimited area. Additionally, it also shows how to embed " +
+                "the etxt.Renderer type in a custom struct that allows defining our " + 
+                "own methods while also preserving all the original methods of " +
+                "etxt.Renderer.\n\nIn this case, we have added DrawInBox(text string, " +
+                "bounds image.Rectangle). Try to resize the screen and see how the text " + 
+                "adapts to it. You may take this code as a reference and write your own " +
+                "text wrapping functions, as you often will have more specific needs." +
+                "\n\nIn most cases, you will want to add some padding to the bounds to " +
+                "avoid text sticking to the borders of your target text area."
 
-// type alias to create an unexported alias of etxt.Renderer
+// Type alias to create an unexported alias of etxt.Renderer.
+// This is quite irrelevant for this example, but it's useful in
+// practical scenarios to avoid leaking a public internal field.
 type renderer = etxt.Renderer
 
-// wrapper type for etxt.Renderer, for which we will add a DrawInBox() method
+// Wrapper type for etxt.Renderer. Since this type embeds etxt.Renderer
+// it will preserve all its methods, and we can additionally add our own
+// new DrawInBox() method.
 type TextBoxRenderer struct { renderer }
 
-// does basic line wrapping
+// The new method for TextBoxRenderer. It draws the given text within the
+// given bounds, performing basic line wrapping on space " " characters.
+// This is only meant as a reference: this method doesn't split on "-",
+// very long words will overflow the box when a single word is longer
+// than the width of the box, \r\n will be considered two line breaks
+// instead of one, etc. In many practical scenarios you will want to
+// further customize the behavior of this function. For more complex
+// examples of Feed usages, see examples/ebiten/typewriter, which also
+// has a typewriter effect, multiple colors, bold, italics and more.
+// Otherwise, if you only needed really basic line wrapping, feel free
+// to copy this function and use it directly. If you don't want a custom
+// TextBoxRenderer type, it's trivial to adapt the function to receive
+// a standard *etxt.Renderer as an argument instead.
+//
+// Notice that this function relies on the renderer's alignment being
+// (etxt.Top, etxt.Left).
 func (self *TextBoxRenderer) DrawInBox(text string, bounds image.Rectangle) {
 	// helper function
 	var getNextWord = func(str string, index int) string {
@@ -35,12 +65,11 @@ func (self *TextBoxRenderer) DrawInBox(text string, bounds image.Rectangle) {
 	feed := self.renderer.NewFeed(fixed.P(bounds.Min.X, bounds.Min.Y))
 	index := 0
 	for index < len(text) {
-		// handle space case with Advance() instead of Draw()
 		switch text[index] {
-		case ' ':
+		case ' ': // handle spaces with Advance() instead of Draw()
 			feed.Advance(' ')
 			index += 1
-		case '\n', '\r':
+		case '\n', '\r': // \r\n line breaks *not* handled as single line breaks
 			feed.LineBreak()
 			index += 1
 		default:
@@ -56,7 +85,7 @@ func (self *TextBoxRenderer) DrawInBox(text string, bounds image.Rectangle) {
 
 			// draw the word and increase index
 			for _, codePoint := range word {
-				feed.Draw(codePoint)
+				feed.Draw(codePoint) // TODO: may want to cut if the word is too long
 			}
 			index += len(word)
 		}
@@ -73,17 +102,7 @@ func (self *Game) Layout(w int, h int) (int, int) { return w, h }
 func (self *Game) Update() error { return nil }
 func (self *Game) Draw(screen *ebiten.Image) {
 	self.txtRenderer.SetTarget(screen)
-	self.txtRenderer.DrawInBox( // **
-		"This example performs text wrapping in order to draw text within a delimited area. Additionally, " +
-		"it also shows how to embed the etxt.Renderer type in a custom struct that will still allow every " +
-		"method of etxt.Renderer to be used directly, while also allowing us to define additional methods." + 
-		"\n\nIn this case, we have added DrawInBox(text string, bounds image.Rectangle). Try to resize the " + 
-		"screen and see how the text adapts to it. You may take this code as a reference and write your " + 
-		"own text wrapping functions, as you often will have more specific needs." +
-		"\n\nIn most cases, you will want to add some padding to the bounds to avoid text sticking to the " +
-		"borders of your text area.",
-		screen.Bounds(),
-	)
+	self.txtRenderer.DrawInBox(Content, screen.Bounds())
 }
 
 func main() {
@@ -107,7 +126,7 @@ func main() {
 	txtRenderer.SetCacheHandler(cache.NewHandler())
 	txtRenderer.SetSizePx(16)
 	txtRenderer.SetFont(font)
-	txtRenderer.SetAlign(etxt.Top, etxt.Left)
+	txtRenderer.SetAlign(etxt.Top, etxt.Left) // important for this example!
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/wrap")
