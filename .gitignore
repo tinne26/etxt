@@ -2,10 +2,16 @@
 *.png
 !docs/img/*.png
 
+# ignore go workspaces
+*.work
+*.work.sum
+
 # ignore generable documentation (./run_docsgen.sh)
 docs/*.html
+docs/*.js
+docs/*.css
 
-# ignore fonts
+# ignore fonts for testing
 fonts/
 *.ttf
 *.otf

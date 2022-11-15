@@ -8,16 +8,39 @@
 
 pkgname="etxt"
 pkgurl="github.com/tinne26/$pkgname"
-subpkgs="emask efixed esizer ecache"
+subpkgs="emask efixed esizer ecache eglyr"
 docsfolder="docs/"
 docsprefix="reference_"
 
-headhtml="<!DOCTYPE html><html><head><title>$pkgurl/godoc</title><link href="https://godoc.org/-/bootstrap.min.css" rel="stylesheet"><style>body { max-width: 840px; margin: 20px auto; font-size: 16px; }</style></head><body>"
+# download css and js files if necessary. they will be placed on docs/
+# and you may remove them at any time in order to refresh them.
+cssurl="https://raw.githubusercontent.com/golang/tools/master/godoc/static/style.css"
+jsurl="https://raw.githubusercontent.com/golang/tools/master/godoc/static/godocs.js"
+jqueryurl="https://raw.githubusercontent.com/golang/tools/master/godoc/static/jquery.js"
+cssfile=reference_style.css
+jsfile=reference_js.js
+jqueryfile=reference_jquery.js
+
+if [ ! -f "./docs/$cssfile" ]; then
+	echo "downloading godoc css..."
+	curl -sS $cssurl --output ./docs/$cssfile
+fi
+if [ ! -f "./docs/$jsfile" ]; then
+	echo "downloading godoc js..."
+	curl -sS $jsurl --output ./docs/$jsfile
+fi
+if [ ! -f "./docs/$jqueryfile" ]; then 
+	echo "downloading jquery..."
+	curl -sS $jqueryurl --output ./docs/$jqueryfile
+fi
+
+headhtml="<!DOCTYPE html><html><head><title>$pkgurl/godoc</title><link href=\"$cssfile\" rel=\"stylesheet\"><style>body { max-width: 900px; margin: 20px auto; font-size: 16px; text-align: left; }</style><script src=\"$jqueryfile\"></script><script src=\"$jsfile\"></script></head><body>"
 tailhtml="</body></html>"
 echo "$headhtml" > tmp_doc_head
 echo "$tailhtml" > tmp_doc_tail
 
 # main package docs
+echo "generating docs for $pkgurl..."
 godoc -url pkg/$pkgurl | tail -n +44 > tmp_doc_body
 cat tmp_doc_head tmp_doc_body tmp_doc_tail > $docsfolder$docsprefix$pkgname.html
 for pkg in $subpkgs; do
@@ -27,6 +50,7 @@ done
 
 # subpackage docs
 for pkg in $subpkgs; do
+	echo "generating docs for subpackage $pkg..."
 	godoc -url pkg/$pkgurl/$pkg | tail -n +44 > tmp_doc_body
 	cat tmp_doc_head tmp_doc_body tmp_doc_tail > "$docsfolder$docsprefix$pkg.html"
 	for pkg in $packages; do
