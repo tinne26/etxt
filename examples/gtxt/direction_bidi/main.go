@@ -22,6 +22,13 @@ import "golang.org/x/image/math/fixed"
 // font!) to test, which should be available on google fonts if you
 // want to try it.
 
+// Notice also that this example has its own go.mod to add the bidi
+// dependency. This means that if you cloned the repo you won't be
+// able to run this example from the etxt folder directly, unlike
+// most other examples. You must either use go run from the specific
+// program folder or create a go.work file that uses this location:
+// >> go work use ./examples/gtxt/direction_bidi
+
 // Please understand that this example is only a proof of concept, not
 // a role model if you want to get bidi *right*. Among the limitations:
 // - The arabic text is not being shaped.

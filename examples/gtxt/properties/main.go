@@ -19,6 +19,13 @@ import "github.com/tinne26/etxt/emetric"
 // This program prints info about the given font directly
 // to standard output. Mostly metrics.
 
+// Notice also that this example has its own go.mod to add the emetric
+// dependency. This means that if you cloned the repo you won't be
+// able to run this example from the etxt folder directly, unlike
+// most other examples. You must either use go run from the specific
+// program folder or create a go.work file that uses this location:
+// >> go work use ./examples/gtxt/direction_bidi
+
 func main() {
 	// get font path
 	if len(os.Args) != 2 {
