@@ -15,6 +15,7 @@ import "golang.org/x/image/math/fixed"
 
 import "github.com/tinne26/etxt/emask"
 import "github.com/tinne26/etxt/esizer"
+import "github.com/tinne26/etxt/efixed"
 
 func TestSetGet(t *testing.T) {
 	// mostly tests the renderer default values
@@ -94,6 +95,55 @@ func TestSelectionRect(t *testing.T) {
 	imgRect3 := renderer.SelectionRect("hey ho\nhey ho").ImageRect()
 	if !imgRect3.Eq(imgRect) {
 		t.Fatalf("line spacing 0 failed (%v vs %v)", imgRect, imgRect3)
+	}
+
+	// test line breaks and other edge cases
+	renderer.SetLineSpacing(1) // restore spacing
+	renderer.SetQuantizationMode(QuantizeNone) // prevent vertical quantization adjustments
+	renderer.SetDirection(LeftToRight)
+	rect = renderer.SelectionRect("")
+	if rect.Width != 0 || rect.Height != 0 {
+		t.Fatalf("expected Width and Height to be 0, but got ~%d", rect.Width.Ceil())
+	}
+	rect = renderer.SelectionRect("MMMMM")
+	baseHeight := efixed.ToFloat64(rect.Height)
+	rect = renderer.SelectionRect(" ")
+	checkHeight := efixed.ToFloat64(rect.Height)
+	if checkHeight != baseHeight {
+		t.Fatalf("expected Height to be %f, but got %f", baseHeight, checkHeight)
+	}
+
+	rect = renderer.SelectionRect("MMM\n")
+	heightA := efixed.ToFloat64(rect.Height)
+	rect = renderer.SelectionRect("\nMMM")
+	heightB := efixed.ToFloat64(rect.Height)
+	if heightA != heightB {
+		t.Fatalf("expected heightA (%f) == heightB (%f)", heightA, heightB)
+	}
+	if heightA == baseHeight {
+		t.Fatalf("expected heightA to be different from baseHeight (%f), but got %f", baseHeight, heightA)
+	}
+	if heightA != baseHeight*2 {
+		t.Fatalf("baseHeight = %f, heightA = %f", baseHeight, heightA)
+		t.Fatalf("expected heightA to be baseHeight*2 (%f), but got %f", baseHeight*2, heightA)
+	}
+	rect = renderer.SelectionRect("\n")
+	checkHeight = efixed.ToFloat64(rect.Height)
+	if checkHeight != baseHeight {
+		t.Fatalf("expected \\n Height to be %f, but got %f", baseHeight, checkHeight)
+	}
+	rect = renderer.SelectionRect("\n\n")
+	checkHeight = efixed.ToFloat64(rect.Height)
+	if checkHeight != baseHeight*2 {
+		t.Fatalf("expected \\n\\n Height to be %f, but got %f", baseHeight*2, checkHeight)
+	}
+
+	rect = renderer.SelectionRect("\n\n\n")
+	heightC := efixed.ToFloat64(rect.Height)
+	rect = renderer.SelectionRect("\n \n")
+	heightD := efixed.ToFloat64(rect.Height)
+	if heightC != heightD {
+		t.Fatalf("expected heightC (%f) == heightD (%f)", heightC, heightD)
 	}
 }
 

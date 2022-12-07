@@ -29,10 +29,12 @@ func (self *Renderer) SelectionRect(text string) RectSize {
 	if text == "" { return RectSize{} }
 	width := fixed.Int26_6(0)
 	absX  := fixed.Int26_6(0)
+	hasNonLineBreak := false
 	measureFn :=
-		func(currentDot fixed.Point26_6, _ rune, _ GlyphIndex) {
+		func(currentDot fixed.Point26_6, codePoint rune, _ GlyphIndex) {
 			absX = fixedAbs(currentDot.X)
 			if absX > width { width = absX }
+			hasNonLineBreak = hasNonLineBreak || (codePoint != '\n')
 		}
 
 	// traverse the string
@@ -44,7 +46,9 @@ func (self *Renderer) SelectionRect(text string) RectSize {
 
 	// obtain height and return
 	if self.metrics == nil { self.updateMetrics() }
-	return RectSize{ width, self.metrics.Height + fixedAbs(dot.Y) }
+	height := fixedAbs(dot.Y)
+	if hasNonLineBreak { height += self.metrics.Height }
+	return RectSize{ width, height }
 }
 
 // Same as [Renderer.SelectionRect](), but taking a slice of glyph indices
