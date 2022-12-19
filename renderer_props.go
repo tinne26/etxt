@@ -152,7 +152,8 @@ func (self *Renderer) GetColor() color.Color { return self.mainColor }
 // (glyphs may have to be cached at many more different fractional
 // pixel positions).
 //
-// Common step values are: 64, 32, 21, 16, 8, 6, 4, 3, 2, 1.
+// Recommended step values come from the formula ceil(64/N): 64, 32,
+// 22, 16, 13, 11, 10, 8, 7, 6, 5, 4, 3, 2, 1.
 //
 // For more details, read the [quantization document].
 //
