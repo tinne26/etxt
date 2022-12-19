@@ -94,9 +94,9 @@ func (self *Game) Update() error {
 		if self.sinceLastKey > 20 {
 			self.sinceLastKey = 0
 			if self.quantized {
-				self.fauxRenderer.SetQuantizationMode(etxt.QuantizeVert)
+				self.fauxRenderer.SetQuantizerStep(1, 64)
 			} else {
-				self.fauxRenderer.SetQuantizationMode(etxt.QuantizeFull)
+				self.fauxRenderer.SetQuantizerStep(64, 64)
 			}
 			self.quantized = !self.quantized
 			return nil
@@ -255,7 +255,7 @@ func main() {
 	helpRend := etxt.NewStdRenderer()
 	helpRend.SetCacheHandler(cache.NewHandler())
 	helpRend.SetSizePx(16)
-	helpRend.SetQuantizationMode(etxt.QuantizeVert)
+	helpRend.SetQuantizerStep(1, 64)
 	helpRend.SetFont(font)
 	helpRend.SetAlign(etxt.YCenter, etxt.XCenter)
 	helpRend.SetColor(color.RGBA{255, 255, 255, 150})

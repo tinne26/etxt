@@ -27,21 +27,6 @@ type Font = sfnt.Font
 // [text shapers]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
 type GlyphIndex = sfnt.GlyphIndex
 
-// Quantization modes can be used to tell a [Renderer] whether it should
-// operate aligning glyphs to the pixel grid or not. When not following
-// the pixel grid and operating at a fractional pixel level, glyphs can be
-// drawn in up to 64 positions per axis.
-//
-// Read the [quantization document] if you need more details.
-//
-// [quantization document]: https://github.com/tinne26/etxt/blob/main/docs/quantization.md
-type QuantizationMode uint8
-const (
-	QuantizeNone QuantizationMode = 0
-	QuantizeVert QuantizationMode = 1
-	QuantizeFull QuantizationMode = 2
-)
-
 // Text alignment types.
 
 type VertAlign int8

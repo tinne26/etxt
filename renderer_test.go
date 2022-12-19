@@ -99,7 +99,7 @@ func TestSelectionRect(t *testing.T) {
 
 	// test line breaks and other edge cases
 	renderer.SetLineSpacing(1) // restore spacing
-	renderer.SetQuantizationMode(QuantizeNone) // prevent vertical quantization adjustments
+	renderer.SetQuantizerStep(1, 1) // prevent vertical quantization adjustments
 	renderer.SetDirection(LeftToRight)
 	rect = renderer.SelectionRect("")
 	if rect.Width != 0 || rect.Height != 0 {
@@ -152,14 +152,19 @@ func TestStringVsGlyph(t *testing.T) {
 	renderer := NewStdRenderer()
 	renderer.SetSizePx(16)
 	renderer.SetFont(testFont)
-	renderer.SetQuantizationMode(QuantizeFull)
+	renderer.SetQuantizerStep(64, 64)
 	renderer.SetColor(color.RGBA{0, 0, 0, 255}) // black
 
 	alignPairs := []struct{ vert VertAlign; horz HorzAlign }{
 		{vert: Baseline, horz: Left}, {vert: YCenter, horz: XCenter},
 		{vert: Top, horz: Right}, {vert: Bottom, horz: Left},
 	}
-	quantModes := []QuantizationMode{QuantizeFull, QuantizeVert, QuantizeNone}
+	type quantMode struct { HorzStep fixed.Int26_6 ; VertStep fixed.Int26_6 }
+	quantModes := []quantMode{
+		quantMode{ HorzStep: 64, VertStep: 64 }, // full quantization
+		quantMode{ HorzStep:  1, VertStep: 64 }, // vert quantization
+		quantMode{ HorzStep:  1, VertStep:  1 }, // no quantization
+	}
 
 	testText := "for lack of better words"
 	var buffer sfnt.Buffer
@@ -186,7 +191,7 @@ func TestStringVsGlyph(t *testing.T) {
 	for _, textDir := range []Direction{LeftToRight, RightToLeft} {
 		renderer.SetDirection(textDir)
 		for _, quantMode := range quantModes {
-			renderer.SetQuantizationMode(quantMode)
+			renderer.SetQuantizerStep(quantMode.HorzStep, quantMode.VertStep)
 			testRect := renderer.SelectionRect(testText)
 			for _, alignPair := range alignPairs {
 				renderer.SetAlign(alignPair.vert, alignPair.horz)
@@ -213,7 +218,7 @@ func TestStringVsGlyph(t *testing.T) {
 	for _, textDir := range []Direction{LeftToRight, RightToLeft} {
 		renderer.SetDirection(textDir)
 		for _, quantMode := range quantModes {
-			renderer.SetQuantizationMode(quantMode)
+			renderer.SetQuantizerStep(quantMode.HorzStep, quantMode.VertStep)
 			for _, alignPair := range alignPairs {
 				renderer.SetAlign(alignPair.vert, alignPair.horz)
 				renderer.SetTarget(outImageA)
@@ -370,11 +375,11 @@ func TestAlignBound(t *testing.T) {
 			const text = "abcdefghijkl - mnopq0123456789"
 			horzPadder.SetHorzPaddingFract(fixed.Int26_6(i))
 
-			renderer.SetQuantizationMode(QuantizeFull)
+			renderer.SetQuantizerStep(64, 64) // full quantization
 			rect1 := renderer.SelectionRect(text)
-			renderer.SetQuantizationMode(QuantizeVert)
+			renderer.SetQuantizerStep(1, 64) // vertical quantization
 			rect2 := renderer.SelectionRect(text)
-			renderer.SetQuantizationMode(QuantizeNone)
+			renderer.SetQuantizerStep(1, 1) // no quantization
 			rect3 := renderer.SelectionRect(text)
 
 			if rect1.Height != rect2.Height {

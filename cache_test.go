@@ -8,8 +8,8 @@ import "testing"
 func TestDefaultCacheConsistency(t *testing.T) {
 	// this test consists in writing some text without caching
 	// while changing text positioning and fonts, and then doing
-	// then doing the same with caching to ensure that the results
-	// are the same
+	// the same with caching to ensure that the results are the
+	// same
 	targetNoCache  := image.NewRGBA(image.Rect(0, 0, 256, 128))
 	targetYesCache := image.NewRGBA(image.Rect(0, 0, 256, 128))
 	cache := NewDefaultCache(8*1024*1024) // 8MiB cache
@@ -34,7 +34,7 @@ func TestDefaultCacheConsistency(t *testing.T) {
 
 	// first test config
 	renderer.SetSizePx(16)
-	renderer.SetQuantizationMode(QuantizeFull)
+	renderer.SetQuantizerStep(64, 64)
 
 	renderer.SetCacheHandler(nil)
 	renderer.SetTarget(targetNoCache)
@@ -46,7 +46,7 @@ func TestDefaultCacheConsistency(t *testing.T) {
 
 	// second test config
 	renderer.SetSizePx(12)
-	renderer.SetQuantizationMode(QuantizeVert)
+	renderer.SetQuantizerStep(1, 64)
 
 	renderer.SetCacheHandler(nil)
 	renderer.SetTarget(targetNoCache)
@@ -58,7 +58,7 @@ func TestDefaultCacheConsistency(t *testing.T) {
 
 	// third test config
 	renderer.SetSizePx(17)
-	renderer.SetQuantizationMode(QuantizeNone)
+	renderer.SetQuantizerStep(1, 1)
 
 	renderer.SetCacheHandler(nil)
 	renderer.SetTarget(targetNoCache)

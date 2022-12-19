@@ -101,9 +101,8 @@ func (self *Renderer) textHeight(text string) fixed.Int26_6 {
 	// we have line breaks, get line advance
 	lineAdvance := self.GetLineAdvance()
 	if lineAdvance < 0 { lineAdvance = -lineAdvance }
-	if self.quantization != QuantizeNone {
-		lineAdvance = efixed.RoundHalfUp(lineAdvance)
-	}
+	
+   lineAdvance = efixed.QuantizeFractUp(lineAdvance, self.vertQuantStep)
 	advance := fixed.Int26_6(lineBreakCount)*lineAdvance
 	return self.metrics.Height + advance
 }

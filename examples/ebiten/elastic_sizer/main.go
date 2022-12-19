@@ -158,11 +158,13 @@ func main() {
 	renderer.SetFont(font)
 	renderer.SetAlign(etxt.YCenter, etxt.Left) // you can try etxt.XCenter too
 	renderer.SetSizer(&esizer.HorzPaddingSizer{})
-	renderer.SetQuantizationMode(etxt.QuantizeVert) // *
+	renderer.SetQuantizerStep(1, 64) // *
 	// * Disabling horizontal quantization is helpful here to get
 	//   smoother results. But it also means we have to cache each
 	//   glyph in 64 different positions! At big sizes this is not
 	//   cheap. You can try commenting it out to see the difference.
+	//   You may also use bigger step values and see how the animation
+	//   becomes more or less smooth.
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/elastic")

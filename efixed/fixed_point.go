@@ -155,6 +155,74 @@ func ToIntHalfAwayZero(value fixed.Int26_6) int {
 	return ToIntHalfDown(value)
 }
 
+// Quantizes the fractional part of the given value with the given step,
+// rounding up.
+func QuantizeFractUp(value fixed.Int26_6, step uint8) fixed.Int26_6 {
+	if step >= 64 { return RoundHalfUp(value) }
+	if step <=  1 { return value }
+
+	fstep := fixed.Int26_6(step)
+	if value >= 0 { // positive values	
+		fract := value & 0x3F
+		mod := fract % fstep
+		if mod == 0 { return value }
+		prevFract := fract - mod
+		nextFract := prevFract + fstep
+		if (nextFract - fract) <= (fract - prevFract) { // round up
+			if nextFract >= 64 { return Floor(value) + 64 }
+			return value + (nextFract - fract)
+		} else {
+			return value - (fract - prevFract)
+		}
+	} else { // negative values
+		fract := (value & 0x3F) | ^0x3F
+		mod := fract % fstep
+		if mod == 0 { return value }
+		prevFract := fract - mod - fstep
+		nextFract := prevFract + fstep
+		if (nextFract - fract) <= (fract - prevFract) { // round up
+			return value + (nextFract - fract)
+		} else { // round down
+			if prevFract <= -64 { return Floor(value) }
+			return value - (fract - prevFract)
+		}
+	}
+}
+
+// Quantizes the fractional part of the given value with the given step,
+// rounding down.
+func QuantizeFractDown(value fixed.Int26_6, step uint8) fixed.Int26_6 {
+	if step >= 64 { return RoundHalfDown(value) }
+	if step <=  1 { return value }
+
+	fstep := fixed.Int26_6(step)
+	if value >= 0 { // positive values	
+		fract := value & 0x3F
+		mod := fract % fstep
+		if mod == 0 { return value }
+		prevFract := fract - mod
+		nextFract := prevFract + fstep
+		if (fract - prevFract) <= (nextFract - fract) { // round down
+			return value - (fract - prevFract)
+		} else { // round up
+			if nextFract >= 64 { return Floor(value) + 64 }
+			return value + (nextFract - fract)
+		}
+	} else { // negative values
+		fract := (value & 0x3F) | ^0x3F
+		mod := fract % fstep
+		if mod == 0 { return value }
+		prevFract := fract - mod - fstep
+		nextFract := prevFract + fstep
+		if (fract - prevFract) <= (nextFract - fract) { // round down
+			if prevFract <= -64 { return Floor(value) }
+			return value - (fract - prevFract)	
+		} else { // round up
+			return value + (nextFract - fract)
+		}
+	}
+}
+
 // Doesn't care about NaNs and general floating point quirkiness.
 func abs64(value float64) float64 {
 	if value >= 0 { return value }

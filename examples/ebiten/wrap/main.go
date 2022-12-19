@@ -85,7 +85,7 @@ func (self *TextBoxRenderer) DrawInBox(text string, bounds image.Rectangle) {
 
 			// draw the word and increase index
 			for _, codePoint := range word {
-				feed.Draw(codePoint) // TODO: may want to cut if the word is too long
+				feed.Draw(codePoint) // you may want to cut this earlier if the word is too long
 			}
 			index += len(word)
 		}

@@ -150,3 +150,63 @@ func TestIntHalf(t *testing.T) {
 		}
 	}
 }
+
+func TestQuantizeFract(t *testing.T) {
+	upTests := []struct {
+		step uint8
+		in  fixed.Int26_6
+		out fixed.Int26_6
+	}{
+		{step: 1, in: 26, out: 26}, {step: 1, in: 27, out: 27}, {step: 1, in: 45, out: 45},
+		{step: 2, in: 26, out: 26}, {step: 2, in: 27, out: 28}, {step: 2, in: 45, out: 46},
+		{step: 3, in: 26, out: 27}, {step: 3, in: 27, out: 27}, {step: 3, in: 45, out: 45},
+		{step: 4, in: 26, out: 28}, {step: 4, in: 27, out: 28}, {step: 4, in: 45, out: 44},
+		{step: 5, in: 62, out: 60}, {step: 5, in: 63, out: 64}, {step: 5, in: 59, out: 60},
+		{step: 5, in: 67, out: 69}, {step: 5, in: 66, out: 64},
+		
+		{step: 1, in: -26, out: -26}, {step: 1, in: -27, out: -27}, {step: 1, in: -45, out: -45},
+		{step: 2, in: -26, out: -26}, {step: 2, in: -27, out: -26}, {step: 2, in: -45, out: -44},
+		{step: 3, in: -26, out: -27}, {step: 3, in: -27, out: -27}, {step: 3, in: -45, out: -45},
+		{step: 4, in: -26, out: -24}, {step: 4, in: -27, out: -28}, {step: 4, in: -45, out: -44},
+		{step: 5, in: -62, out: -60}, {step: 5, in: -63, out: -64}, {step: 5, in: -59, out: -60},
+		{step: 5, in: -67, out: -69}, {step: 5, in: -66, out: -64},
+	}
+
+	for i, test := range upTests {
+		got := QuantizeFractUp(test.in, test.step)
+		if got != test.out {
+			str := "test #%d: with step %d, input %.6f (%d) expected out %.6f (%d) but got %.6f (%d"
+			t.Fatalf(str, i, test.step, ToFloat64(test.in), test.in, ToFloat64(test.out), test.out, ToFloat64(got), got)
+		}
+	}
+
+	// ---- down tests ----
+
+	downTests := []struct {
+		step uint8
+		in  fixed.Int26_6
+		out fixed.Int26_6
+	}{
+		{step: 1, in: 26, out: 26}, {step: 1, in: 27, out: 27}, {step: 1, in: 45, out: 45},
+		{step: 2, in: 26, out: 26}, {step: 2, in: 27, out: 26}, {step: 2, in: 45, out: 44},
+		{step: 3, in: 26, out: 27}, {step: 3, in: 27, out: 27}, {step: 3, in: 45, out: 45},
+		{step: 4, in: 26, out: 24}, {step: 4, in: 27, out: 28}, {step: 4, in: 45, out: 44},
+		{step: 5, in: 62, out: 60}, {step: 5, in: 63, out: 64}, {step: 5, in: 59, out: 60},
+		{step: 5, in: 67, out: 69}, {step: 5, in: 66, out: 64},
+		
+		{step: 1, in: -26, out: -26}, {step: 1, in: -27, out: -27}, {step: 1, in: -45, out: -45},
+		{step: 2, in: -26, out: -26}, {step: 2, in: -27, out: -28}, {step: 2, in: -45, out: -46},
+		{step: 3, in: -26, out: -27}, {step: 3, in: -27, out: -27}, {step: 3, in: -45, out: -45},
+		{step: 4, in: -26, out: -28}, {step: 4, in: -27, out: -28}, {step: 4, in: -45, out: -44},
+		{step: 5, in: -62, out: -60}, {step: 5, in: -63, out: -64}, {step: 5, in: -59, out: -60},
+		{step: 5, in: -67, out: -69}, {step: 5, in: -66, out: -64},
+	}
+
+	for i, test := range downTests {
+		got := QuantizeFractDown(test.in, test.step)
+		if got != test.out {
+			str := "test #%d: with step %d, input %.6f (%d) expected out %.6f (%d) but got %.6f (%d"
+			t.Fatalf(str, i, test.step, ToFloat64(test.in), test.in, ToFloat64(test.out), test.out, ToFloat64(got), got)
+		}
+	}
+}

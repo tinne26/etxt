@@ -49,7 +49,7 @@ func main() {
 	renderer.Draw("Horizontally quantized vs unquantized text. [quantized]", 8, 8)
 
 	// disable horizontal quantization and draw again
-	renderer.SetQuantizationMode(etxt.QuantizeVert)
+	renderer.SetQuantizerStep(1, 64)
 	renderer.Draw("Horizontally quantized vs unquantized text. [unquantized]", 8, 32)
 
 	// store image as png

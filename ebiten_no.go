@@ -29,6 +29,11 @@ const defaultMixMode = MixOver
 // this doesn't do anything in gtxt, only ebiten needs it
 func convertAlphaImageToGlyphMask(i *image.Alpha) GlyphMask { return i }
 
+// TODO: just remove glyph index from default draw func if unused everywhere.
+//       Maybe replace with ColorM? like... that would seem much more
+//       reasonable for traverse. we are doing a lot of color conversion each
+//       time. hmmmm... at least for ebitengine. 
+
 // The default glyph drawing function used in renderers. Do not confuse with
 // the main [Renderer.Draw]() function. DefaultDrawFunc is a low level function,
 // rarely necessary except when paired with [Renderer.Traverse]*() operations.

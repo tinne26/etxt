@@ -41,15 +41,17 @@ type Renderer struct {
 	vertAlign VertAlign
 	horzAlign HorzAlign
 	direction Direction
+	lineAdvanceIsCached bool
 
-	quantization QuantizationMode
+	horzQuantStep uint8
+	vertQuantStep uint8
+	_ uint8
 	mixMode MixMode
 
 	sizePx fixed.Int26_6
 	lineSpacing fixed.Int26_6 // 64 by default (which is 1 in 26_6)
 	lineHeight  fixed.Int26_6 // non-negative value or -1 to match font height
 	cachedLineAdvance fixed.Int26_6
-	lineAdvanceIsCached bool
 
 	cacheHandler ecache.GlyphCacheHandler
 	rasterizer emask.Rasterizer
@@ -78,10 +80,11 @@ func NewRenderer(rasterizer emask.Rasterizer) *Renderer {
 		vertAlign: Baseline,
 		horzAlign: Left,
 		direction: LeftToRight,
+		horzQuantStep: 64,
+		vertQuantStep: 64,
 		lineSpacing: fixed.Int26_6(1 << 6),
 		lineHeight: -1,
-		sizePx: 16 << 6,
-		quantization: QuantizeFull,
+		sizePx: fixed.I(16),
 		rasterizer: rasterizer,
 		mainColor: color.RGBA{ 255, 255, 255, 255 },
 		mixMode: defaultMixMode,
@@ -106,7 +109,7 @@ func (self *Renderer) SetFont(font *Font) {
 	self.metrics = nil
 }
 
-// Gets the current font. The font is nil by default.
+// Returns the current font. The font is nil by default.
 func (self *Renderer) GetFont() *Font { return self.font }
 
 // Sets the target of subsequent operations.
@@ -126,22 +129,47 @@ func (self *Renderer) SetMixMode(mixMode MixMode) {
 	self.mixMode = mixMode
 }
 
-// Sets the color to be used on subsequent operations.
+// Sets the color to be used on subsequent draw operations.
 // The default color is white.
 func (self *Renderer) SetColor(mainColor color.Color) {
 	self.mainColor = mainColor
 }
 
-// Returns the current font color.
+// Returns the current drawing color.
 func (self *Renderer) GetColor() color.Color { return self.mainColor }
 
-// Sets the quantization mode to be used on subsequent operations.
-// By default, the renderer's mode is [QuantizeFull].
-func (self *Renderer) SetQuantizationMode(mode QuantizationMode) {
-	self.quantization = mode
+// Sets the granularity of the glyph position quantization applied to
+// rendering and measurement operations, in 1/64th parts of a pixel.
+//
+// At minimum granularity (step = 1), glyphs will be laid out
+// without any changes to their advances and kerns, fully respecting 
+// the font's intended spacing and flow.
+// 
+// At maximum granularity (step = 64), glyphs will be effectively
+// quantized to the pixel grid instead. This is the default value.
+//
+// The higher the precision, the higher the pressure on the glyph cache
+// (glyphs may have to be cached at many more different fractional
+// pixel positions).
+//
+// Common step values are: 64, 32, 21, 16, 8, 6, 4, 3, 2, 1.
+//
+// For more details, read the [quantization document].
+//
+// [quantization document]: https://github.com/tinne26/etxt/blob/main/docs/quantization.md
+func (self *Renderer) SetQuantizerStep(horzStep fixed.Int26_6, vertStep fixed.Int26_6) {
+	if horzStep < 1 || horzStep > 64 { panic("horzStep outside the [1, 64] range") }
+	if vertStep < 1 || vertStep > 64 { panic("vertStep outside the [1, 64] range") }
+	self.horzQuantStep = uint8(horzStep)
+	self.vertQuantStep = uint8(vertStep)
 }
 
-// Gets the current glyph cache handler, which is nil by default.
+// Ask for it if you need it.
+// func (self *Renderer) GetQuantizerStep() (horzStep, vertStep fixed.Int26_6) {
+// 	return self.horzQuantStep, self.vertQuantStep
+// }
+
+// Returns the current glyph cache handler, which is nil by default.
 //
 // Rarely used unless you are examining the cache handler manually.
 func (self *Renderer) GetCacheHandler() ecache.GlyphCacheHandler {
@@ -175,7 +203,7 @@ func (self *Renderer) SetCacheHandler(cacheHandler ecache.GlyphCacheHandler) {
 	}
 }
 
-// Gets the current glyph mask rasterizer.
+// Returns the current glyph mask rasterizer.
 //
 // This function is only useful when working with configurable rasterizers;
 // ignore it if you are using the default glyph mask rasterizer.
@@ -393,7 +421,7 @@ func (self *Renderer) SetDirection(dir Direction) {
 	self.direction = dir
 }
 
-// Gets the current Sizer. You shouldn't worry about sizers unless
+// Returns the current Sizer. You shouldn't worry about sizers unless
 // you are making custom glyph mask rasterizers or want to disable
 // kerning or adjust spacing in some other unusual way.
 func (self *Renderer) GetSizer() esizer.Sizer {
