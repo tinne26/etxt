@@ -161,7 +161,6 @@ func (self *Renderer) TraverseGlyphs(glyphIndices []GlyphIndex, xy fixed.Point26
 // --- helper methods ---
 
 func (self *Renderer) quantizeY(y fixed.Int26_6) fixed.Int26_6 {
-	if self.vertQuantStep == 64 { return y }
 	if self.GetLineAdvance() >= 0 {
 		return efixed.QuantizeFractUp(y, self.vertQuantStep)
 	} else {
@@ -190,7 +189,7 @@ func (self *Renderer) centerLineStringX(iterator strIterator, lineHorzResetPoint
 // Notify fractional position change at the start of traversal.
 func (self *Renderer) preFractPositionNotify(dot fixed.Point26_6) {
 	if self.cacheHandler != nil {
-		if self.horzQuantStep != 64 || self.vertQuantStep != 64 {
+		if self.vertQuantStep != 64 {
 			self.cacheHandler.NotifyFractChange(dot) // only required for Y
 		} else {
 			// X is expected to be notified later too, so
