@@ -20,7 +20,10 @@ type Game struct {
 	text []rune
 }
 
-func (self *Game) Layout(w int, h int) (int, int) { return w, h }
+func (self *Game) Layout(w int, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(float64(w)*scale), int(float64(h)*scale)
+}
 func (self *Game) Update() error {
 	backspacePressed := ebiten.IsKeyPressed(ebiten.KeyBackspace)
 	enterPressed     := ebiten.IsKeyPressed(ebiten.KeyEnter)
@@ -41,13 +44,13 @@ func (self *Game) Update() error {
 
 func (self *Game) Draw(screen *ebiten.Image) {
 	// dark background
-	screen.Fill(color.RGBA{ 30, 6, 34, 255 })
+	screen.Fill(color.RGBA{ 2, 1, 0, 255 })
 
 	// draw text's selection rect
 	x, y := 8, 8
 	rect := self.txtRenderer.SelectionRect(string(self.text)).ImageRect()
 	rectImg := screen.SubImage(rect.Add(image.Pt(x, y))).(*ebiten.Image)
-	rectImg.Fill(color.RGBA{ 32, 255, 255, 64 })
+	rectImg.Fill(color.RGBA{ 8, 72, 88, 255 })
 
 	// draw text
 	self.txtRenderer.SetTarget(screen)
@@ -78,9 +81,10 @@ func main() {
 	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
 
 	// create and configure renderer
+	scale := ebiten.DeviceScaleFactor()
 	renderer := etxt.NewStdRenderer()
 	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(18)
+	renderer.SetSizePx(int(18*scale))
 	renderer.SetFont(font)
 	renderer.SetAlign(etxt.Top, etxt.Left)
 	renderer.SetColor(color.RGBA{255, 255, 255, 255}) // white
