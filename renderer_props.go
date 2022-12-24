@@ -122,11 +122,25 @@ func (self *Renderer) SetTarget(target TargetImage) {
 	self.target = target
 }
 
+// Returns the current renderer target. As far as I know, this is only
+// strictly necessary when implementing draw operations with custom
+// shaders.
+func (self *Renderer) GetTarget() TargetImage {
+	return self.target
+}
+
 // Sets the mix mode to be used on subsequent operations.
 // The default mix mode will compose glyphs over the active
 // target with regular alpha blending.
 func (self *Renderer) SetMixMode(mixMode MixMode) {
 	self.mixMode = mixMode
+}
+
+// Returns the renderer's [MixMode]. As far as I know, this is only
+// strictly necessary when implementing draw operations with custom
+// shaders.
+func (self *Renderer) GetMixMode() MixMode {
+	return self.mixMode
 }
 
 // Sets the color to be used on subsequent draw operations.

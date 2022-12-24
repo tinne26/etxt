@@ -1,23 +1,11 @@
+//go:build gtxt && test
+
 package etxt
 
 import "os"
 import "embed"
-import "io/fs"
-import "errors"
 import "strings"
-import "log"
-
 import "testing"
-
-func init() {
-	_, err := os.Stat("test_font.ttf")
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			log.Fatal("etxt requires a test_font.ttf file to run tests")
-		}
-		log.Fatal(err)
-	}
-}
 
 //go:embed test_font.ttf
 var embedFilesys embed.FS

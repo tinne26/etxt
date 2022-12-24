@@ -1,3 +1,5 @@
+//go:build gtxt && test
+
 package emask
 
 import "image/color"
