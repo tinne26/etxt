@@ -130,16 +130,16 @@ func main() {
 
 	// create the kid, which is the same but smaller
 	shape.Reset()
-	shape.MoveTo(-2, 16) // move to the top of the trapezoid
-	shape.LineTo(-5,  0)
-	shape.LineTo( 5,  0)
-	shape.LineTo( 2, 16)
-	shape.LineTo(-2, 16) // close the trapezoid
-	shape.MoveTo(0, 16) // move to the start of the circle (bottom)
-	shape.QuadTo(-6, 16, -6, 22)// draw first quarter (to left-middle)
-	shape.QuadTo(-6, 28,  0, 28)// draw second quarter (to top)
-	shape.QuadTo( 6, 28,  6, 22)// draw third quarter (to right-middle)
-	shape.QuadTo( 6, 16,  0, 16)// close the shape
+	moveTo(&shape, -2, 16, scale) // move to the top of the trapezoid
+	lineTo(&shape, -5,  0, scale)
+	lineTo(&shape,  5,  0, scale)
+	lineTo(&shape,  2, 16, scale)
+	lineTo(&shape, -2, 16, scale) // close the trapezoid
+	moveTo(&shape,  0, 16, scale) // move to the start of the circle (bottom)
+	quadTo(&shape, -6, 16, -6, 22, scale)// draw first quarter (to left-middle)
+	quadTo(&shape, -6, 28,  0, 28, scale)// draw second quarter (to top)
+	quadTo(&shape,  6, 28,  6, 22, scale)// draw third quarter (to right-middle)
+	quadTo(&shape,  6, 16,  0, 16, scale)// close the shape
 	mask, err = emask.Rasterize(shape.Segments(), renderer.GetRasterizer(), pixelAligned)
 	if err != nil { log.Fatal(err) }
 	childImg := ebiten.NewImageFromImage(mask)
