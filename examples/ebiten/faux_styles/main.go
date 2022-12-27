@@ -28,7 +28,10 @@ type Game struct {
 	defaultSizer esizer.Sizer
 }
 
-func (self *Game) Layout(w int, h int) (int, int) { return w, h }
+func (self *Game) Layout(w int, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+}
 func (self *Game) Update() error {
 	self.sinceLastKey += 1
 
@@ -240,7 +243,7 @@ func main() {
 	defaultSizer := renderer.GetSizer()
 	customSizer  := &esizer.AdvancePadSizer{}
 	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(36)
+	renderer.SetSizePx(int(36*ebiten.DeviceScaleFactor()))
 	renderer.SetFont(font)
 	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
 	renderer.SetColor(color.RGBA{255, 255, 255, 255})
@@ -254,7 +257,7 @@ func main() {
 	// create helper renderer for other text
 	helpRend := etxt.NewStdRenderer()
 	helpRend.SetCacheHandler(cache.NewHandler())
-	helpRend.SetSizePx(16)
+	helpRend.SetSizePx(int(16*ebiten.DeviceScaleFactor()))
 	helpRend.SetQuantizerStep(1, 64)
 	helpRend.SetFont(font)
 	helpRend.SetAlign(etxt.YCenter, etxt.XCenter)

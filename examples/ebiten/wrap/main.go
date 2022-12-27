@@ -3,6 +3,7 @@ package main
 import "os"
 import "log"
 import "fmt"
+import "math"
 import "image"
 import "unicode/utf8"
 
@@ -98,7 +99,10 @@ type Game struct {
 	txtRenderer *TextBoxRenderer
 }
 
-func (self *Game) Layout(w int, h int) (int, int) { return w, h }
+func (self *Game) Layout(w int, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+}
 func (self *Game) Update() error { return nil }
 func (self *Game) Draw(screen *ebiten.Image) {
 	self.txtRenderer.SetTarget(screen)
@@ -124,7 +128,7 @@ func main() {
 	// create and configure renderer
 	txtRenderer := &TextBoxRenderer{ *etxt.NewStdRenderer() }
 	txtRenderer.SetCacheHandler(cache.NewHandler())
-	txtRenderer.SetSizePx(16)
+	txtRenderer.SetSizePx(int(16*ebiten.DeviceScaleFactor()))
 	txtRenderer.SetFont(font)
 	txtRenderer.SetAlign(etxt.Top, etxt.Left) // important for this example!
 

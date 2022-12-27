@@ -6,6 +6,7 @@ import "os"
 import "log"
 import "fmt"
 import "time"
+import "math"
 import "math/rand"
 import "image/color"
 
@@ -35,7 +36,10 @@ type Game struct {
 	backLines [][]rune
 	offscreen *ebiten.Image
 }
-func (self *Game) Layout(w int, h int) (int, int) { return w, h }
+func (self *Game) Layout(w int, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+}
 func (self *Game) Update() error {
 	// update background text
 	randMaxOpen := len(runePool)
@@ -57,10 +61,11 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	// draw background text
 	// ... the main idea is to draw line by line while positioning
 	//     the glyphs manually, more or less centered.
+	scale := ebiten.DeviceScaleFactor()
 	self.backRenderer.SetTarget(screen)
 	for i, line := range self.backLines {
-		y := fixed.Int26_6((22 + i*16)*64)
-		x := fixed.Int26_6(12*64)
+		y := fixed.Int26_6(int(scale*float64((22 + i*16)*64)))
+		x := fixed.Int26_6(int(scale*12*64))
 		self.backRenderer.Traverse(string(line), fixed.P(0, 0),
 			func (dot fixed.Point26_6, _ rune, index etxt.GlyphIndex) {
 				mask := self.backRenderer.LoadGlyphMask(index, dot)
@@ -68,7 +73,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 				dot.X = x - fixed.Int26_6(glyphWidth << 5)
 				dot.Y = y - fixed.Int26_6(glyphHeight << 5)
 				self.backRenderer.DefaultDrawFunc(dot, mask, index)
-				x += 16*64
+				x += fixed.Int26_6(scale*16*64)
 			})
 	}
 
@@ -111,7 +116,7 @@ func main() {
 	// create and configure renderer
 	renderer := etxt.NewStdRenderer()
 	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(16)
+	renderer.SetSizePx(int(16*ebiten.DeviceScaleFactor()))
 	renderer.SetFont(font)
 	renderer.SetAlign(etxt.Baseline, etxt.Left)
 	renderer.SetColor(color.RGBA{0, 255, 0, 255})
@@ -119,7 +124,7 @@ func main() {
 	// mmmm... actually, two renderers will make life easier here
 	frontRend := etxt.NewRenderer(renderer.GetRasterizer()) // share rasterizer, no problem
 	frontRend.SetCacheHandler(cache.NewHandler()) // share cache, no problem
-	frontRend.SetSizePx(MainFontSize)
+	frontRend.SetSizePx(int(MainFontSize*ebiten.DeviceScaleFactor()))
 	frontRend.SetFont(font)
 	frontRend.SetAlign(etxt.YCenter, etxt.XCenter)
 	frontRend.SetColor(color.RGBA{0, 255, 0, 244}) // [1]

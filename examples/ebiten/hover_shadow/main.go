@@ -3,6 +3,7 @@ package main
 import "os"
 import "log"
 import "fmt"
+import "math"
 import "image"
 import "image/color"
 
@@ -17,12 +18,17 @@ type Game struct {
 	focus float64
 }
 
-func (self *Game) Layout(w int, h int) (int, int) { return w, h }
+func (self *Game) Layout(w int, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+}
 func (self *Game) Update() error {
 	// calculate target area. in general you don't need to recalculate
 	// this at every frame, but we are being lazy and wasteful here
 	targetArea := self.txtRenderer.SelectionRect(HoverText)
-	w, h := ebiten.WindowSize()
+	uw, uh := ebiten.WindowSize()
+	scale := ebiten.DeviceScaleFactor()
+	w, h := int(math.Ceil(float64(uw)*scale)), int(math.Ceil(float64(uh)*scale))
 	tw, th := targetArea.Width.Ceil(), targetArea.Height.Ceil()
 	tRect := image.Rect(w/2 - tw/2, h/2 - th/2, w/2 + tw/2, h/2 + th/2)
 
@@ -50,8 +56,9 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	self.txtRenderer.SetTarget(screen)
 	if self.focus > 0 {
 		self.txtRenderer.SetColor(color.RGBA{255, 0, 255, 128}) // sharp shadow
-		hx := fixed.Int26_6((w/2)*64) + fixed.Int26_6(self.focus*MaxOffsetX*64)
-		hy := fixed.Int26_6((h/2)*64) + fixed.Int26_6(self.focus*MaxOffsetY*64)
+		scale := ebiten.DeviceScaleFactor()
+		hx := fixed.Int26_6((w/2)*64) + fixed.Int26_6(self.focus*MaxOffsetX*scale*64)
+		hy := fixed.Int26_6((h/2)*64) + fixed.Int26_6(self.focus*MaxOffsetY*scale*64)
 		self.txtRenderer.DrawFract(HoverText, hx, hy)
 	}
 
@@ -78,7 +85,7 @@ func main() {
 	// create and configure renderer
 	renderer := etxt.NewStdRenderer()
 	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(64)
+	renderer.SetSizePx(int(64*ebiten.DeviceScaleFactor()))
 	renderer.SetFont(font)
 	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
 

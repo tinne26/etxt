@@ -3,6 +3,7 @@ package main
 import "os"
 import "log"
 import "fmt"
+import "math"
 import "image/color"
 
 import "golang.org/x/image/math/fixed"
@@ -44,7 +45,10 @@ func NewGame(renderer *etxt.Renderer) *Game {
 	}
 }
 
-func (self *Game) Layout(w int, h int) (int, int) { return w, h }
+func (self *Game) Layout(w int, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+}
 func (self *Game) Update() error {
 	// All this code in Update() doesn't have much to do with text rendering
 	// or anything, it's the spring simulation and related logic. It's the
@@ -122,7 +126,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 
 	self.txtRenderer.SetColor(color.RGBA{255, 255, 255, 128})
 	self.txtRenderer.SetAlign(etxt.Baseline, etxt.Right)
-	self.txtRenderer.SetSizePx(14)
+	self.txtRenderer.SetSizePx(int(14*ebiten.DeviceScaleFactor()))
 	self.txtRenderer.Draw(fmt.Sprintf("%.2f FPS", ebiten.CurrentFPS()), w - 8, h - 8)
 	self.txtRenderer.SetHorzAlign(etxt.Left)
 	txt := "click and drag horizontally to interact"
@@ -154,7 +158,7 @@ func main() {
 	// create and configure renderer
 	renderer := etxt.NewStdRenderer()
 	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(64)
+	renderer.SetSizePx(int(64*ebiten.DeviceScaleFactor()))
 	renderer.SetFont(font)
 	renderer.SetAlign(etxt.YCenter, etxt.Left) // you can try etxt.XCenter too
 	renderer.SetSizer(&esizer.HorzPaddingSizer{})

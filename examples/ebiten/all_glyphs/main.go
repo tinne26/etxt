@@ -4,6 +4,7 @@ import "os"
 import "log"
 import "fmt"
 import "time"
+import "math"
 import "image/color"
 
 import "github.com/hajimehoshi/ebiten/v2"
@@ -45,7 +46,7 @@ func NewGame(renderer *etxt.Renderer, font *etxt.Font, noHint bool) *Game {
 	if !noHint {
 		hintRenderer = etxt.NewStdRenderer()
 		hintRenderer.SetFont(font)
-		hintRenderer.SetSizePx(14)
+		hintRenderer.SetSizePx(int(14*ebiten.DeviceScaleFactor()))
 		hintRenderer.SetHorzAlign(etxt.Right)
 		cache := etxt.NewDefaultCache(1024*1024) // 1MB cache
 		hintRenderer.SetCacheHandler(cache.NewHandler())
@@ -69,7 +70,7 @@ func NewGame(renderer *etxt.Renderer, font *etxt.Font, noHint bool) *Game {
 
 func (self *Game) refreshScreenProperties() {
 	size := self.txtRenderer.GetSizePxFract()
-	spacing := int((float64(size)*GlyphSpacing)/64)
+	spacing := int((float64(size)*GlyphSpacing)/64.0)
 	sizer := self.txtRenderer.GetSizer().(*esizer.FixedSizer)
 	sizer.SetAdvance(spacing)
 	glyphsPerLine := self.screenWidth/spacing
@@ -82,12 +83,14 @@ func (self *Game) refreshScreenProperties() {
 }
 
 func (self *Game) Layout(w int, h int) (int, int) {
-	if w != self.screenWidth || h != self.screenHeight {
-		self.screenWidth  = w
-		self.screenHeight = h
+	scale := ebiten.DeviceScaleFactor()
+	sw, sh := int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+	if sw != self.screenWidth || sh != self.screenHeight {
+		self.screenWidth  = sw
+		self.screenHeight = sh
 		self.refreshScreenProperties()
 	}
-	return w, h
+	return sw, sh
 }
 
 func (self *Game) Update() error {
@@ -213,7 +216,7 @@ func main() {
 	// create and configure renderer
 	renderer := etxt.NewStdRenderer()
 	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(GlyphSize)
+	renderer.SetSizePx(int(ebiten.DeviceScaleFactor()*GlyphSize))
 	renderer.SetFont(font)
 	renderer.SetAlign(etxt.YCenter, etxt.Left)
 

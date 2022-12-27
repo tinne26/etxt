@@ -18,7 +18,10 @@ type Game struct {
 	blueSrc  float64
 }
 
-func (self *Game) Layout(w int, h int) (int, int) { return w, h }
+func (self *Game) Layout(w int, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+}
 func (self *Game) Update() error {
 	// progressively change the values to use in Draw to derive colors,
 	// at different speeds each one
@@ -76,7 +79,7 @@ func main() {
 	// create and configure renderer
 	renderer := etxt.NewStdRenderer()
 	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(64)
+	renderer.SetSizePx(int(64*ebiten.DeviceScaleFactor()))
 	renderer.SetFont(font)
 	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
 

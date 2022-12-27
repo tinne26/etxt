@@ -3,13 +3,14 @@ package main
 import "os"
 import "log"
 import "fmt"
+import "time"
+import "math"
 import "strconv"
 import "strings"
 import "image"
 import "image/color"
 import "image/png"
 import "math/rand"
-import "time"
 
 import "github.com/hajimehoshi/ebiten/v2"
 import "github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -52,7 +53,10 @@ type Game struct {
 	ebiImg *ebiten.Image
 }
 
-func (self *Game) Layout(w, h int) (int, int) { return w, h }
+func (self *Game) Layout(w, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+}
 func (self *Game) Update() error {
 	for _, key := range keys {
 		wasPressed := self.keyPressed[key]
@@ -239,7 +243,7 @@ func main() {
 	game := &Game{
 		rasterizer: emask.NewStdEdgeMarkerRasterizer(),
 		keyPressed: make(map[ebiten.Key]bool),
-		size: 476,
+		size: int(476*ebiten.DeviceScaleFactor()),
 		segments: 16,
 		symmetryMode: 1,
 	}
