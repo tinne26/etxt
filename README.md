@@ -109,8 +109,8 @@ If I get really bored, I'd also like to look into:
 - Add outline expansion. Freetype and libASS do this, and it would be quite nice to get high quality outlines and better faux-bolds... but it's also *hard*; I don't really know if I want to go there.
 - Triangulation and GPU rendering of Bézier curves are also interesting for Ebitengine (although they probably don't belong in this package).
 
-## Testing, contributions and me
+## Testing, contributions and others
 - For testing, see the instructions on [`etxt/test`](https://github.com/tinne26/etxt/blob/main/test).
-- If you have any questions or suggestions for improvements, including documentation, I'm always happy to explain or discuss.
-- I'm not looking for contributors nor general help, though moving text shaping forward in Golang would be nice.
-- The API is reasonably stable, but I never hesitate to break compatibility if it's to make the library better. I also tend to update dependency versions when tagging new versions.
+- If you have any questions or suggestions for improvements feel free to ask, I'm always happy to explain or discuss.
+- I'm not looking for contributors nor general help.
+- The API is reasonably stable, but I'll never hesitate to break compatibility if it's to make the library better. I also tend to update dependency versions when tagging new versions.

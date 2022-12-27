@@ -4,7 +4,7 @@ Testing etxt requires placing two different `.ttf` fonts in `/test/fonts/`. Some
 
 The most basic form requires both `gtxt` and `test` tags:
 ```
-go run -tags "gtxt test" ./...
+go test -tags "gtxt test" ./...
 ```
 
 Many scripts are provided in `test/scripts`. For example, you can also run tests with them, which should yield something like the following[^1]:
