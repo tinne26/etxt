@@ -22,6 +22,6 @@ ok      github.com/tinne26/etxt/efixed  0.299s  coverage: 81.8% of statements
 ok      github.com/tinne26/etxt/emask   0.315s  coverage: 74.0% of statements
 ```
 
-Scripts also include generation of static documentation, coverage and some benchmarking of custom rasterizers. Some of them even have `.bat` versions for Windows users.
+Scripts also include generation of static documentation, coverage and some benchmarking of custom rasterizers. For Window users, `.bat` versions are provided in some cases.
 
 [^1]: The Ebitengine test results are almost irrelevant and only exist to detect build problems. It's not easy to test with Ebitengine images (you need to spawn separate processes that use `RunGame()` directly from the tests), so the only tests run are those that don't require any rasterization targets, which are already included in the `gtxt` tests.
