@@ -1,3 +1,5 @@
+//go:build gtxt
+
 package main
 
 import "os"

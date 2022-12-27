@@ -1,4 +1,4 @@
-//go:build gtxt && test
+//go:build test
 
 package etxt
 

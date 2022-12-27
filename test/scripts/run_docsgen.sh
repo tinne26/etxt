@@ -8,12 +8,12 @@
 
 pkgname="etxt"
 pkgurl="github.com/tinne26/$pkgname"
-subpkgs="emask efixed esizer ecache eglyr"
+subpkgs="emask efixed esizer ecache eglyr ekage"
 docsfolder="docs/"
 docsprefix="reference_"
 
 # download css and js files if necessary. they will be placed on docs/
-# and you may remove them at any time in order to refresh them.
+# and you may remove them at any time in order to re-fetch them.
 cssurl="https://raw.githubusercontent.com/golang/tools/master/godoc/static/style.css"
 jsurl="https://raw.githubusercontent.com/golang/tools/master/godoc/static/godocs.js"
 jqueryurl="https://raw.githubusercontent.com/golang/tools/master/godoc/static/jquery.js"

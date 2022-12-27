@@ -6,6 +6,8 @@ import "image"
 import "testing"
 
 func TestDefaultCacheConsistency(t *testing.T) {
+	if testFontA == nil || testFontB == nil { t.SkipNow() }
+
 	// this test consists in writing some text without caching
 	// while changing text positioning and fonts, and then doing
 	// the same with caching to ensure that the results are the
@@ -19,16 +21,16 @@ func TestDefaultCacheConsistency(t *testing.T) {
 
 	var drawProc = func() {
 		y := 16
-		renderer.SetFont(testFont)
+		renderer.SetFont(testFontA)
 		renderer.Draw("education", 128, y)
 		y += 24
-		renderer.SetFont(testFont2)
+		renderer.SetFont(testFontB)
 		renderer.Draw("failure", 128, y)
 		y += 24
-		renderer.SetFont(testFont)
+		renderer.SetFont(testFontA)
 		renderer.Draw("programming", 128, y)
 		y += 24
-		renderer.SetFont(testFont2)
+		renderer.SetFont(testFontB)
 		renderer.Draw("disaster", 128, y)
 	}
 

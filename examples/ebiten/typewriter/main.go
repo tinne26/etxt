@@ -57,11 +57,12 @@ type Typewriter struct {
 }
 
 func NewTypewriter(font *etxt.Font, size int, content string) *Typewriter {
+	scale := ebiten.DeviceScaleFactor()
 	cache := etxt.NewDefaultCache(4*1024*1024) // 4MB cache
 	fauxRast := emask.FauxRasterizer{}
 	renderer := etxt.NewRenderer(&fauxRast)
 	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(size)
+	renderer.SetSizePx(int(float64(size)*scale))
 	renderer.SetFont(font)
 	renderer.SetVertAlign(etxt.Top)
 	return &Typewriter {
@@ -293,7 +294,10 @@ func loadFloat64FromUint64(u uint64) float64 { return math.Float64frombits(u) }
 // --- actual game ---
 
 type Game struct { typewriter *Typewriter }
-func (self *Game) Layout(w int, h int) (int, int) { return w, h }
+func (self *Game) Layout(w int, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	return int(float64(w)*scale), int(float64(h)*scale)
+}
 func (self *Game) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyR) {
 		self.typewriter.Reset(Text)
@@ -309,7 +313,10 @@ func (self *Game) Draw(screen *ebiten.Image) {
 
 	// determine positioning and draw
 	w, h := screen.Size()
-	area := image.Rect(16, 16, w - 32, h - 32)
+	scale := ebiten.DeviceScaleFactor()
+	offset1 := int(16*scale)
+	offset2 := int(32*scale)
+	area := image.Rect(offset1, offset1, w - offset2, h - offset2)
 	self.typewriter.Draw(screen.SubImage(area).(*ebiten.Image))
 }
 

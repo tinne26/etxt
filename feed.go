@@ -53,7 +53,11 @@ func (self *Feed) DrawGlyph(glyphIndex GlyphIndex) {
 
 // Advances the Feed's position without drawing anything.
 func (self *Feed) Advance(codePoint rune) {
-	// TODO: do we *reaally* need this method? Maybe it is superfluous.
+	// Note: while this method may seem superfluous, at least it can be
+	//       useful when drawing paragraphs at an abitrary scroll position.
+	//       Efficient implementations would split by lines from the start,
+	//       but that's tricky, so the cheap approach could be reasonable
+	//       and one would rather Advance() than Draw(). Fair enough?
 	self.AdvanceGlyph(self.renderer.getGlyphIndex(codePoint))
 }
 

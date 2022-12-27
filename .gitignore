@@ -12,11 +12,15 @@ docs/*.js
 docs/*.css
 
 # ignore fonts for testing
-fonts/
+/fonts/
 *.ttf
 *.otf
 *.ttf.gz
 *.otf.gz
+
+# ignore root copies of scripts if anyone uses them
+/*.sh
+/*.bat
 
 # don't share the dirty secrets
 TODO.txt

@@ -2,11 +2,8 @@
 
 package etxt
 
-import "os"
 import "image"
 import "image/color"
-import "image/png"
-import "log"
 
 import "testing"
 
@@ -63,8 +60,10 @@ func TestSetGet(t *testing.T) {
 }
 
 func TestSelectionRect(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
 	renderer := NewStdRenderer()
-	renderer.SetFont(testFont)
+	renderer.SetFont(testFontA)
 	renderer.SetCacheHandler(NewDefaultCache(1024).NewHandler())
 	renderer.SetDirection(RightToLeft)
 
@@ -85,7 +84,7 @@ func TestSelectionRect(t *testing.T) {
 	testGlyphs := make([]GlyphIndex, 0, len("hey ho"))
 	var buffer sfnt.Buffer
 	for _, codePoint := range "hey ho" {
-		index, err := testFont.GlyphIndex(&buffer, codePoint)
+		index, err := testFontA.GlyphIndex(&buffer, codePoint)
 		if err != nil { panic(err) }
 		if index == 0 { panic(err) }
 		testGlyphs = append(testGlyphs, index)
@@ -149,9 +148,11 @@ func TestSelectionRect(t *testing.T) {
 
 // the real consistency test
 func TestStringVsGlyph(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
 	renderer := NewStdRenderer()
 	renderer.SetSizePx(16)
-	renderer.SetFont(testFont)
+	renderer.SetFont(testFontA)
 	renderer.SetQuantizerStep(64, 64)
 	renderer.SetColor(color.RGBA{0, 0, 0, 255}) // black
 
@@ -169,19 +170,19 @@ func TestStringVsGlyph(t *testing.T) {
 	testText := "for lack of better words"
 	var buffer sfnt.Buffer
 
-	missing, err := GetMissingRunes(testFont, testText)
+	missing, err := GetMissingRunes(testFontA, testText)
 	if err != nil { panic(err) }
 	if len(missing) > 0 { panic("missing runes to test") }
 
 	// get text as glyphs
 	testGlyphs := make([]GlyphIndex, 0, len(testText))
 	for _, codePoint := range testText {
-		index, err := testFont.GlyphIndex(&buffer, codePoint)
+		index, err := testFontA.GlyphIndex(&buffer, codePoint)
 		if err != nil {
-			t.Fatalf("Unexpected error on testFont.GlyphIndex: " + err.Error())
+			t.Fatalf("Unexpected error on testFontA.GlyphIndex: " + err.Error())
 		}
 		if index == 0 {
-			t.Fatalf("testFont.GlyphIndex missing rune '" + string(codePoint) + "'")
+			t.Fatalf("testFontA.GlyphIndex missing rune '" + string(codePoint) + "'")
 		}
 		testGlyphs = append(testGlyphs, index)
 	}
@@ -257,8 +258,10 @@ func drawGlyphs(renderer *Renderer, glyphIndices []GlyphIndex, x, y int) fixed.P
 }
 
 func TestDrawCached(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
 	renderer := NewStdRenderer()
-	renderer.SetFont(testFont)
+	renderer.SetFont(testFontA)
 	renderer.SetCacheHandler(NewDefaultCache(1024).NewHandler())
 	target := image.NewAlpha(image.Rect(0, 0, 64, 64))
 	renderer.SetTarget(target)
@@ -269,9 +272,11 @@ func TestDrawCached(t *testing.T) {
 }
 
 func TestGtxtMixModes(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
 	target := image.NewRGBA(image.Rect(0, 0, 64, 64))
 	renderer := NewStdRenderer()
-	renderer.SetFont(testFont)
+	renderer.SetFont(testFontA)
 	renderer.SetSizePx(24)
 	renderer.SetTarget(target)
 
@@ -362,8 +367,10 @@ func TestGtxtMixModes(t *testing.T) {
 }
 
 func TestAlignBound(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
 	renderer := NewStdRenderer()
-	renderer.SetFont(testFont)
+	renderer.SetFont(testFontA)
 	renderer.SetAlign(YCenter, XCenter)
 	horzPadder := &esizer.HorzPaddingSizer{}
 	renderer.SetSizer(horzPadder)
@@ -398,13 +405,4 @@ func TestAlignBound(t *testing.T) {
 			// }
 		}
 	}
-}
-
-func debugExport(name string, img image.Image) {
-	file, err := os.Create(name)
-	if err != nil { log.Fatal(err) }
-	err = png.Encode(file, img)
-	if err != nil { log.Fatal(err) }
-	err = file.Close()
-	if err != nil { log.Fatal(err) }
 }

@@ -1,39 +1,16 @@
-//go:build gtxt && test
+//go:build bench
 
 package emask
 
-import "os"
 import "log"
-import "io/fs"
-import "errors"
-import "strings"
-
 import "testing"
 
 import "golang.org/x/image/font/sfnt"
 import "golang.org/x/image/math/fixed"
 
-var testFont *sfnt.Font
-func init() { // parse test font
-	workDir, err := os.Getwd()
-	if err != nil { log.Fatal(err) }
-
-	fontPath := "test_font.ttf"
-	_, err = os.Stat(fontPath)
-	if errors.Is(err, fs.ErrNotExist) && strings.HasSuffix(workDir, "/etxt/emask") {
-		fontPath = "../test_font.ttf" // search on etxt/ instead
-	}
-
-	fontBytes, err := os.ReadFile(fontPath)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) { log.Fatal(err) }
-		log.Fatal("etxt requires '" + fontPath + "' file to run benchmarks")
-	}
-	testFont, err = sfnt.Parse(fontBytes)
-	if err != nil { log.Fatal(err) }
-}
-
 func BenchmarkFauxBoldWhole(b *testing.B) {
+	if benchFont == nil { b.SkipNow() }
+
 	contours, rasterizer, dot := getBenchMinData()
 	rasterizer.SetExtraWidth(1)
 
@@ -44,6 +21,8 @@ func BenchmarkFauxBoldWhole(b *testing.B) {
 }
 
 func BenchmarkFauxBoldWhole7(b *testing.B) {
+	if benchFont == nil { b.SkipNow() }
+
 	contours, rasterizer, dot := getBenchMinData()
 	rasterizer.SetExtraWidth(7)
 
@@ -54,6 +33,8 @@ func BenchmarkFauxBoldWhole7(b *testing.B) {
 }
 
 func BenchmarkFauxBoldFract(b *testing.B) {
+	if benchFont == nil { b.SkipNow() }
+
 	contours, rasterizer, dot := getBenchMinData()
 	rasterizer.SetExtraWidth(0.7)
 
@@ -64,6 +45,8 @@ func BenchmarkFauxBoldFract(b *testing.B) {
 }
 
 func BenchmarkFauxBoldFract7(b *testing.B) {
+	if benchFont == nil { b.SkipNow() }
+
 	contours, rasterizer, dot := getBenchMinData()
 	rasterizer.SetExtraWidth(7.4)
 
@@ -74,6 +57,8 @@ func BenchmarkFauxBoldFract7(b *testing.B) {
 }
 
 func BenchmarkFauxOblique(b *testing.B) {
+	if benchFont == nil { b.SkipNow() }
+
 	contours, rasterizer, dot := getBenchMinData()
 	rasterizer.SetSkewFactor(0.8) // (this is a rather extreme value)
 
@@ -84,6 +69,8 @@ func BenchmarkFauxOblique(b *testing.B) {
 }
 
 func BenchmarkFauxNone(b *testing.B) {
+	if benchFont == nil { b.SkipNow() }
+
 	contours, rasterizer, dot := getBenchMinData()
 
 	b.ResetTimer()
@@ -93,13 +80,15 @@ func BenchmarkFauxNone(b *testing.B) {
 }
 
 func BenchmarkDefault(b *testing.B) {
+	if benchFont == nil { b.SkipNow() }
+
 	var buffer sfnt.Buffer
 	size := fixed.Int26_6(72 << 6) // in pixels
 	rasterizer := DefaultRasterizer{}
 	_ = rasterizer.CacheSignature()
-	index, err := testFont.GlyphIndex(&buffer, 'g')
+	index, err := benchFont.GlyphIndex(&buffer, 'g')
 	if err != nil { log.Fatal(err) }
-	contours, err := testFont.LoadGlyph(&buffer, index, size, nil)
+	contours, err := benchFont.LoadGlyph(&buffer, index, size, nil)
 	if err != nil { log.Fatal(err) }
 	dot := fixed.P(0, 0)
 
@@ -114,9 +103,9 @@ func getBenchMinData() (sfnt.Segments, *FauxRasterizer, fixed.Point26_6) {
 	size := fixed.Int26_6(72 << 6) // in pixels
 	rasterizer := FauxRasterizer{}
 	_ = rasterizer.CacheSignature()
-	index, err := testFont.GlyphIndex(&buffer, 'g')
+	index, err := benchFont.GlyphIndex(&buffer, 'g')
 	if err != nil { log.Fatal(err) }
-	contours, err := testFont.LoadGlyph(&buffer, index, size, nil)
+	contours, err := benchFont.LoadGlyph(&buffer, index, size, nil)
 	if err != nil { log.Fatal(err) }
 	return contours, &rasterizer, fixed.P(0, 0)
 }

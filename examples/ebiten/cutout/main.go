@@ -64,7 +64,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 		self.backRenderer.Traverse(string(line), fixed.P(0, 0),
 			func (dot fixed.Point26_6, _ rune, index etxt.GlyphIndex) {
 				mask := self.backRenderer.LoadGlyphMask(index, dot)
-				glyphWidth, glyphHeight := mask.Image.Size()
+				glyphWidth, glyphHeight := mask.Size()
 				dot.X = x - fixed.Int26_6(glyphWidth << 5)
 				dot.Y = y - fixed.Int26_6(glyphHeight << 5)
 				self.backRenderer.DefaultDrawFunc(dot, mask, index)
