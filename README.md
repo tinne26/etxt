@@ -95,14 +95,10 @@ If you want flashier examples you will find [many more](https://github.com/tinne
 Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time stuff. In particular, be careful to not accidentally use `gtxt` with Ebitengine (they are compatible in many cases, but performance will die).
 
 ## Should I bother learning to use etxt?
-If you are only dealing with text rendering incidentally and **ebiten/text** does the job well enough for you, feel free to stay with that.
-
-The main consideration when using **etxt** is that you need to be minimally acquainted with how fonts work. [FreeType glyph conventions](https://freetype.org/freetype2/docs/glyphs/index.html) is the go to reference that you *really should be reading* (up to section IV or V).
+If you are only dealing with text rendering incidentally and **ebiten/text** does the job well enough for you, feel free to stay with that. If you are having trouble with fonts, don't know where to go next or would like a more complete overview of the landscape, check out [this document](https://github.com/tinne26/etxt/blob/main/docs/panorama.md).
 
 ## Any future plans?
-This package is already quite solid, there are only a few points left to improve:
-- Adding a few more effects (hollow text, shaders, etc).
-- Missing a couple important examples (crisp UI and shaders).
+The package has been fairly ok in terms of stability and robustness from v0.0.1 to v0.0.8, but I've been accumulating ideas for improvements that I'd like to make in 2023. See this [discussion](https://github.com/tinne26/etxt/discussions/7) for more details.
 
 If I get really bored, I'd also like to look into:
 - Contributing to Golang's **sfnt** to [expose more tables](https://github.com/golang/go/issues/45325) and allow the creation of minimal packages to do basic [text shaping](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) in arabic or other complex scripts.
@@ -113,4 +109,4 @@ If I get really bored, I'd also like to look into:
 - For testing, see the instructions on [`etxt/test`](https://github.com/tinne26/etxt/blob/main/test).
 - If you have any questions or suggestions for improvements feel free to ask, I'm always happy to explain or discuss.
 - I'm not looking for contributors nor general help.
-- The API is reasonably stable, but I'll never hesitate to break compatibility if it's to make the library better. I also tend to update dependency versions when tagging new versions.
+- The API has been reasonably stable for the last year, but I'll never hesitate to break compatibility if it's to make the library better (actually, I have the first [big update](https://github.com/tinne26/etxt/discussions/7) planned for 2023). I also tend to update dependency versions when tagging new versions and to keep up with the improvements on Ebitengine itself.
