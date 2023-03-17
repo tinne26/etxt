@@ -1,5 +1,7 @@
 package font
 
+import "io"
+import "errors"
 import "testing"
 
 func TestLibrary(t *testing.T) {
@@ -68,6 +70,15 @@ func TestLibrary(t *testing.T) {
 	if !lib.RemoveFont(name) {
 		t.Fatalf("expected font %s to be present and possible to remove", name)
 	}
+	file, err := testfs.Open(testFontsDir + "/" + testPathA)
+	if err != nil { file.Close() ; panic(err) }
+	bytes, err := io.ReadAll(file)
+	file.Close()
+	if err != nil { panic(err) }
+	fname, err = lib.ParseFromBytes(bytes)
+	if err != nil { t.Fatalf("unexpected error '%s'", err) }
+	if fname != name { t.Fatalf("unexpected name '%s' (expected '%s')", fname, name) }
+	lib.RemoveFont(fname)
 
 	lname, err := lib.AddFont(font)
 	if err != nil {
@@ -77,8 +88,26 @@ func TestLibrary(t *testing.T) {
 		t.Fatalf("expected AddFont() name return to be '%s', but got '%s' instead", name, lname)
 	}
 
+	mustErr := true
+	err = lib.EachFont(func(string, *Font) error {
+		if mustErr {
+			mustErr = false
+			return errors.New("manual error test")
+		}
+		t.Fatal("EachFont failed to stop on the first iteration")
+		return nil
+	})
+	if err == nil || err.Error() != "manual error test" {
+		t.Fatalf("expected \"manual error test\" error, but got \"%s\" instead", err)
+	}
+
 	if doesNotPanic(func() { lib.AddFont(nil) }) {
 		t.Fatalf("lib.AddFont(nil) should have panicked")
 	}
 	releaseSfntBuffer(sfntBuffer) // critical cleanup after the panic
+
+	added, skipped, err = lib.ParseAllFromPath("unexistent/path/ffs/dont-tell-me")
+	if added != 0 { t.Fatalf("added != 0") }
+	if skipped != 0 { t.Fatalf("skipped != 0") }
+	if err == nil { t.Fatalf("seriously?") }
 }
