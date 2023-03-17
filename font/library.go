@@ -13,13 +13,13 @@ import "golang.org/x/image/font/sfnt"
 // A Library doesn't know about system fonts, but there are other
 // packages out there that can find those for you if you need that.
 type Library struct {
-	fonts map[string]*Font
+	fonts map[string]*sfnt.Font
 }
 
 // Creates a new, empty font library.
 func NewLibrary() *Library {
 	return &Library {
-		fonts: make(map[string]*Font),
+		fonts: make(map[string]*sfnt.Font),
 	}
 }
 
@@ -51,10 +51,10 @@ func (self *Library) HasFont(name string) bool {
 // ways to figure it out:
 //  - Add the fonts into the font library and print their names with
 //    [Library.EachFont]().
-//  - Use the [GetName]() function directly on a [*Font] object.
+//  - Use the [GetName]() function directly on a font.
 //  - Open a font with the OS's default font viewer; the name is usually
 //    on the title and/or first line of text.
-func (self *Library) GetFont(name string) *Font {
+func (self *Library) GetFont(name string) *sfnt.Font {
 	font, found := self.fonts[name]
 	if found { return font }
 	return nil
@@ -110,7 +110,7 @@ func (self *Library) ParseFromBytes(fontBytes []byte) (string, error) {
 }
 
 var ErrAlreadyPresent = errors.New("font already present in the library")
-func (self *Library) addNewFont(font *Font, name string) error {
+func (self *Library) addNewFont(font *sfnt.Font, name string) error {
 	if self.HasFont(name) { return ErrAlreadyPresent }
 	self.fonts[name] = font
 	return nil
@@ -124,11 +124,11 @@ func (self *Library) addNewFont(font *Font, name string) error {
 // return nil.
 //
 // Example code to print the names of all the fonts in the library:
-//   library.EachFont(func(name string, _ *font.Font) error {
+//   library.EachFont(func(name string, _ *etxt.Font) error {
 //       fmt.Println(name)
 //       return nil
 //   })
-func (self *Library) EachFont(fontFunc func(string, *Font) error) error {
+func (self *Library) EachFont(fontFunc func(string, *sfnt.Font) error) error {
 	for name, font := range self.fonts {
 		err := fontFunc(name, font)
 		if err != nil { return err }

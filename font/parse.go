@@ -15,7 +15,7 @@ import "golang.org/x/image/font/sfnt"
 // [Library] instead.
 //
 // [sfnt.Parse]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Parse.
-func ParseFromBytes(fontBytes []byte) (*Font, string, error) {
+func ParseFromBytes(fontBytes []byte) (*sfnt.Font, string, error) {
 	newFont, err := sfnt.Parse(fontBytes)
 	if err != nil { return nil, "", err }
 	fontName, err := GetName(newFont)
@@ -27,7 +27,7 @@ func ParseFromBytes(fontBytes []byte) (*Font, string, error) {
 //
 // This is a low level function; you may prefer to use a
 // [Library] instead.
-func ParseFromPath(path string) (*Font, string, error) {
+func ParseFromPath(path string) (*sfnt.Font, string, error) {
 	// check font path validity
 	ok := hasValidFontExtension(path)
 	if !ok {
@@ -44,7 +44,7 @@ func ParseFromPath(path string) (*Font, string, error) {
 //
 // This is a low level function; you may prefer to use a
 // [Library] instead.
-func ParseFromFS(filesys fs.FS, path string) (*Font, string, error) {
+func ParseFromFS(filesys fs.FS, path string) (*sfnt.Font, string, error) {
 	// check font path validity
 	ok := hasValidFontExtension(path)
 	if !ok {
@@ -59,7 +59,7 @@ func ParseFromFS(filesys fs.FS, path string) (*Font, string, error) {
 
 // ---- helpers ----
 
-func parseFontFileAndClose(file io.ReadCloser) (*Font, string, error) {
+func parseFontFileAndClose(file io.ReadCloser) (*sfnt.Font, string, error) {
 	fontBytes, err := io.ReadAll(file)
 	if err != nil {
 		_ = file.Close()

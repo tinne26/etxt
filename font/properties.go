@@ -4,10 +4,6 @@ import "golang.org/x/image/font/sfnt"
 import "sync/atomic"
 import "errors"
 
-// A handy type alias for sfnt.Font so you don't need to
-// import it when already working with etxt/font.
-type Font = sfnt.Font
-
 var ErrNotFound = errors.New("font property not found or empty")
 
 // We allocate one sfnt.Buffer so it can be used in FontProperty() calls.

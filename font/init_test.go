@@ -7,14 +7,15 @@ import "os"
 import "fmt"
 import "embed"
 import "testing"
+import "golang.org/x/image/font/sfnt"
 
 //go:embed test/*
 var testfs embed.FS
 
 var testFontsDir string = "test"
 var testPathA string
-var testFontA *Font
-var testFontB *Font
+var testFontA *sfnt.Font
+var testFontB *sfnt.Font
 
 func TestCompleteness(t *testing.T) {
 	if len(testWarnings) > 0 {

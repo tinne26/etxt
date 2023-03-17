@@ -3,6 +3,7 @@ package font
 import "io"
 import "errors"
 import "testing"
+import "golang.org/x/image/font/sfnt"
 
 func TestLibrary(t *testing.T) {
 	lib := NewLibrary()
@@ -27,13 +28,13 @@ func TestLibrary(t *testing.T) {
 		t.Fatal("well, well, well...")
 	}
 
-	lib.EachFont(func(fname string, _ *Font) error {
+	lib.EachFont(func(fname string, _ *sfnt.Font) error {
 		if fname != name { t.Fatalf("unexpected font %s", fname) }
 		return nil
 	})
 	if lib.RemoveFont("totally-not-fake-yay") { t.Fatal("unexpected remove") }
 	if !lib.RemoveFont(name) { t.Fatal("unexpected remove failure") }
-	lib.EachFont(func(fname string, _ *Font) error {
+	lib.EachFont(func(fname string, _ *sfnt.Font) error {
 		t.Fatalf("unexpected font %s", fname)
 		return nil
 	})
@@ -89,7 +90,7 @@ func TestLibrary(t *testing.T) {
 	}
 
 	mustErr := true
-	err = lib.EachFont(func(string, *Font) error {
+	err = lib.EachFont(func(string, *sfnt.Font) error {
 		if mustErr {
 			mustErr = false
 			return errors.New("manual error test")
