@@ -5,7 +5,7 @@ package fract
 // 26 bits represent the integer part of the value, while the remaining 6 bits
 // represent the decimal part. For an intuitive understanding, if you can
 // understand that var ms Millis = 1000 is storing the equivalent to 1 second,
-// with Unit, instead of thousandths of a value, you are storing 64ths. So,
+// with Unit, instead of 1/1000ths of a value, you are storing 1/64ths. So,
 // var pixels Unit = 64 would mean 1 pixel, and 96 would be 1.5 pixels.
 //
 // The internal representation is compatible with [fixed.Int26_6].
@@ -19,15 +19,99 @@ func (self Unit) IsWhole() bool {
 	return self & 0x3F == 0
 }
 
+// Returns the absolute value of the Unit.
+func (self Unit) Abs() Unit {
+	if self >= 0 { return self }
+	return -self
+}
+
 // Returns only the fractional part of the Unit.
-// TODO: what about negative values?
 func (self Unit) Fract() Unit {
 	return self % 64
 }
 
+// Multiplies the unit by the given value, rounding away from zero.
 func (self Unit) Mul(multiplier Unit) Unit {
 	mx64 := int64(self)*int64(multiplier)
-	return Unit((mx64 + 32) >> 6)
+	if mx64 >= 0 { return Unit((mx64 + 32) >> 6) }
+	return Unit((mx64 + 31) >> 6)
+}
+
+// Note: I also tested this, but of course sometimes +1 results are
+// closer due to truncation... and I just don't think there's any
+// good use-case for it. Worsening precision to avoid one addition
+// doesn't seem healthy.
+// func (self Unit) MulTrunc(multiplier Unit) Unit {
+// 	return Unit(int64(self)*int64(multiplier) >> 6)
+// }
+
+// Multiplies the unit by the given value, rounding up in case of ties.
+func (self Unit) MulUp(multiplier Unit) Unit {
+	mx64 := int64(self)*int64(multiplier)
+	return Unit((mx64 + 32) >> 6) // round up
+}
+
+// Multiplies the unit by the given value, rounding down in case of ties.
+func (self Unit) MulDown(multiplier Unit) Unit {
+	mx64 := int64(self)*int64(multiplier)
+	return Unit((mx64 + 31) >> 6) // round down
+}
+
+// Divides the unit by the given divisor, rounding away from zero in
+// case of ties.
+func (self Unit) Div(divisor Unit) Unit {
+	// I don't know why people share obviously lame formulas for fixed
+	// point division on the internet. Sure, they are fast and whatever...
+	// but the results are so obviously off. So I decided to figure it out
+	// on my own. The key idea is that we need a rounding factor to be 
+	// applied before the actual division, unlike in the multiplication
+	// where we apply the rounding afterwards. The natural rounding factor
+	// here would be divisor/2, but if divisor is odd, this will result
+	// in a slightly incorrect rounding value that will make the operation
+	// fail in some cases. Instead, if we multiply everything by 2 again,
+	// since we have the bits for it, there's no problem using 'divisor'
+	// directly as the rounding factor. Well, there's also some sign
+	// trickiness, but that's expanded below, you can figure it out.
+	numerator   := int64(self)    << 7
+	denominator := int64(divisor) << 1
+	if (self >= 0) == (divisor >= 0) { // *
+		numerator += int64(divisor)
+	} else {
+		numerator -= int64(divisor)
+	}
+	return Unit(numerator/denominator)
+	// * If you wanted to round towards zero, instead, you would
+	// have to expand the (self >= 0) == (divisor >= 0) expression
+	// into something like this:
+	//    if self >= 0 {
+	// 	   if divisor >= 0 { // +/+
+	// 		   numerator += int64(divisor) - 1
+	// 	   } else { // +/-
+	// 		   numerator -= int64(divisor) + 1
+	// 	   }
+	//    } else { // self < 0
+	// 	   if divisor >= 0 { // -/+
+	// 		   numerator -= int64(divisor) - 1
+	// 	   } else { // -/-
+	// 		   numerator += int64(divisor) + 1
+	// 	   }
+	//    }
+	// You can try yourself: changing the +/- values you can make
+	// it adjust the rounding. I only picked the simplest version.
+	// The tests include a debugRounding variable that can be used
+	// to visualize the results of any roundings you may want to
+	// experiment with.
+}
+
+// Rescales the value from the 'from' scale to the 'to'
+// scale. For example, if the value was 10 on a scale of
+// 1000, rescaling it to a scale of 100 now the value
+// will be 1. A rule of three. Heavily used for scaling
+// font sizes in units to specific ppem sizes.
+func (self Unit) Rescale(from, to Unit) Unit {
+	// TODO: optimize to do everything at once and
+	//       not lose precision
+	return self.Mul(to).Div(from)
 }
 
 func (self Unit) ToFloat64() float64 {
@@ -36,8 +120,6 @@ func (self Unit) ToFloat64() float64 {
 	// slower. even with amd64 assembly, lack of inlining kills perf.
 	// also, https://go-review.googlesource.com/c/go/+/291229
 }
-
-// TODO: method to decompose in floor + positive fract for glyph drawing?
 
 // Defaults to [Unit.ToIntHalfUp](). For the fastest possible
 // conversion to int, use [Unit.ToIntFloor]() instead.
@@ -156,4 +238,10 @@ func (self Unit) QuantizeDown(step Unit) Unit {
 		if sum > 64 { sum = 64 }
 	}
 	return self.Floor() + sum
+}
+
+// Decomposes a number in its floor value and a positive fractional
+// part. Useful for determining glyph placement and fractional mask.
+func (self Unit) FloorAndFract() (int, Unit) {
+	return self.ToIntFloor(), self & 0x3F
 }

@@ -1,9 +1,10 @@
-//go:build test
-
 package fract
 
 import "testing"
 import "math"
+import crand "crypto/rand"
+import mrand "math/rand"
+import "encoding/binary"
 
 func TestToFloat64(t *testing.T) {
 	tests := []struct {
@@ -406,7 +407,7 @@ func TestHalfAway(t *testing.T) {
 	}
 }
 
-func TestMul(t *testing.T) {
+func TestMulUp(t *testing.T) {
 	tests := []struct {
 		in  Unit
 		mul Unit
@@ -426,11 +427,210 @@ func TestMul(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		out := test.in.Mul(test.mul).ToFloat64()
+		out := test.in.MulUp(test.mul).ToFloat64()
 		if out != test.out {
 			str := "test #%d: in %d (%f) * %d (%f), expected out %f, but got %f"
 			t.Fatalf(str, i, test.in, test.in.ToFloat64(), test.mul, test.mul.ToFloat64(), test.out, out)
 		}
+	}
+}
+
+func NewRng() *mrand.Rand {
+	var bytes [8]byte
+	n, err := crand.Read(bytes[:])
+	if err != nil { panic(err) }
+	if n != 8 { panic("spec violation") }
+	seed := int64(binary.BigEndian.Uint64(bytes[:]))
+	return mrand.New(mrand.NewSource(seed))
+}
+
+func TestAbs(t *testing.T) {
+	rng := NewRng()
+	for i := 0; i < 9999; i++ {
+		value := Unit(rng.Intn(64*8) - 64*4)
+		if value.Abs() < 0 { t.Fatalf("negative abs() value for %d", value) }
+		if value.Abs() != value && value.Abs() != -value {
+			t.Fatalf("inconsistent abs() value for %d", value)
+		}
+	}
+}
+
+func TestMulRng(t *testing.T) {
+	rng := NewRng()
+	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	for i := 0; i < 9999; i++ {
+		valueA := Unit(rng.Intn(64*8) - 64*4)
+		valueB := Unit(rng.Intn(64*8) - 64*4)
+		
+		resultFloat := valueA.ToFloat64()*valueB.ToFloat64()
+		resultFixed := valueA.Mul(valueB)
+		dist := abs(resultFloat - resultFixed.ToFloat64())
+		distPlus1  := abs(resultFloat - (resultFixed + 1).ToFloat64())
+		distMinus1 := abs(resultFloat - (resultFixed - 1).ToFloat64())
+		var bestFixed = resultFixed
+		if distPlus1  < dist { bestFixed = resultFixed + 1 }
+		if distMinus1 < dist { bestFixed = resultFixed - 1 }
+		if bestFixed != resultFixed {
+			t.Fatalf(
+				"%d*%d (%f*%f) = %f, but got %d (%f) when %d (%f) is closer",
+				valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+				resultFixed, resultFixed.ToFloat64(), bestFixed, bestFixed.ToFloat64(),
+			)
+		}
+	}
+}
+
+func TestMulUpRng(t *testing.T) {
+	rng := NewRng()
+	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	for i := 0; i < 9999; i++ {
+		valueA := Unit(rng.Intn(64*8) - 64*4)
+		valueB := Unit(rng.Intn(64*8) - 64*4)
+		
+		resultFloat := valueA.ToFloat64()*valueB.ToFloat64()
+		resultFixed := valueA.MulUp(valueB)
+		dist := abs(resultFloat - resultFixed.ToFloat64())
+		if dist > HalfDelta {
+			t.Fatalf(
+				"%d*%d (%f*%f) = %f, but got %d (%f) (diff > Delta/2)",
+				valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+				resultFixed, resultFixed.ToFloat64(),
+			)
+		}
+		distPlus1  := abs(resultFloat - (resultFixed + 1).ToFloat64())
+		distMinus1 := abs(resultFloat - (resultFixed - 1).ToFloat64())
+		var bestFixed = resultFixed
+		if distPlus1  < dist { bestFixed = resultFixed + 1 }
+		if distMinus1 < dist { bestFixed = resultFixed - 1 }
+		if bestFixed != resultFixed {
+			t.Fatalf(
+				"%d*%d (%f*%f) = %f, but got %d (%f) when %d (%f) is closer",
+				valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+				resultFixed, resultFixed.ToFloat64(), bestFixed, bestFixed.ToFloat64(),
+			)
+		}
+		if dist == HalfDelta { // hit around 4.5% of the time
+			if distPlus1 == HalfDelta {
+				t.Fatalf(
+					"%d*%d (%f*%f) = %f, but got %d (%f) when %d (%f) is at the same distance but rounding up",
+					valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+					resultFixed, resultFixed.ToFloat64(), (resultFixed + 1), (resultFixed + 1).ToFloat64(),
+				)
+			}
+		}
+	}
+}
+
+func TestMulDownRng(t *testing.T) {
+	rng := NewRng()
+	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	for i := 0; i < 9999; i++ {
+		valueA := Unit(rng.Intn(64*8) - 64*4)
+		valueB := Unit(rng.Intn(64*8) - 64*4)
+		
+		resultFloat := valueA.ToFloat64()*valueB.ToFloat64()
+		resultFixed := valueA.MulDown(valueB)
+		dist := abs(resultFloat - resultFixed.ToFloat64())
+		if dist > HalfDelta {
+			t.Fatalf(
+				"%d*%d (%g*%g) = %g, but got %d (%g) (diff > Delta/2)",
+				valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+				resultFixed, resultFixed.ToFloat64(),
+			)
+		}
+		distPlus1  := abs(resultFloat - (resultFixed + 1).ToFloat64())
+		distMinus1 := abs(resultFloat - (resultFixed - 1).ToFloat64())
+		var bestFixed = resultFixed
+		if distPlus1  < dist { bestFixed = resultFixed + 1 }
+		if distMinus1 < dist { bestFixed = resultFixed - 1 }
+		if bestFixed != resultFixed {
+			t.Fatalf(
+				"%d*%d (%g*%g) = %g, but got %d (%g) when %d (%g) is closer",
+				valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+				resultFixed, resultFixed.ToFloat64(), bestFixed, bestFixed.ToFloat64(),
+			)
+		}
+		if dist == HalfDelta { // hit around 4.5% of the time
+			if distMinus1 == HalfDelta {
+				t.Fatalf(
+					"%d*%d (%g*%g) = %f, but got %d (%g) when %d (%g) is at the same distance but rounding down",
+					valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+					resultFixed, resultFixed.ToFloat64(), (resultFixed - 1), (resultFixed - 1).ToFloat64(),
+				)
+			}
+		}
+	}
+}
+
+func TestDivRng(t *testing.T) {
+	rng := NewRng()
+	var roundedUp, roundedDown, roundedTowardZero, roundedAwayZero int
+	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	for i := 0; i < 9999; i++ {
+		valueA := Unit(rng.Intn(64*8) - 64*4)
+		valueB := Unit(rng.Intn(64*8) - 64*4)
+		if valueB == 0 { valueB = 64 }
+		
+		resultFloat := valueA.ToFloat64()/valueB.ToFloat64()
+		resultFixed := valueA.Div(valueB)
+		dist := abs(resultFloat - resultFixed.ToFloat64())
+		if dist > abs(valueB.ToFloat64()) {
+			t.Fatalf(
+				"%d/%d (%g/%g) = %g, but got %d (%g) with too high diff %g",
+				valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+				resultFixed, resultFixed.ToFloat64(), dist,
+			)
+		}
+		distPlus1  := abs(resultFloat - (resultFixed + 1).ToFloat64())
+		distMinus1 := abs(resultFloat - (resultFixed - 1).ToFloat64())
+		var bestFixed = resultFixed
+		if distPlus1  < dist { bestFixed = resultFixed + 1 }
+		if distMinus1 < dist { bestFixed = resultFixed - 1 }
+		if bestFixed != resultFixed {
+			minDist := distPlus1
+			if distMinus1 < minDist { minDist = distMinus1 }
+			t.Fatalf(
+				"%d/%d (%g/%g) = %g, but got %d (%g) when %d (%g) is closer (diff %g vs %g) (iter = %d)",
+				valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
+				resultFixed, resultFixed.ToFloat64(), bestFixed, bestFixed.ToFloat64(),
+				dist, minDist, i,
+			)
+		}
+		if dist == distPlus1 && dist == distMinus1 { t.Fatalf("wat") }
+		
+		// rounding analysis, see debugRounding below
+		if distPlus1 == dist {
+			roundedDown += 1
+			if resultFloat < 0 {
+				roundedAwayZero += 1
+			} else {
+				roundedTowardZero += 1
+			}
+		}
+		if distMinus1 == dist {
+			roundedUp += 1
+			if resultFloat < 0 {
+				roundedTowardZero += 1
+			} else {
+				roundedAwayZero += 1
+			}
+		}
+	}
+
+	debugRounding := false // analyze rounding with this
+	if debugRounding {
+		t.Fatalf(
+			"roundings: up = %d, down = %d, toward zero = %d, away zero = %d",
+			roundedUp, roundedDown, roundedTowardZero, roundedAwayZero,
+		)
+	}
+
+	// expect implementation to round away from zero
+	if roundedTowardZero != 0 {
+		t.Fatalf(
+			"expected all rounding to be away from zero, but got %d roundings towards zero",
+			roundedTowardZero,
+		)
 	}
 }
 
@@ -476,6 +676,15 @@ func TestQuantizeUp(t *testing.T) {
 			t.Fatalf(str, i, test.in, test.in.ToFloat64(), test.step, out, out.ToFloat64(), (out & 0x3F), test.step, mod)
 		}
 	}
+
+	// test expected panics
+	for _, value := range []Unit{0, 65, -47, 1238} {
+		func() {
+			defer func(){ _ = recover() }()
+			Unit(0).QuantizeUp(value)
+			t.Fatalf("expected %d to panic", value)
+		}()
+	}
 }
 
 func TestQuantizeDown(t *testing.T) {
@@ -518,6 +727,26 @@ func TestQuantizeDown(t *testing.T) {
 		if mod != 0 {
 			str := "test #%d: in %d (%f), step %d, out = %d (%f), fractBits %d %% step %d == %d (!= 0)"
 			t.Fatalf(str, i, test.in, test.in.ToFloat64(), test.step, out, out.ToFloat64(), (out & 0x3F), test.step, mod)
+		}
+	}
+
+	// test expected panics
+	for _, value := range []Unit{0, 65, -47, 1238} {
+		func() {
+			defer func(){ _ = recover() }()
+			Unit(0).QuantizeDown(value)
+			t.Fatalf("expected %d to panic", value)
+		}()
+	}
+}
+
+func TestFloorAndFract(t *testing.T) {
+	rng := NewRng()
+	for i := 0; i < 9999; i++ {
+		value := Unit(rng.Intn(64*64) - 64*32)
+		floor, fract := value.FloorAndFract()
+		if FromInt(floor) + fract != value {
+			t.Fatalf("incorrect floor and fract %d (int) and %d for value %d", floor, fract, value)
 		}
 	}
 }
