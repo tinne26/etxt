@@ -190,10 +190,6 @@ func TestToIntHalfUp(t *testing.T) {
 			str := "test #%d: in %d (%f), expected out %d, but got %d"
 			t.Fatalf(str, i, test.in, test.in.ToFloat64(), test.out, out)
 		}
-		if out != test.in.ToInt() {
-			str := "test #%d: ToIntHalfUp() != ToInt() (with in %d (%f))"
-			t.Fatalf(str, i, test.in, test.in.ToFloat64())
-		}
 	}
 }
 
@@ -235,6 +231,12 @@ func TestToIntHalfAway(t *testing.T) {
 		if out != test.out {
 			str := "test #%d: in %d (%f), away %d, expected out %d, but got %d"
 			t.Fatalf(str, i, test.in, test.in.ToFloat64(), test.ref, test.out, out)
+		}
+		if test.ref == 0 {
+			if out != test.in.ToInt() {
+				str := "test #%d: ToIntHalfAway(0) != ToInt() (with in %d (%f))"
+				t.Fatalf(str, i, test.in, test.in.ToFloat64())
+			}
 		}
 	}
 }

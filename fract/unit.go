@@ -19,13 +19,13 @@ func (self Unit) IsWhole() bool {
 	return self & 0x3F == 0
 }
 
-// Returns the absolute value of the Unit.
+// Returns the absolute value of the unit.
 func (self Unit) Abs() Unit {
 	if self >= 0 { return self }
 	return -self
 }
 
-// Returns only the fractional part of the Unit.
+// Returns only the fractional part of the unit.
 func (self Unit) Fract() Unit {
 	return self % 64
 }
@@ -129,10 +129,10 @@ func (self Unit) ToFloat64() float64 {
 	// also, https://go-review.googlesource.com/c/go/+/291229
 }
 
-// Defaults to [Unit.ToIntHalfUp](). For the fastest possible
+// Defaults to [Unit.ToIntHalfAway](0). For the fastest possible
 // conversion to int, use [Unit.ToIntFloor]() instead.
 func (self Unit) ToInt() int {
-	return self.ToIntHalfUp()
+	return self.ToIntHalfAway(0)
 }
 
 // Fastest conversion from Unit to int.
