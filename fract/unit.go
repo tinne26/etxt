@@ -103,15 +103,23 @@ func (self Unit) Div(divisor Unit) Unit {
 	// experiment with.
 }
 
-// Rescales the value from the 'from' scale to the 'to'
-// scale. For example, if the value was 10 on a scale of
-// 1000, rescaling it to a scale of 100 now the value
-// will be 1. A rule of three. Heavily used for scaling
-// font sizes in units to specific ppem sizes.
+// Rescales the value from the 'from' scale to the 'to' scale,
+// rounding away from zero. In etxt, this is often used to rescale font
+// metrics between different EM sizes (e.g. an advance of 512 on a
+// font with EM of 1024 units corresponds to an advance of 384 with
+// an EM size of 768, or 512.Rescale(1024, 768) = 384).
 func (self Unit) Rescale(from, to Unit) Unit {
-	// TODO: optimize to do everything at once and
-	//       not lose precision
-	return self.Mul(to).Div(from)
+	// this is basically an inlined form of self.Mul(to).Div(from)
+	// that avoids rounding between operations. refer to them for
+	// further implementation details
+	numerator   := (int64(self)*int64(to)) << 1
+	denominator := int64(from) << 1
+	if (numerator >= 0) == (from >= 0) {
+		numerator += int64(from)
+	} else {
+		numerator -= int64(from)
+	}
+	return Unit(numerator/denominator)
 }
 
 func (self Unit) ToFloat64() float64 {

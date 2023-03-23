@@ -634,6 +634,34 @@ func TestDivRng(t *testing.T) {
 	}
 }
 
+func TestRescaleRng(t *testing.T) {
+	rng := NewRng()
+	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	for i := 0; i < 9999; i++ {
+		value     := Unit(rng.Intn(64*32) - 64*16)
+		fromScale := Unit(rng.Intn(64*32) - 64*16)
+		toScale   := Unit(rng.Intn(64*16) - 64*8)
+		if fromScale == 0 { fromScale = 1024 }
+
+		floatRescale := (value.ToFloat64()*toScale.ToFloat64())/fromScale.ToFloat64()
+		fixedRescale := value.Rescale(fromScale, toScale)
+
+		diffZero   := abs(abs(floatRescale) - abs((fixedRescale + 0).ToFloat64()))
+		diffPlus1  := abs(abs(floatRescale) - abs((fixedRescale + 1).ToFloat64()))
+		diffMinus1 := abs(abs(floatRescale) - abs((fixedRescale - 1).ToFloat64()))
+		if diffZero > Delta {
+			t.Fatalf(
+				"on %d*%d/%d (%g*%g/%g = %g), got %d (%g), but that's too imprecise (diff = %g)",
+				value, toScale, fromScale, value.ToFloat64(), toScale.ToFloat64(),
+				fromScale.ToFloat64(), floatRescale, fixedRescale, fixedRescale.ToFloat64(),
+				diffZero,
+			)
+		}
+		if diffPlus1  < diffZero { t.Fatalf("inaccurate rescaling") }
+		if diffMinus1 < diffZero { t.Fatalf("inaccurate rescaling") }
+	}
+}
+
 func TestQuantizeUp(t *testing.T) {
 	tests := []struct {
 		step Unit
