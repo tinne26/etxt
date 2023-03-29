@@ -5,6 +5,8 @@ import "image"
 import "golang.org/x/image/font/sfnt"
 import "github.com/tinne26/etxt/fract"
 
+var _ Rasterizer = (*EdgeMarkerRasterizer)(nil)
+
 // An alternative to [DefaultRasterizer] that avoids using
 // [golang.org/x/image/vector.Rasterizer] under the hood. Results
 // are visually very similar, but performance is 3 times worse.

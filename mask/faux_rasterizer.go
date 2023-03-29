@@ -9,6 +9,8 @@ import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
 
+var _ Rasterizer = (*FauxRasterizer)(nil)
+
 // A rasterizer to draw oblique and faux-bold text. For high quality
 // results, please use the font's italic and bold versions directly
 // instead of these fake effects.

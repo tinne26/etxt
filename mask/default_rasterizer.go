@@ -7,6 +7,8 @@ import "golang.org/x/image/vector"
 import "golang.org/x/image/font/sfnt"
 import "github.com/tinne26/etxt/fract"
 
+var _ Rasterizer = (*DefaultRasterizer)(nil)
+
 // The DefaultRasterizer is a wrapper to make [golang.org/x/image/vector.Rasterizer]
 // conform to the [Rasterizer] interface.
 type DefaultRasterizer struct {
