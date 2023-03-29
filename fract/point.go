@@ -25,6 +25,10 @@ func (self Point) ToFloat64s() (x, y float64) {
 	return self.X.ToFloat64(), self.Y.ToFloat64()
 }
 
+func (self Point) ToFloat32s() (x, y float32) {
+	return self.X.ToFloat32(), self.Y.ToFloat32()
+}
+
 func (self Point) AddUnits(x, y Unit) Point {
 	self.X += x
 	self.Y += y

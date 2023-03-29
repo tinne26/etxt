@@ -25,6 +25,10 @@ func TestPoint(t *testing.T) {
 	if x != 2 || y != 1 {
 		t.Fatalf("expected (2, 1), got (%f, %f)", x, y)
 	}
+	x32, y32 := point.ToFloat32s()
+	if x32 != 2 || y32 != 1 {
+		t.Fatalf("expected (2, 1), got (%f, %f)", x32, y32)
+	}
 
 	if !point.In(UnitsToRect(128, 64, 129, 65)) {
 		t.Fatalf("point.In(rect) #1: expected inside, got outside")

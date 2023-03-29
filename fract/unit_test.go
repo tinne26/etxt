@@ -26,6 +26,25 @@ func TestToFloat64(t *testing.T) {
 	}
 }
 
+func TestToFloat32(t *testing.T) {
+	tests := []struct {
+		in  Unit
+		out float32
+	}{
+		{0, 0}, {64, 1}, {32, 0.5}, {-32, -0.5},
+		{1, 1.0/64.0}, {2, 2.0/64.0}, {-2, -2.0/64.0},
+		{3, 3.0/64.0}, {63, 63.0/64.0}, {96, 1.5},
+	}
+
+	for i, test := range tests {
+		out := test.in.ToFloat32()
+		if out != test.out {
+			str := "test #%d: in %d expected out %f, but got %f"
+			t.Fatalf(str, i, test.in, test.out, out)
+		}
+	}
+}
+
 func TestIsWhole(t *testing.T) {
 	tests := []struct {
 		in  Unit
@@ -770,13 +789,13 @@ func TestQuantizeDown(t *testing.T) {
 	}
 }
 
-func TestFloorAndFract(t *testing.T) {
+func TestFractShift(t *testing.T) {
 	rng := NewRng()
 	for i := 0; i < 9999; i++ {
 		value := Unit(rng.Intn(64*64) - 64*32)
-		floor, fract := value.FloorAndFract()
-		if FromInt(floor) + fract != value {
-			t.Fatalf("incorrect floor and fract %d (int) and %d for value %d", floor, fract, value)
+		shift := value.FractShift()
+		if value.Floor() + shift != value {
+			t.Fatalf("incorrect fract shift %d for value %d (%f)", shift, value, value.ToFloat64())
 		}
 	}
 }

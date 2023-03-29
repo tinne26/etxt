@@ -30,6 +30,12 @@ func (self Unit) Fract() Unit {
 	return self % 64
 }
 
+// Returns only the fractional part of the unit as a
+// non-negative value relative to the unit's floor.
+func (self Unit) FractShift() Unit {
+	return self & 0x3F
+}
+
 // Multiplies the unit by the given value, rounding away from zero.
 func (self Unit) Mul(multiplier Unit) Unit {
 	mx64 := int64(self)*int64(multiplier)
@@ -122,11 +128,17 @@ func (self Unit) Rescale(from, to Unit) Unit {
 	return Unit(numerator/denominator)
 }
 
+// The conversion is always exact.
 func (self Unit) ToFloat64() float64 {
 	return float64(self)/64.0 // *
 	// math.Ldexp(float64(self), -6) also sounds good and works, but it's
 	// slower. even with amd64 assembly, lack of inlining kills perf.
 	// also, https://go-review.googlesource.com/c/go/+/291229
+}
+
+// Unlike with [Unit.ToFloat64](), this conversion is not always exact.
+func (self Unit) ToFloat32() float32 {
+	return float32(self)/64.0 // TODO: test error
 }
 
 // Defaults to [Unit.ToIntHalfAway](0). For the fastest possible
@@ -246,10 +258,4 @@ func (self Unit) QuantizeDown(step Unit) Unit {
 		if sum > 64 { sum = 64 }
 	}
 	return self.Floor() + sum
-}
-
-// Decomposes a number in its floor value and a positive fractional
-// part. Useful for determining glyph placement and fractional mask.
-func (self Unit) FloorAndFract() (int, Unit) {
-	return self.ToIntFloor(), self & 0x3F
 }

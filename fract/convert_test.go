@@ -34,5 +34,17 @@ func TestFromFloat64(t *testing.T) {
 			str := "test #%d: in (%f), expected outs %d (%f) and %d (%f), but got %d (%f) and %d (%f)"
 			t.Fatalf(str, i, test.in, test.low, test.low.ToFloat64(), test.high, test.high.ToFloat64(), low, low.ToFloat64(), high, high.ToFloat64())
 		}
+		away := FromFloat64(test.in)
+		if test.in >= 0 {
+			if away != test.high {
+				str := "test #%d: expected FromFloat64(%f) to return %d (%f), but got %d (%f) instead"
+				t.Fatalf(str, i, test.in, test.high, test.high.ToFloat64(), away, away.ToFloat64())
+			}
+		} else {
+			if away != test.low {
+				str := "test #%d: expected FromFloat64(%f) to return %d (%f), but got %d (%f) instead"
+				t.Fatalf(str, i, test.in, test.low, test.low.ToFloat64(), away, away.ToFloat64())
+			}
+		}
 	}
 }
