@@ -136,9 +136,11 @@ func (self Unit) ToFloat64() float64 {
 	// also, https://go-review.googlesource.com/c/go/+/291229
 }
 
-// Unlike with [Unit.ToFloat64](), this conversion is not always exact.
+// The conversion is exact in the +/-16777216 Units range. Beyond that
+// range, which corresponds to +/-2^18 (+/-262144) in the decimal
+// numbering system), conversions become progressively less precise.
 func (self Unit) ToFloat32() float32 {
-	return float32(self)/64.0 // TODO: test error
+	return float32(self)/64.0
 }
 
 // Defaults to [Unit.ToIntHalfAway](0). For the fastest possible

@@ -799,3 +799,48 @@ func TestFractShift(t *testing.T) {
 		}
 	}
 }
+
+func TestFloatError(t *testing.T) {
+	const factor = 262144 // 2^18
+	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	totalDistF64 := 0.0
+	totalDistF32 := 0.0
+
+	rng := NewRng()
+	for i := 0; i < 9999; i++ {
+		f64 := rng.Float64()*factor - factor/2 + rng.Float64()
+		value := FromFloat64(f64)
+		reF64 := value.ToFloat64()
+		reF32 := float64(value.ToFloat32())
+
+		distF64 := abs(f64 - reF64)
+		if distF64 > HalfDelta {
+			t.Fatalf("%g to Unit and back is %g, with dist = %g", f64, reF64, distF64)
+		}
+		totalDistF64 += distF64
+
+		distF32 := abs(f64 - reF32)
+		if distF32 > HalfDelta {
+			t.Fatalf("%g to Unit and back is %g, with dist = %g", f64, reF32, distF32)
+		}
+		totalDistF32 += distF32
+	}
+
+	if totalDistF32 != totalDistF64 {
+		t.Fatalf("total dist F64 = %g, total dist F32 = %g", totalDistF64, totalDistF32)
+	}
+}
+
+// func TestDebugFloatError(t *testing.T) {
+// 	u := Unit(0)
+// 	for {
+// 		f64 := u.ToFloat64()
+// 		f32 := u.ToFloat32()
+// 		if f64 != float64(f32) {
+// 			t.Fatalf("value %d converted to f64 = %g, but lost precision on f32 = %g", u, f64, f32)
+// 		}
+// 		if u == MaxUnit { break }
+// 		if u == MinUnit { break }
+// 		u += 1
+// 	}
+// }
