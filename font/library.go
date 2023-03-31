@@ -116,6 +116,10 @@ func (self *Library) addNewFont(font *sfnt.Font, name string) error {
 	return nil
 }
 
+// Special error that can be used with EachFont() to break early
+// without causing the function to actually return an error.
+var ErrBreakEach = errors.New("EachFont() early break")
+
 // Calls the given function for each font in the library, passing their
 // names and content as arguments, in pseudo-random order.
 //
@@ -131,7 +135,10 @@ func (self *Library) addNewFont(font *sfnt.Font, name string) error {
 func (self *Library) EachFont(fontFunc func(string, *sfnt.Font) error) error {
 	for name, font := range self.fonts {
 		err := fontFunc(name, font)
-		if err != nil { return err }
+		if err != nil {
+			if err == ErrBreakEach { return nil }
+			return err
+		}
 	}
 	return nil
 }

@@ -74,5 +74,3 @@ func TestParse(t *testing.T) {
 		t.Fatalf("expected err == \"fakeClose\", but got '%s'", err)
 	}
 }
-
-// ...

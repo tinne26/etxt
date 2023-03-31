@@ -8,6 +8,8 @@ import "golang.org/x/image/font/sfnt"
 func TestLibrary(t *testing.T) {
 	lib := NewLibrary()
 	if lib.Size() != 0 { t.Fatal("really?") }
+
+	ensureTestAssetsLoaded()
 	if testFontA == nil { t.SkipNow() }
 
 	added, skipped, err := lib.ParseAllFromPath(testFontsDir + "/" + testPathA)

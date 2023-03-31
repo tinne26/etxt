@@ -4,6 +4,7 @@ import "strings"
 import "testing"
 
 func TestGetProperties(t *testing.T) {
+	ensureTestAssetsLoaded()
 	if testFontA == nil { t.SkipNow() }
 	var value string
 	var err error
@@ -52,6 +53,7 @@ func TestGetProperties(t *testing.T) {
 }
 
 func TestGetMissingRunes(t *testing.T) {
+	ensureTestAssetsLoaded()
 	if testFontA == nil { t.SkipNow() }
 	var missing []rune
 	var err error
