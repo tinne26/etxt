@@ -456,6 +456,29 @@ func TestMulUp(t *testing.T) {
 	}
 }
 
+func TestMulInt(t *testing.T) {
+	tests := []struct {
+		in  Unit
+		mul int
+		out float64
+	}{
+		{0, 0, 0}, {0, 35, 0}, {-1125, 0, 0},
+		{64, 2, 2.0}, {222, 3, (222*3)/64.0}, 
+		{64, 64, 64.0}, {64, -1, -1}, {64, 128, 128}, {128, -64, -128},
+		{32, 1, 0.5}, {-32, -1, 0.5}, {32, -1, -0.5}, 
+		{32, 2, 1.0}, {-32, -2, 1.0}, {32, -2, -1.0},
+		{64*3, 4, 12}, {96, -3, -4.5}, {-96, -2, 3},
+	}
+
+	for i, test := range tests {
+		out := test.in.MulInt(test.mul).ToFloat64()
+		if out != test.out {
+			str := "test #%d: in %d (%f) * %d, expected out %f, but got %f"
+			t.Fatalf(str, i, test.in, test.in.ToFloat64(), test.mul, test.out, out)
+		}
+	}
+}
+
 func NewRng() *mrand.Rand {
 	var bytes [8]byte
 	n, err := crand.Read(bytes[:])

@@ -1,112 +1,98 @@
 # etxt
 [![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt.svg)](https://pkg.go.dev/github.com/tinne26/etxt)
 
-**etxt** is a package for font management and text rendering in Golang designed to be used with the [**Ebitengine**](https://github.com/hajimehoshi/ebiten) game engine.
+**NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
-While Ebitengine already provides the [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package that makes *getting some text drawn on screen* easy enough, **etxt** aims to help you actually understand what you are doing, doing it in a structured way and giving you much more control over it.
+**etxt** is a package for text rendering in Golang designed to be used with the [**Ebitengine**](https://github.com/hajimehoshi/ebiten) game engine.
 
-As a quick summary of what this package provides:
-- Structured font management and usage through the `FontLibrary` and `Renderer` types; because having to create and manage new `font.Face`s just to change text size is *not* ok.
-- Full control over glyph mask caching and rasterization (or just stay with the defaults!).
-- A few custom rasterizers that allow you to draw faux-bold, oblique, ~~blurred and hollow text~~ (WIP). Not really "main features", though, only examples of what you can do with **etxt**.
-- Lots of [examples](https://github.com/tinne26/etxt/tree/main/examples) and thorough documentation.
+While Ebitengine already includes a basic [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package, **etxt** improves it in the following ways:
+- Makes text size and text align easy to change.
+- Puts emphasis on getting [display scaling](https://github.com/tinne26/kage-desk/blob/main/docs/tutorials/ebitengine_game.md#layout) right.
+- Gets rid of `font.Face` for good.
+- Provides high quality documentation and [examples](https://github.com/tinne26/etxt/tree/main/examples).
+- Helps out with some extras like faux bold, faux oblique, basic line wrapping, embedded fonts, glyph quantization, line spacing, etc.
+- Exposes caches, rasterizers and sizers for you to adapt if you have more advanced needs.
+
+What **etxt** doesn't do:
+- No general [text layout](https://raphlinus.github.io/text/2020/10/26/text-layout.html). Features like bidi, rich text support, itemization, shaping, general hit testing, justification and others are not covered and in most cases aren't a primary goal for this package.
+- Poor or no support for [complex scripts](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) like Arabic.
+- None of the things people actually want: shadows and outlines, gamma correction, subpixel antialiasing, Knuth-Plass line breaking, better support for shaders, etc. Some can already be crudely faked, some will be added in the future... but this is the situation right now.
 
 ## Code example
 Less talk and more code!
 ```Golang
 package main
 
-import ( "log" ; "time" ; "image/color" )
+import ( "math" ; "image/color" )
 import "github.com/hajimehoshi/ebiten/v2"
 import "github.com/tinne26/etxt"
+import "github.com/tinne26/fonts/liberation/lbrtserif"
 
-type Game struct { txtRenderer *etxt.Renderer }
-func (self *Game) Layout(int, int) (int, int) { return 400, 400 }
-func (self *Game) Update() error { return nil }
-func (self *Game) Draw(screen *ebiten.Image) {
-	// hacky color computation
-	millis := time.Now().UnixMilli()
-	blue := (millis/16) % 512
-	if blue >= 256 { blue = 511 - blue }
-	changingColor := color.RGBA{ 0, 255, uint8(blue), 255 }
-
-	// set relevant text renderer properties and draw
-	self.txtRenderer.SetTarget(screen)
-	self.txtRenderer.SetColor(changingColor)
-	self.txtRenderer.Draw("Hello World!", 200, 200)
+const WordsPerSec = 2.71828
+var Words = []string {
+	"solitude", "joy", "ride", "whisper", "leaves", "cookie",
+	"hearts", "disdain", "simple", "death", "sea", "shallow",
+	"self", "rhyme", "childish", "sky", "tic", "tac", "boom",
 }
+
+// ---- Ebitengine's Game interface implementation ----
+
+type Game struct { text *etxt.Renderer ; wordIndex float64 }
+
+func (self *Game) Layout(winWidth int, winHeight int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	self.text.SetScale(scale) // relevant for HiDPI
+	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
+	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	return canvasWidth, canvasHeight
+}
+
+func (self *Game) Update() error {
+	newIndex := (self.wordIndex + WordsPerSec/60.0)
+	self.wordIndex = math.Mod(newIndex, float64(len(Words)))
+	return nil
+}
+
+func (self *Game) Draw(canvas *ebiten.Image) {
+	// background color
+	canvas.Fill(color.RGBA{229, 255, 222, 255})
+	
+	// get screen center position and text content
+	bounds := canvas.Bounds() // assumes origin (0, 0)
+	x, y := bounds.Dx()/2, bounds.Dy()/2
+	text := Words[int(self.wordIndex)]
+
+	// draw the text
+	self.text.Draw(canvas, text, x, y)
+}
+
+// ---- main function ----
 
 func main() {
-	// load font library
-	fontLib := etxt.NewFontLibrary()
-	_, _, err := fontLib.ParseDirFonts("game_dir/assets/fonts") // !!
-	if err != nil {
-		log.Fatalf("Error while loading fonts: %s", err.Error())
-	}
+	// create text renderer, set the font and cache
+	renderer := etxt.NewRenderer()
+	renderer.SetFont(lbrtserif.Font())
+	renderer.SetCache8MiB()
+	
+	// adjust main text style properties
+	renderer.SetColor(color.RGBA{239, 91, 91, 255})
+	renderer.SetAlign(etxt.Center)
+	renderer.SetSize(72)
 
-	// check that we have the fonts we want
-	// (shown for completeness, you don't need this in most cases)
-	expectedFonts := []string{ "Roboto Bold", "Carter One" }  // !!
-	for _, fontName := range expectedFonts {
-		if !fontLib.HasFont(fontName) {
-			log.Fatal("missing font: " + fontName)
-		}
-	}
-
-	// check that the fonts have the characters we want
-	// (shown for completeness, you don't need this in most cases)
-	err = fontLib.EachFont(checkMissingRunes)
-	if err != nil { log.Fatal(err) }
-
-	// create a new text renderer and configure it
-	txtRenderer := etxt.NewStdRenderer()
-	glyphsCache := etxt.NewDefaultCache(10*1024*1024) // 10MB
-	txtRenderer.SetCacheHandler(glyphsCache.NewHandler())
-	txtRenderer.SetFont(fontLib.GetFont(expectedFonts[0]))
-	txtRenderer.SetAlign(etxt.YCenter, etxt.XCenter)
-	txtRenderer.SetSizePx(64)
-
-	// run the "game"
-	ebiten.SetWindowSize(400, 400)
-	err = ebiten.RunGame(&Game{ txtRenderer })
-	if err != nil { log.Fatal(err) }
-}
-
-// helper function used with FontLibrary.EachFont to make sure
-// all loaded fonts contain the characters or alphabet we want
-func checkMissingRunes(name string, font *etxt.Font) error {
-	const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	const symbols = "0123456789 .,;:!?-()[]{}_&#@"
-
-	missing, err := etxt.GetMissingRunes(font, letters + symbols)
-	if err != nil { return err }
-	if len(missing) > 0 {
-		log.Fatalf("Font '%s' missing runes: %s", name, string(missing))
-	}
-	return nil
+	// set up Ebitengine and start the game
+	ebiten.SetWindowTitle("etxt/examples/ebiten/words")
+	err := ebiten.RunGame(&Game{ text: renderer })
+	if err != nil { panic(err) }
 }
 ```
 
-This example focuses on the mundane usage of the main **etxt** `FontLibrary` and `Renderer` types, with abundant checks to fail fast if anything seems out of place.
-
-If you want flashier examples you will find [many more](https://github.com/tinne26/etxt/tree/main/examples) in the project, make sure to check them out!
+This is a very simple and self-contained example. If you want to learn more, make sure to take a look at [etxt/examples](https://github.com/tinne26/etxt/tree/main/examples)!
 
 ## Can I use this package without Ebitengine?
-Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time stuff. In particular, be careful to not accidentally use `gtxt` with Ebitengine (they are compatible in many cases, but performance will die).
-
-## Should I bother learning to use etxt?
-If you are only dealing with text rendering incidentally and **ebiten/text** does the job well enough for you, feel free to stay with that. If you are having trouble with fonts, don't know where to go next or would like a more complete overview of the landscape, check out [this document](https://github.com/tinne26/etxt/blob/main/docs/panorama.md).
-
-## Any future plans?
-The package has been fairly ok in terms of stability and robustness from v0.0.1 to v0.0.8, but I've been accumulating ideas for improvements that I'd like to make in 2023. See this [discussion](https://github.com/tinne26/etxt/discussions/7) for more details.
-
-If I get really bored, I'd also like to look into:
-- Contributing to Golang's **sfnt** to [expose more tables](https://github.com/golang/go/issues/45325) and allow the creation of minimal packages to do basic [text shaping](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) in arabic or other complex scripts.
-- Add outline expansion. Freetype and libASS do this, and it would be quite nice to get high quality outlines and better faux-bolds... but it's also *hard*; I don't really know if I want to go there.
-- Triangulation and GPU rendering of Bézier curves are also interesting for Ebitengine (although they probably don't belong in this package).
+Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text drawing happen on the CPU, so don't try to use it for real-time applications. In particular, be careful to not accidentally use `gtxt` with Ebitengine (they are compatible in many cases, but performance will die).
 
 ## Testing, contributions and others
 - For testing, see the instructions on [`etxt/test`](https://github.com/tinne26/etxt/blob/main/test).
-- If you have any questions or suggestions for improvements feel free to ask, I'm always happy to explain or discuss.
-- I'm not looking for contributors nor general help.
-- The API has been reasonably stable for the last year, but I'll never hesitate to break compatibility if it's to make the library better (actually, I have the first [big update](https://github.com/tinne26/etxt/discussions/7) planned for 2023). I also tend to update dependency versions when tagging new versions and to keep up with the improvements on Ebitengine itself.
+- If you have any questions or suggestions for improvements feel free to speak, I'm always happy to explain or discuss.
+- If you speak Arabic and want to help improve the situation and make [complex scripts](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) work with Ebitengine, get in touch. This also applies to some other languages, but Arabic is probably the best starting point.
+- Otherwise, I'm not looking for contributors nor general help.

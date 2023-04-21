@@ -1,23 +1,22 @@
-// etxt is a package for font management and text rendering in Golang
-// designed to be used mainly with the Ebitengine game engine.
+// etxt is a package for text rendering designed to be used with
+// [Ebitengine], a 2D game engine made by Hajime Hoshi for Golang.
 //
-// While the API surface can look slightly intimidating at the beginning,
-// common usage depends only on a couple types and a few functions...
+// To get started, you should create a [Renderer] and set up
+// a font and cache:
+//   text := etxt.NewRenderer()
+//   text.SetFont(font)
+//   text.SetCache8MiB()
 //
-// First, you create a [FontLibrary] and parse the fonts:
-//   fontLib := etxt.NewFontLibrary()
-//   _, _, err := fontLib.ParseDirFonts("path/to/fonts")
-//   if err != nil { ... }
+// Then, you can further adjust the renderer properties with functions
+// like [Renderer.SetColor](), [Renderer.SetSize](), [Renderer.SetAlign](),
+// [Renderer.SetScale]() and many others.
 //
-// Then, you create a [Renderer]:
-//   txtRenderer := etxt.NewStdRenderer()
-//   txtRenderer.SetFont(fontLib.GetFont("My Font Name"))
+// Once you have everything configured to your liking, drawing should be
+// very straightforward:
+//   text.Draw(canvas, "Hello world!", x, y)
 //
-// Finally, you set a target and start drawing:
-//   txtRenderer.SetTarget(screen)
-//   txtRenderer.Draw("Hello world!", x, y)
+// To learn more, make sure to check the [examples]!
 //
-// There are a lot of parameters you can configure, but the critical ones
-// are font, size, align, color, cache and target. Take a good look at those
-// and have fun exploring the rest!
+// [examples]: https://github.com/tinne26/etxt/tree/main/examples
+// [Ebitengine]: https://ebitengine.org
 package etxt

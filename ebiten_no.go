@@ -10,21 +10,20 @@ import "golang.org/x/image/math/fixed"
 type TargetImage = draw.Image
 type GlyphMask = *image.Alpha
 
-type MixMode uint8
+type BlendMode uint8
 
 const (
-	MixOver       MixMode = 0 // glyphs drawn over target (default mode)
-	MixReplace    MixMode = 1 // glyph mask only (transparent pixels included!)
-	MixAdd        MixMode = 2 // add colors (black adds nothing, white stays white)
-	MixSub        MixMode = 3 // subtract colors (black removes nothing) (alpha = target)
-	MixMultiply   MixMode = 4 // multiply % of glyph and target colors and MixOver
-	MixCut        MixMode = 5 // cut glyph shape hole based on alpha (cutout text)
-	MixFiftyFifty MixMode = 6 // mix glyph and target hues 50%-50% and MixOver
+	BlendOver       MixMode = 0 // glyphs drawn over target (default mode)
+	BlendReplace    MixMode = 1 // glyph mask only (transparent pixels included!)
+	BlendAdd        MixMode = 2 // add colors (black adds nothing, white stays white)
+	BlendSub        MixMode = 3 // subtract colors (black removes nothing) (alpha = target)
+	BlendMultiply   MixMode = 4 // multiply % of glyph and target colors and MixOver
+	BlendCut        MixMode = 5 // cut glyph shape hole based on alpha (cutout text)
+	BlendFiftyFifty MixMode = 6 // mix glyph and target hues 50%-50% and BlendOver
 
 	// TODO: many of the modes above will have some trouble with
 	//       semi-transparency, I should look more into it.
 )
-const defaultMixMode = MixOver
 
 // this doesn't do anything in gtxt, only ebiten needs it
 func convertAlphaImageToGlyphMask(i *image.Alpha) GlyphMask { return i }
@@ -49,13 +48,13 @@ func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ Gly
 	shift.X, shift.Y = -shift.X, -shift.Y
 	srcRect = targetRect.Add(shift)
 
-	switch self.mixMode {
-	case MixReplace: // ---- source only ----
+	switch self.blendMode {
+	case BlendReplace: // ---- source only ----
 		self.mixImageInto(mask, self.target, srcRect, targetRect,
 			func(new, _ color.Color) color.Color { return new })
-	case MixOver: // ---- default mixing ----
-		self.mixImageInto(mask, self.target, srcRect, targetRect, mixOverFunc)
-	case MixCut: // ---- remove alpha mode ----
+	case BlendOver: // ---- default mixing ----
+		self.mixImageInto(mask, self.target, srcRect, targetRect, blendOverFunc)
+	case BlendCut: // ---- remove alpha mode ----
 		self.mixImageInto(mask, self.target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				_, _, _, na := new.RGBA()
@@ -71,7 +70,7 @@ func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ Gly
 					A: uint16(alpha),
 				}
 			})
-	case MixMultiply: // ---- multiplicative mixing ----
+	case BlendMultiply: // ---- multiplicative blending ----
 		self.mixImageInto(mask, self.target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				nr, ng, nb, na := new.RGBA()
@@ -82,9 +81,9 @@ func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ Gly
 					B: uint16(nb*cb/0xFFFF),
 					A: uint16(na*ca/0xFFFF),
 				}
-				return mixOverFunc(pureMult, curr)
+				return blendOverFunc(pureMult, curr)
 			})
-	case MixAdd: // --- additive mixing ----
+	case BlendAdd: // --- additive blending ----
 		self.mixImageInto(mask, self.target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				nr, ng, nb, na := new.RGBA()
@@ -97,7 +96,7 @@ func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ Gly
 					A: uint16N(na + ca),
 				}
 			})
-	case MixSub: // --- subtractive mixing (only color) ----
+	case BlendSub: // --- subtractive blending (only color) ----
 		self.mixImageInto(mask, self.target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				nr, ng, nb, na := new.RGBA()
@@ -110,7 +109,7 @@ func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ Gly
 					A: uint16(ca),
 				}
 			})
-	case MixFiftyFifty: // ---- 50%-50% hue mixing ----
+	case BlendFiftyFifty: // ---- 50%-50% hue blending ----
 		self.mixImageInto(mask, self.target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				var nr, ng, nb, na uint32
@@ -131,17 +130,10 @@ func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ Gly
 					B: uint16((nb + cb)/2),
 					A: uint16(na),
 				}
-				return mixOverFunc(partial, curr)
+				return blendOverFunc(partial, curr)
 			})
-	//case MixCMYK:
-		// pigment color mixing? mixbox?
-		//   black = 1 - max(R, G, B)/255
-		//   cyan  = (1 - (R/255 - K))/(1 - K)
-		//   magenta ... like cyan, but with G
-		//   yellow ... like cyan, but with B
-		// TODO: what about shifting gradients with hue?
 	default:
-		panic("unexpected mix mode")
+		panic("unexpected blend mode")
 	}
 }
 
@@ -208,8 +200,8 @@ func min32As16(a, b uint32) uint16 {
 }
 
 
-// ---- color mixing functions ----
-func mixOverFunc(new, curr color.Color) color.Color {
+// ---- color blending functions ----
+func blendOverFunc(new, curr color.Color) color.Color {
 	nr, ng, nb, na := new.RGBA()
 	if na == 0xFFFF { return new }
 	if na == 0      { return curr }

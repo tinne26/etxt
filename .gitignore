@@ -15,8 +15,6 @@ docs/*.css
 /fonts/
 *.ttf
 *.otf
-*.ttf.gz
-*.otf.gz
 
 # ignore root copies of scripts if anyone uses them
 /*.sh

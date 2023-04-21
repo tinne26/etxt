@@ -43,6 +43,11 @@ func (self Unit) Mul(multiplier Unit) Unit {
 	return Unit((mx64 + 31) >> 6)
 }
 
+// Multiplies the unit by the given int.
+func (self Unit) MulInt(multiplier int) Unit {
+	return self*Unit(multiplier)
+}
+
 // Note: I also tested this, but of course sometimes +1 results are
 // closer due to truncation... and I just don't think there's any
 // good use-case for it. Worsening precision to avoid one addition
@@ -134,6 +139,8 @@ func (self Unit) ToFloat64() float64 {
 	// math.Ldexp(float64(self), -6) also sounds good and works, but it's
 	// slower. even with amd64 assembly, lack of inlining kills perf.
 	// also, https://go-review.googlesource.com/c/go/+/291229
+	// I also benchmarked a possible float64(self >> 6) optimization
+	// when the value is integer, but it's slower due to the extra check.
 }
 
 // The conversion is exact in the +/-16777216 Units range. Beyond that

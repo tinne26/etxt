@@ -8,7 +8,7 @@
 
 pkgname="etxt"
 pkgurl="github.com/tinne26/$pkgname"
-subpkgs="emask efixed esizer ecache eglyr ekage"
+subpkgs="mask fract sizer cache"
 docsfolder="docs/"
 docsprefix="reference_"
 

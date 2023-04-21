@@ -1,13 +1,14 @@
 # How to `go test` etxt
 
-Testing etxt requires placing two different `.ttf` fonts in `/test/fonts/`. Some tests can be run even without these fonts, but you will get a failure due to missing assets and some warnings related to it.
+Testing etxt requires placing two different `.ttf` fonts in `/font/test/`. Some tests can be run even without these fonts, but you will get a failure due to missing assets and some warnings related to it.
 
-The most basic form requires both `gtxt` and `test` tags:
+The main testing command is the following:
 ```
-go test -tags "gtxt test" ./...
+go test -tags gtxt ./...
 ```
+While you can test without the `gtxt` tag, most tests won't run because there's no easy way to test Ebitengine graphical output. Ebitengine tests exist almost only to detect build problems.
 
-Many scripts are provided in `test/scripts`. For example, you can run the tests with `run_tests.sh` (or `run_tests.bat` if you are on Windows). Here are the results of an example run[^1]:
+Many scripts are provided in `/test/scripts`. For example, you can run the tests with `run_tests.sh` (or `run_tests.bat` if you are on Windows). Here are the results of an example run:
 ```
 $ ./test/scripts/run_tests.sh
 [testing with gtxt...]
@@ -23,5 +24,3 @@ ok      github.com/tinne26/etxt/emask   0.315s  coverage: 74.0% of statements
 ```
 
 Scripts also include generation of static documentation, coverage and some benchmarking of custom rasterizers.
-
-[^1]: The Ebitengine test results are almost irrelevant and only exist to detect build problems. It's not easy to test with Ebitengine images (you need to spawn separate processes that use `RunGame()` directly from the tests), so the only tests run are those that don't require any rasterization targets, which are already included in the `gtxt` tests.
