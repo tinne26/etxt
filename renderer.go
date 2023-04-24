@@ -38,6 +38,8 @@ const (
 // that won't require them. The current gateways are the following:
 //  - [Renderer.Utils](), to access non-essential but handy functions.
 //  - [Renderer.Fract](), to access specialized fractional functionality.
+//  - [Renderer.Glyph](), to access low level functions for glyphs and
+//    glyph masks.
 //  - [Renderer.Complex](), to access advanced functionality related to
 //    rich text and complex scripts.
 //

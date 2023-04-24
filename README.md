@@ -57,13 +57,13 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	// background color
 	canvas.Fill(color.RGBA{229, 255, 222, 255})
 	
-	// get screen center position and text content
+	// get screen center position
 	bounds := canvas.Bounds() // assumes origin (0, 0)
 	x, y := bounds.Dx()/2, bounds.Dy()/2
-	text := Words[int(self.wordIndex)]
 
-	// draw the text
-	self.text.Draw(canvas, text, x, y)
+	// draw text
+	word := Words[int(self.wordIndex)]
+	self.text.Draw(canvas, word, x, y)
 }
 
 // ---- main function ----
@@ -86,7 +86,7 @@ func main() {
 }
 ```
 
-You can try[^1] running this yourself with:
+You can try running this yourself with[^1]:
 ```
 go run github.com/tinne26/etxt/examples/ebiten/words@v0.0.9-alpha.2
 ```
