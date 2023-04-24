@@ -62,9 +62,16 @@ func (self *DefaultSizer) Kern(font *Font, buffer *Buffer, size fract.Unit, g1, 
 
 // Implements [Sizer.NotifyChange]().
 func (self *DefaultSizer) NotifyChange(font *Font, buffer *Buffer, size fract.Unit) {
-	metrics, err := font.Metrics(buffer, fixed.Int26_6(size), hintingNone)
-	if err != nil { panic("font.Metrics error: " + err.Error()) }
-	self.cachedAscent  = fract.Unit(metrics.Ascent)
-	self.cachedDescent = fract.Unit(metrics.Descent)
-	self.cachedLineHeight = fract.Unit(metrics.Height)
+	if font == nil || size == 0 {
+		self.cachedAscent     = 0
+		self.cachedDescent    = 0
+		self.cachedLineHeight = 0
+		return
+	} else {
+		metrics, err := font.Metrics(buffer, fixed.Int26_6(size), hintingNone)
+		if err != nil { panic("font.Metrics error: " + err.Error()) }
+		self.cachedAscent  = fract.Unit(metrics.Ascent)
+		self.cachedDescent = fract.Unit(metrics.Descent)
+		self.cachedLineHeight = fract.Unit(metrics.Height)
+	}
 }

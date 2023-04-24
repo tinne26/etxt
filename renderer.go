@@ -263,6 +263,7 @@ func (self *Renderer) initSizer() {
 	if self.internalFlags & internalFlagSizer == 0 {
 		self.internalFlags |= internalFlagSizer
 		self.fontSizer = &sizer.DefaultSizer{}
+		self.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.scaledSize)
 	}
 }
 

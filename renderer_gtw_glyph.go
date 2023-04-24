@@ -26,6 +26,7 @@ func (self *Renderer) Glyph() *RendererGlyph {
 	return (*RendererGlyph)(self)
 }
 
+// TODO: consider also DrawRune, DrawGlyph? Probably not, ok.
 // Default draw glyph function.
 func (self *RendererGlyph) DrawMask(mask GlyphMask, dot fract.Point) {
 	panic("unimplemented")

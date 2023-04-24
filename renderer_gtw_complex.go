@@ -3,8 +3,6 @@ package etxt
 import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
-import "github.com/tinne26/etxt/mask"
-import "github.com/tinne26/etxt/sizer"
 
 // This type exists only for documentation and structuring purposes,
 // acting as a [gateway] to access advanced [Renderer] properties and
@@ -53,49 +51,9 @@ func (self *RendererComplex) SetFonts(fonts []*sfnt.Font) {
 	(*Renderer)(self).complexSetFonts(fonts)
 }
 
-// Sets the glyph mask rasterizer to be used on subsequent operations.
-// Nil rasterizers are not allowed.
-func (self *RendererComplex) SetRasterizer(rasterizer mask.Rasterizer) {
-	(*Renderer)(self).complexSetRasterizer(rasterizer)
-}
-
-// Returns the current glyph mask rasterizer.
-//
-// This function is only useful when working with configurable rasterizers;
-// ignore it if you are using the default glyph mask rasterizer.
-//
-// Mask rasterizers are not concurrent-safe, so be careful with
-// what you do and where you put them.
-func (self *RendererComplex) GetRasterizer() mask.Rasterizer {
-	return (*Renderer)(self).complexGetRasterizer()
-}
-
 // Returns the renderer fonts available for use with rich text.
 func (self *RendererComplex) GetFonts() []*sfnt.Font {
 	return (*Renderer)(self).fonts
-}
-
-// Returns the current [sizer.Sizer].
-//
-// The most common use of sizers is adjusting line height or glyph
-// interspacing. Outside of that, sizers can also be relevant when
-// trying to obtain information about font metrics or when making
-// custom glyph mask rasterizers, but it's fairly uncommon for the
-// average user to have to worry about all these things.
-func (self *RendererComplex) GetSizer() sizer.Sizer {
-	return (*Renderer)(self).complexGetSizer()
-}
-
-// Sets the sizer to be used on subsequent operations. Nil sizers are
-// not allowed.
-//
-// The most common use of sizers is adjusting line height or glyph
-// interspacing. Outside of that, sizers can also be relevant when
-// trying to obtain information about font metrics or when making
-// custom glyph mask rasterizers, but it's fairly uncommon for the
-// average user to have to worry about all these things.
-func (self *RendererComplex) SetSizer(fontSizer sizer.Sizer) {
-	(*Renderer)(self).complexSetSizer(fontSizer)
 }
 
 // Sets the active font index to the given value.
@@ -146,58 +104,6 @@ func (self *Renderer) complexGetDirection() Direction {
 	} else {
 		return LeftToRight
 	}
-}
-
-func (self *Renderer) complexGetRasterizer() mask.Rasterizer {
-	self.initRasterizer()
-	return self.rasterizer
-}
-
-func (self *Renderer) initRasterizer() {
-	if self.internalFlags & internalFlagRasterizer == 0 {
-		self.internalFlags |= internalFlagRasterizer
-		self.rasterizer = &mask.DefaultRasterizer{}
-	}
-}
-
-func (self *Renderer) complexSetRasterizer(rasterizer mask.Rasterizer) {
-	// assertion
-	if rasterizer == nil { panic("nil rasterizers not allowed") }
-
-	// clear rasterizer onChangeFunc
-	if self.rasterizer != nil {
-		self.rasterizer.SetOnChangeFunc(nil)
-	}
-
-	// set rasterizer and mark it as initialized
-	self.rasterizer = rasterizer
-	self.internalFlags |= internalFlagRasterizer
-
-	// link new rasterizer to the cache handler
-	if self.missingBasicProps() { self.initBasicProps() }
-	if self.cacheHandler == nil {
-		rasterizer.SetOnChangeFunc(nil)
-	} else {
-		rasterizer.SetOnChangeFunc(self.cacheHandler.NotifyRasterizerChange)
-		self.cacheHandler.NotifyRasterizerChange(rasterizer)
-	}
-}
-
-func (self *Renderer) complexGetSizer() sizer.Sizer {
-	self.initSizer()
-	return self.fontSizer
-}
-
-func (self *Renderer) initSizer() {
-	if self.internalFlags & internalFlagSizer == 0 {
-		self.internalFlags |= internalFlagSizer
-		self.fontSizer = &sizer.DefaultSizer{}
-	}
-}
-
-func (self *Renderer) complexSetSizer(fontSizer sizer.Sizer) {
-	self.fontSizer = fontSizer
-	self.internalFlags |= internalFlagSizer
 }
 
 func (self *Renderer) complexSetFonts(fonts []*sfnt.Font) {

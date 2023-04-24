@@ -59,11 +59,12 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 	var maxLineWidth fract.Unit
 	var prevGlyphIndex sfnt.GlyphIndex
 	var lineBreakNth int = -1
+	var hasLineHeight bool
 	horzQuant, vertQuant := fract.Unit(self.horzQuantization), fract.Unit(self.vertQuantization)
 
 	// neither text direction nor align matter in this context.
 	// only font, size and quantization. go traverse the text.
-	for i, codePoint := range text {
+	for _, codePoint := range text {
 		// line break case
 		if codePoint == '\n' {
 			if lineBreakNth == -1 { lineBreakNth = 0 }
@@ -82,9 +83,10 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 		}
 
 		// apply line height if first time hitting a non line break
-		if lineBreakNth == i {
+		if !hasLineHeight {
 			dot.Y += self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
 			dot.Y  = dot.Y.QuantizeUp(vertQuant)
+			hasLineHeight = true
 		}
 
 		// regular glyph case
@@ -180,7 +182,7 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 	var lastSafeIndex int // for word breaking, a.k.a, after space index
 	var lineStartIndex int
 	var lastSafeX fract.Unit // within current line
-	var hasNonLineBreak bool
+	var hasLineHeight bool
 	horzQuant, vertQuant := fract.Unit(self.horzQuantization), fract.Unit(self.vertQuantization)
 	var index int = 0
 
@@ -210,11 +212,11 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 		// --- regular character case ---
 
 		// apply line height if first time hitting a non line break
-		if hasNonLineBreak {
+		if !hasLineHeight {
 			dot.Y += self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
 			dot.Y  = dot.Y.QuantizeUp(vertQuant)
+			hasLineHeight = true
 		}
-		hasNonLineBreak = true
 
 		// memorize this as it may be needed later in some cases
 		memoX := dot.X
