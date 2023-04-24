@@ -3,11 +3,11 @@
 
 **NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
-**etxt** is a package for text rendering in Golang designed to be used with the [**Ebitengine**](https://github.com/hajimehoshi/ebiten) game engine.
+**etxt** is a package for text rendering in Golang designed to be used with [**Ebitengine**](https://github.com/hajimehoshi/ebiten), the 2D game engine made by [Hajime Hoshi](https://github.com/hajimehoshi) for Golang.
 
 While Ebitengine already includes a basic [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package, **etxt** improves it in the following ways:
 - Makes text size and text align easy to change.
-- Puts emphasis on getting [display scaling](https://github.com/tinne26/kage-desk/blob/main/docs/tutorials/ebitengine_game.md#layout) right.
+- Puts emphasis on getting [display scaling](https://github.com/tinne26/etxt/blob/main/docs/display-scaling.md) right.
 - Gets rid of `font.Face` for good.
 - Provides high quality documentation and [examples](https://github.com/tinne26/etxt/tree/main/examples).
 - Helps out with some extras like faux bold, faux oblique, basic line wrapping, embedded fonts, glyph quantization, line spacing, etc.
@@ -25,7 +25,7 @@ package main
 
 import ( "math" ; "image/color" )
 import "github.com/hajimehoshi/ebiten/v2"
-import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt" // v0.0.9+
 import "github.com/tinne26/fonts/liberation/lbrtserif"
 
 const WordsPerSec = 2.71828
@@ -72,7 +72,7 @@ func main() {
 	// create text renderer, set the font and cache
 	renderer := etxt.NewRenderer()
 	renderer.SetFont(lbrtserif.Font())
-	renderer.SetCache8MiB()
+	renderer.Utils().SetCache8MiB()
 	
 	// adjust main text style properties
 	renderer.SetColor(color.RGBA{239, 91, 91, 255})
@@ -85,6 +85,13 @@ func main() {
 	if err != nil { panic(err) }
 }
 ```
+
+You can try[^1] running this yourself with:
+```
+go run github.com/tinne26/etxt/examples/ebiten/words@v0.0.9-alpha.2
+```
+
+[^1]: You will need Golang >=1.18, and if you have never used Ebitengine before, you may need to [install some dependencies](https://ebitengine.org/en/documents/install.html?os=linux) (typically only on Linux or FreeBSD).
 
 This is a very simple and self-contained example. If you want to learn more, make sure to take a look at [etxt/examples](https://github.com/tinne26/etxt/tree/main/examples)!
 

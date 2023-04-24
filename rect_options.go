@@ -1,3 +1,5 @@
+//go:build nope
+
 package etxt
 
 import "image"

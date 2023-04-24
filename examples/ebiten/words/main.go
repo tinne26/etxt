@@ -49,7 +49,7 @@ func main() {
 	// create text renderer, set the font and cache
 	renderer := etxt.NewRenderer()
 	renderer.SetFont(lbrtserif.Font())
-	renderer.SetCache8MiB()
+	renderer.Utils().SetCache8MiB()
 	
 	// adjust main text style properties
 	renderer.SetColor(color.RGBA{239, 91, 91, 255})

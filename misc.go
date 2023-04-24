@@ -8,7 +8,7 @@ import "golang.org/x/image/font/sfnt"
 // Helper types, wrappers, aliases and functions.
 
 // Renderers can have their text direction configured as
-// left-to-right or right-to-left. See [Renderer.SetDirection]().
+// left-to-right or right-to-left. See [RendererComplex.SetDirection]().
 //
 // Directions can be casted directly to [unicode/bidi] directions:
 //   bidi.Direction(etxt.LeftToRight).

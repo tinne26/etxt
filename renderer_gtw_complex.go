@@ -1,42 +1,28 @@
 package etxt
 
 import "golang.org/x/image/font/sfnt"
+
 import "github.com/tinne26/etxt/fract"
+import "github.com/tinne26/etxt/mask"
+import "github.com/tinne26/etxt/sizer"
 
-// Also, on the topic of complex scripts and bidi and stuff:
-// - allow horizontal align that's Base for following the current base direction.
-//   each paragraph may have a different Base direction, though I may not support
-//   that directly, it's not that important probably.
-// - chars are stored in the order they are typed. makes sense.
-// - separate runs for Text kiiinda become necessary. though I can also assume
-//   directly from the []byte data with a special separator.
-// - punctuation with neutral dir between different dir chars gets base dir direction.
-// - actually, if the neutral chars like parens are handled by the Text encoding
-//   (¿is that even possible?), the base dir may be irrelevant for that? this means
-//   that the main shaping process needs to be aware of this base direction thingie.
-//   which seems ok enough. it's basically getting a []Paragraph, where each
-//   paragraph is Text with a base direction to apply. good enough for me I guess.
-// - yeah, direction doesn't really change anything at runtime, must be known and
-//   considered when "compiling" the text. fair enough. also, runs will simply be
-//   implicit unless an active run specification is found. but that would mean I
-//   have to detect the end... so no point in indicating an explicit length. just
-//   change the run direction explicitly when necessary.
-
-// A wrapper type for using a [Renderer] in "complex mode". This mode allows
-// accessing advanced renderer properties, as well as operating directly with
-// glyphs and the more flexible [Text] type. These types are relevant when
-// working with [complex scripts and text shaping], among others.
+// This type exists only for documentation and structuring purposes,
+// acting as a [gateway] to access advanced [Renderer] properties and
+// operating directly with glyphs and the more flexible [Text] type.
 //
-// Notice that this type exists almost exclusively for documentation and
-// structuring purposes. To most effects, you could consider the methods
-// part of [Renderer] itself.
+// These types and features are mainly relevant when working with
+// rich text, [complex scripts] and text shaping.
 //
-// [complex scripts and text shaping]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
+// In general, this type is used through method chaining:
+//   renderer.Complex().Draw(canvas, text, x, y)
+//
+// [complex scripts]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
 type RendererComplex Renderer
 
-// Access the renderer in [RendererComplex] mode. This mode allows accessing
-// advanced renderer properties, as well as operating directly with glyphs and
-// the more flexible [Text] type.
+// [Gateway] to [RendererComplex] functionality.
+//
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
 func (self *Renderer) Complex() *RendererComplex {
 	return (*RendererComplex)(self)
 }
@@ -52,10 +38,17 @@ func (self *RendererComplex) SetDirection(dir Direction) {
 	(*Renderer)(self).complexSetDirection(dir)
 }
 
+// Returns the current main text direction. See [RendererComplex.SetDirection]()
+// for more details.
 func (self *RendererComplex) GetDirection() Direction {
 	return (*Renderer)(self).complexGetDirection()
 }
 
+// Sets the renderer's fonts. Having multiple fonts is mostly relevant
+// when working with rich text, for example when trying to combine regular,
+// bold and italic subfamilies in the same draw call.
+//
+// To change the main font statically, use [RendererComplex.SetFontIndex]().
 func (self *RendererComplex) SetFonts(fonts []*sfnt.Font) {
 	(*Renderer)(self).complexSetFonts(fonts)
 }
@@ -74,9 +67,10 @@ func (self *RendererComplex) SetRasterizer(rasterizer mask.Rasterizer) {
 // Mask rasterizers are not concurrent-safe, so be careful with
 // what you do and where you put them.
 func (self *RendererComplex) GetRasterizer() mask.Rasterizer {
-	(*Renderer)(self).complexGetRasterizer(rasterizer)
+	return (*Renderer)(self).complexGetRasterizer()
 }
 
+// Returns the renderer fonts available for use with rich text.
 func (self *RendererComplex) GetFonts() []*sfnt.Font {
 	return (*Renderer)(self).fonts
 }
@@ -92,7 +86,8 @@ func (self *RendererComplex) GetSizer() sizer.Sizer {
 	return (*Renderer)(self).complexGetSizer()
 }
 
-// Sets the current [sizer.Sizer], which must be non-nil.
+// Sets the sizer to be used on subsequent operations. Nil sizers are
+// not allowed.
 //
 // The most common use of sizers is adjusting line height or glyph
 // interspacing. Outside of that, sizers can also be relevant when
@@ -109,18 +104,19 @@ func (self *RendererComplex) SetFontIndex(index uint8) *sfnt.Font {
 	return (*Renderer)(self).complexSetFontIndex(index)
 }
 
+// Returns the index of the renderer's main font.
 func (self *RendererComplex) GetFontIndex() int {
 	return int((*Renderer)(self).fontIndex)
 }
 
-func (self *RendererComplex) Draw(screen TargetImage, text Text, x, y fract.Unit) fract.Point {
-	// TODO
-	return fract.Point{}
+// Same as [Renderer.Draw](), but expecting a [Text] instead of a string.
+func (self *RendererComplex) Draw(screen TargetImage, text Text, x, y fract.Unit) {
+	panic("unimplemented / TODO")
 }
 
-func (self *RendererComplex) DrawInRect(screen TargetImage, text Text, x, y fract.Unit, opts *RectOptions) fract.Point {
-	// TODO
-	return fract.Point{}
+// Same as [Renderer.DrawWithWrap](), but expecting a [Text] instead of a string.
+func (self *RendererComplex) DrawWithWrap(screen TargetImage, text Text, x, y, widthLimit fract.Unit) {
+	panic("unimplemented / TODO")
 }
 
 // Exposes the renderer's internal [*sfnt.Buffer].

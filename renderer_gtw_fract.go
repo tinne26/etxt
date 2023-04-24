@@ -6,13 +6,12 @@ import "github.com/tinne26/etxt/fract"
 
 // Quantization levels for [RendererFract.SetQuantization]().
 //
-// Only the perfectly equidistant quantization values are given. Other
-// values like fract.Unit(22) (~one third of a pixel = ceil(64/3)) could
-// work too, but they all result in potentially uneven distributions of
-// the glyph positions. These would make the results of text measuring
-// functions dependent on the text direction, align and working position,
-// which would make centering impractically complicated. The API would
-// also become exceedingly difficult to use correctly.
+// Only the equispaced quantization values are given. Other values like
+// [fract.Unit](22) (which approximates one third of a pixel, ceil(64/3))
+// could work too, but they all result in potentially uneven distributions of
+// the glyph positions. Such positions would make the results of text measuring
+// functions dependent on the text direction, align and starting position, which
+// would make centering operations and the API impractically complicated.
 const (
 	QtNone = fract.Unit( 1) // full glyph position resolution (1/64ths of a pixel)
 	Qt32th = fract.Unit( 2) // quantize glyph positions to 1/32ths of a pixel
@@ -23,31 +22,32 @@ const (
 	QtFull = fract.Unit(64) // full glyph position quantization (default)
 )
 
-// Access the renderer in [RendererFract] mode. This mode allows you to 
-// configure or operate the renderer with an increased level of precision, up
-// to 1/64th of a pixel.
+// [Gateway] to [RendererFract] functionality.
+//
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
 func (self *Renderer) Fract() *RendererFract {
 	return (*RendererFract)(self)
 }
 
-// A wrapper type for using a [Renderer] in "fractional mode". This mode 
-// allows you to configure or operate the renderer with an increased level 
-// of precision, up to 1/64th of a pixel.
+// This type exists only for documentation and structuring purposes,
+// acting as a [gateway] to operate a [Renderer] with fractional units.
 //
-// Fractional operations are typically relevant when animating or trying to
-// respect the text flow with the highest precision possible.
+// Fractional units give us an increased level of precision when
+// drawing or measuring text. This is typically relevant when animating
+// or trying to respect the text flow with the highest precision 
+// possible.
+//
+// In general, this type is used through method chaining:
+//   renderer.Fract().Draw(canvas, text, x, y)
 //
 // The fractional getters and setters can also be useful when saving state
-// of the renderer to be restored later, as floating point conversions can
-// be avoided.
+// of the renderer to be restored later, avoiding floating point conversions.
 //
 // All the fractional operations depend on the [fract.Unit] type, so make
 // sure to check out the [etxt/fract] subpackage if you need more context
 // to understand how everything ties together.
 //
-// Notice that this type exists almost exclusively for documentation and
-// structuring purposes. To most effects, you could consider the methods
-// part of [Renderer] itself.
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
 type RendererFract Renderer
 
 // ---- wrapper methods ----
@@ -62,8 +62,8 @@ func (self *RendererFract) GetSize() fract.Unit {
 	return (*Renderer)(self).fractGetSize()
 }
 
-// Same as [Renderer.SetScale](), but avoids a conversion from float64
-// to fract.Unit.
+// Same as [Renderer.SetScale](), but avoiding a conversion from float64
+// to [fract.Unit].
 func (self *RendererFract) SetScale(scale fract.Unit) {
 	(*Renderer)(self).fractSetScale(scale)
 }
@@ -73,14 +73,17 @@ func (self *RendererFract) GetScale() fract.Unit {
 	return (*Renderer)(self).fractGetScale()
 }
 
-// Sets the renderer's quantization level. You should use [QtNone],
-// [Qt4th], [QtHalf], [QtFull] and the other existing constants. As
-// their documentation explains, other arbitrary values may get you
-// in trouble.
+// Sets the quantization levels to be used on subsequent operations.
+// Recommended values are [QtNone], [Qt4th], [QtHalf], [QtFull] and
+// the other existing constants.
+//
+// Non-equispaced values are technically allowed but are not recommended,
+// as drawing and measuring algorithms may break in subtle ways in
+// different edge cases.
 //
 // By default, quantization is fully enabled ([QtFull], [QtFull]).
 //
-// Values below one or above 64 fractional units will panic.
+// Values below 1 or above 64 fractional units will panic.
 func (self *RendererFract) SetQuantization(horz, vert fract.Unit) {
 	(*Renderer)(self).fractSetQuantization(horz, vert)
 }
@@ -95,8 +98,8 @@ func (self *RendererFract) MeasureHeight(text string) fract.Unit {
 	return (*Renderer)(self).fractMeasureHeight(text)
 }
 
-func (self *RendererFract) Draw(target TargetImage, text string, x, y fract.Unit) fract.Point {
-	return (*Renderer)(self).fractDraw(target, text, x, y)
+func (self *RendererFract) Draw(target TargetImage, text string, x, y fract.Unit) {
+	(*Renderer)(self).fractDraw(target, text, x, y)
 }
 
 // ---- underlying implementations ----
@@ -142,11 +145,8 @@ func (self *Renderer) fractGetScale() fract.Unit {
 
 // Must be called after logical size or scale changes.
 func (self *Renderer) refreshScaledSize() {
-	scaledSize := self.logicalSize.MulDown(self.scale) // *
-	// * We use MulDown here to compensate having used FromFloat64Up()
-	//   on both size and scale conversions. It's not a big deal in
-	//   either case, but I guess this reduces the maximum potential
-	//   error.
+	scaledSize := self.scaleLogicalSize(self.logicalSize)
+	
 	if scaledSize == self.scaledSize { return } // yeah, not likely
 	self.scaledSize = scaledSize
 
@@ -155,7 +155,7 @@ func (self *Renderer) refreshScaledSize() {
 		self.cacheHandler.NotifySizeChange(self.scaledSize)
 	}
 	if self.fontSizer != nil {
-		self.fontSizer.NotifyChange(self.GetFont(), &self.Buffer, self.scaledSize)
+		self.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.scaledSize)
 	}
 }
 
@@ -170,4 +170,3 @@ func (self *Renderer) fractSetQuantization(horz, vert fract.Unit) {
 func (self *Renderer) fractGetQuantization() (horz, vert fract.Unit) {
 	return fract.Unit(self.horzQuantization), fract.Unit(self.vertQuantization)
 }
-

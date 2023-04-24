@@ -5,10 +5,6 @@ import "unicode/utf8"
 import "golang.org/x/image/font/sfnt"
 import "github.com/tinne26/etxt/fract"
 
-// TODO: some operations end with a certain communicated quantization
-//       level. should I assume I always start at 0, or never assume
-//       anything or what?
-
 // Returns the dimensions of the area taken by the given text. Intuitively,
 // this matches the shaded area that you see when highlighting or selecting
 // text in browsers and text editors.
@@ -25,8 +21,13 @@ func (self *Renderer) Measure(text string) fract.Rect {
 }
 
 // Same as [Renderer.Measure](), but using a width limit for line wrapping.
-// Typically used in conjunction with [Renderer.DrawInRect]() when the
-// [LineWrapGreedy] mode is used on [RectOptions] LineBreak field.
+// Typically used in conjunction with [Renderer.DrawWithWrap]().
+//
+// The widthLimit must take into account the scaling factor, it's not in
+// logical units.
+//
+// The returned rect dimensions are always quantized, but the width doesn't
+// take into account final spaces in the line (TODO: spaces thingie unimplemented).
 func (self *Renderer) MeasureWithWrap(text string, widthLimit int) fract.Rect {
 	if widthLimit > fract.MaxInt { panic("widthLimit too big, must be <= fract.MaxInt") }
 	return self.fractMeasureWithWrap(text, fract.FromInt(widthLimit))
@@ -154,7 +155,10 @@ func (self *Renderer) fractMeasureHeight(text string) fract.Unit {
 func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) fract.Rect {
 	// Notes on quirkiness:
 	// - It's unclear whether spaces ' ' at end of line due to 
-	//   wrapping should be considered for the rect width or not.
+	//   wrapping should be considered for the rect width or not
+	//   when they are kept. I guess they shouldn't, in case we
+	//   want to optimize the widthLimit in some extreme way...
+	//   Yeah, I guess I should change this in the future. TODO.
 
 	// preconditions
 	font := self.GetFont()

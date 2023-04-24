@@ -1,9 +1,9 @@
 package etxt
 
-// Aligns are used to define how coordinates passed to renderer
-// operations have to be interpreted. For example, if you try to
-// draw text at (0, 0) with any align that's not top-left, the
-// result is going to be clipped or not visible at all.
+// Aligns are used to define how to interpret the coordinates passed
+// to renderer operations. For example, if you try to draw text at
+// (0, 0) with any align that's not top-left, the result is going to
+// be clipped or not visible at all.
 //
 // See [Renderer.SetAlign]() for more details.
 type Align uint8
@@ -20,7 +20,7 @@ func (self Align) Horz() Align { return alignHorzBits & self }
 
 // Align constants for renderer operations. Vertical
 // and horizontal aligns can be combined with a bitwise
-// OR (|). See [Renderer.SetAlign]() for more details.
+// OR (|).
 const (
 	Left    Align = 0b0001_0000 // horizontal align
 	XCenter Align = 0b0010_0000 // horizontal align
@@ -49,7 +49,7 @@ const (
 //
 // Notice that aligns have separate horizontal and vertical components, so
 // you can use calls like [Renderer.SetAlign](etxt.[Right]) to change only
-// one of the components (the horizontal in this case).
+// one of the components (the horizontal one in this case).
 //
 // By default, the renderer's align is (etxt.[Baseline] | etxt.[Left]).
 //

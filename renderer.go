@@ -24,14 +24,32 @@ const (
 // getter and setter methods. Actual operations are split in other
 // files.
 
-// The [Renderer] is the main type for drawing text provided by etxt.
+// The [Renderer] is the heart of etxt and the type around which
+// everything else revolves.
 //
-// Renderers allow you to control font, text size, color, text
-// alignment and more from a single place.
+// Renderers have three groups of functions:
+//  - Simple functions to adjust basic text properties like font,
+//    size, color or align.
+//  - Simple functions to draw and measure text.
+//  - Gateways to access other more specific functions.
 //
-// The zero value is valid, but you must set a font (e.g. [Renderer.SetFont]())
-// if you want to do anything useful with it. In most cases, you will
-// also want to set a cache, the text size, the color and the align.
+// Gateways are auxiliary types that group specialized or advanced
+// functions together and keep them out of the way for most workflows
+// that won't require them. The current gateways are the following:
+//  - [Renderer.Utils](), to access non-essential but handy functions.
+//  - [Renderer.Fract](), to access specialized fractional functionality.
+//  - [Renderer.Complex](), to access advanced functionality related to
+//    rich text and complex scripts.
+//
+// The zero value is valid, but you must set a font before drawing or
+// measuring text. In most practical scenarios, you will also want to set
+// a cache, the text size, the text color and the align.
+//
+// If you need further help or guidance, I recommend reading ["advice on 
+// renderers"] and simply going through the code on the [examples] folder.
+//
+// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/main/docs/renderer.md
+// [examples]: https://github.com/tinne26/etxt/blob/main/examples
 type Renderer struct {
 	fonts []*sfnt.Font
 	gfxFuncs []func(*Renderer, TargetImage, fract.Rect, uint16)
@@ -60,9 +78,10 @@ type Renderer struct {
 
 // Creates a new [Renderer].
 //
-// Setting a font through [Renderer.SetFont]() or [Renderer.SetFontBytes]()
+// Setting a font through [Renderer.SetFont]() or [RendererUtils.SetFontBytes]()
 // is required before being able to operate with it. It's also heavily
-// recommended to set a cache (none by default) right from the start.
+// recommended to set a cache (none by default) right from the start, for
+// example with [RendererUtils.SetCache8MiB]().
 func NewRenderer() *Renderer {
 	renderer := &Renderer{}
 	renderer.initBasicProps()
@@ -146,7 +165,11 @@ func (self *Renderer) GetScale() float64 {
 // font, a renderer is fundamentally useless, so don't forget to
 // set this up.
 //
-// See also [Renderer.SetFontBytes]().
+// Further pointers and advice:
+//  - If you only have the font data, consider [RendererUtils.SetFontBytes]().
+//  - If you need more robust font management, consider [font.Library].
+//
+// [font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font
 func (self *Renderer) SetFont(font *sfnt.Font) {
 	// Notice: you *can* call this function with a nil font, but
 	//         only if you *really really have to ensure* that the
@@ -173,21 +196,8 @@ func (self *Renderer) notifyFontChange(font *sfnt.Font) {
 		self.cacheHandler.NotifyFontChange(font)
 	}
 	if self.fontSizer != nil {
-		self.fontSizer.NotifyChange(font, &self.Buffer, self.scaledSize)
+		self.fontSizer.NotifyChange(font, &self.buffer, self.scaledSize)
 	}
-}
-
-
-// Utility method to set the font by passing its raw data and letting
-// the renderer parse it. This method should be avoided if you want
-// to reuse the font data at different points in your application; in
-// that case, parsing the font only once (e.g. using [font.Library])
-// and setting it with [Renderer.SetFont]() is the way to go.
-func (self *Renderer) SetFontBytes(data []byte) error {
-	font, err := sfnt.Parse(data)
-	if err != nil { return err }
-	self.SetFont(font)
-	return nil
 }
 
 // Returns the current font. The font is nil by default.
@@ -232,27 +242,10 @@ func (self *Renderer) GetCacheHandler() cache.GlyphCacheHandler {
 	return self.cacheHandler
 }
 
-// See the following [Renderer.SetCache8MiB]() method.
-var pkgCache8MiB *cache.DefaultCache
-
-// Utility method to set a cache that will get you started.
-// For a more manual and adjustable approach, see
-// [Renderer.SetCacheHandler]().
-func (self *Renderer) SetCache8MiB() {
-	// This uses a package level cache that will be shared by
-	// all renderers using this utility method. If you have
-	// many renderers with different fonts, it may be better
-	// to start creating your own caches.
-	if pkgCache8MiB == nil {
-		pkgCache8MiB = cache.NewDefaultCache(8*1024*1024)
-	}
-	self.SetCacheHandler(pkgCache8MiB.NewHandler())
-}
-
 // Sets the glyph cache handler used by the renderer. By default,
 // no cache is used, but you almost always want to set one.
 //
-// The easiest way is to use [Renderer.SetCache8MiB](), but that's
+// The easiest way is to use [RendererUtils.SetCache8MiB](), but that's
 // not suitable for all use-cases. The general approach is to create
 // a cache manually, obtain a cache handler from it and set it:
 //   glyphsCache := cache.NewDefaultCache(16*1024*1024) // 16MiB cache

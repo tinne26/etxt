@@ -25,9 +25,15 @@ import "github.com/tinne26/etxt/fract"
 // [unimplemented] - \xNN : fake control code that can be replaced with other codes.
 // TODO: provide some built in functions as control codes. like draw underline or stuff like that
 
-// The text may be added as utf8, raw glyphs or a mix of both,
-// with some styling directives also supported through control
-// codes.
+// A flexible type that can have text content added as utf8, raw
+// glyphs or a mix of both, with some styling directives also being
+// supported through control codes.
+//
+// Almost all the methods on this type can be chained:
+//   text := etxt.NewText().Add("Hello ").PushRGBA(cyan).Add("Color").Pop()
+//
+// Rendering of [Text] requires the use of [RendererComplex] drawing
+// functions.
 type Text struct {
 	buffer []byte
 	oscillation float64
@@ -125,7 +131,9 @@ func (self *Text) PushRGBA(text string, rgba color.RGBA) *Text {
 	return self
 }
 
-func (self *Text) PushFID(fontId uint8) *Text {
+// Formatting directive to change the active font. To cancel
+// the directive, use [Text.Pop]() or [Text.PopAll]().
+func (self *Text) PushFont(fontId uint8) *Text {
 	self.buffer = append(self.buffer, []byte{'\x1F', '\x05', fontId}...)
 	return self
 }
@@ -134,15 +142,22 @@ func (self *Text) PushFID(fontId uint8) *Text {
 //
 // }
 
-// Only relevant when motion effects are used for the text.
+// Returns the current oscillation loop point. The value will
+// always be in the range [0, 1). Only relevant when motion
+// effecs are used for the text.
 func (self *Text) GetOsc() float64 {
 	return self.oscillation
 }
 
+// Sets the current oscillation loop point. The value should be
+// in the range [0, 1). Only relevant when motion effects are
+// used for the text.
 func (self *Text) SetOsc(point float64) {
 	self.oscillation = f64Mod1(point)
 }
 
+// Modify the current oscillation loop point by the given shift.
+// Only relevant when motion effects are used for the text.
 func (self *Text) ShiftOsc(shift float64) {
 	self.oscillation = f64Mod1(self.oscillation + shift)
 }
