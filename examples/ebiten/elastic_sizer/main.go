@@ -6,11 +6,13 @@ import "fmt"
 import "math"
 import "image/color"
 
-import "golang.org/x/image/math/fixed"
 import "github.com/hajimehoshi/ebiten/v2"
+
 import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/esizer"
-import "github.com/tinne26/etxt/ecache"
+import "github.com/tinne26/etxt/fract"
+import "github.com/tinne26/etxt/sizer"
+import "github.com/tinne26/etxt/cache"
+import "github.com/tinne26/etxt/font"
 
 // you can play around with these, but it can get out of hand quite easily
 const SpringText   = "Bouncy!"
@@ -20,7 +22,7 @@ const Timescaling  = 0.8/40.0 // make the first factor smaller to slow down
 const Bounciness   = 25.0
 
 type Game struct {
-	txtRenderer *etxt.Renderer
+	text *etxt.Renderer
 
 	// spring related variables
 	restLength float64
@@ -29,19 +31,22 @@ type Game struct {
 	inertia float64
 	holdX int
 	holding bool
+	qPressed bool
 }
 
 func NewGame(renderer *etxt.Renderer) *Game {
-	textRect := renderer.SelectionRect(SpringText)
-	precacheText(renderer) // not necessary, but a useful example
+	renderer.SetSize(64)
+	textRect := renderer.Measure(SpringText)
+	precacheText(renderer, SpringText) // not necessary, but a useful example
 	return &Game {
-		txtRenderer: renderer,
-		restLength: float64(textRect.Width)/64,
+		text: renderer,
+		restLength: textRect.Width().ToFloat64(),
 		textLen: float64(len([]rune(SpringText))),
 		expansion: 1.0,
 		inertia: 0.0,
 		holdX: 0,
 		holding: false,
+		qPressed: false,
 	}
 }
 
@@ -50,10 +55,23 @@ func (self *Game) Layout(w int, h int) (int, int) {
 	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
 }
 func (self *Game) Update() error {
-	// All this code in Update() doesn't have much to do with text rendering
-	// or anything, it's the spring simulation and related logic. It's the
-	// most complex part of the program, but you may ignore it completely,
-	// as the spring simulation is not even good (too linear).
+	// Logic for switching quantization on / off
+	newQPressed := ebiten.IsKeyPressed(ebiten.KeyQ)
+	if self.qPressed != newQPressed {
+		if !self.qPressed {
+			horzQuant, _ := self.text.Fract().GetQuantization()
+			if horzQuant == etxt.QtFull {
+				self.text.Fract().SetQuantization(etxt.QtNone, etxt.QtFull)
+			} else {
+				self.text.Fract().SetQuantization(etxt.QtFull, etxt.QtFull)
+			}
+		}
+		self.qPressed = newQPressed
+	}
+
+	// Spring simulation logic. This part of the code doesn't have
+	// anything to do with text rendering, so you should just ignore it.
+	// It's not like the spring simulation is even good (too linear).
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		// manual spring manipulation with the mouse
 		if !self.holding {
@@ -82,7 +100,7 @@ func (self *Game) Update() error {
 
 		// apply movement and update inertia
 		movement := (self.inertia + tension)*Timescaling
-		self.inertia += Bounciness*tension*Timescaling
+		self.inertia += Bounciness*tension*Timescaling*ebiten.DeviceScaleFactor()
 		self.expansion = self.expansion + (movement/self.restLength)
 
 		// clamp expansion if it went outside range
@@ -99,44 +117,52 @@ func (self *Game) Update() error {
 	return nil
 }
 
-// For the purposes of this example, the only key line is
-// "sizer.SetHorzPaddingFloat"... but whatever, the others
-// may be interesting too as general usage examples.
+// For the purposes of this example, the only key lines are
+// the ones where we get the sizer and set its padding, but
+// the rest should still be nice for general reference.
 func (self *Game) Draw(screen *ebiten.Image) {
 	// dark background
-	screen.Fill(color.RGBA{ 0, 0, 0, 255 })
+	screen.Fill(color.RGBA{0, 0, 0, 255})
 
-	// get and adjust sizer (we could have stored it earlier too)
-	sizer := self.txtRenderer.GetSizer().(*esizer.HorzPaddingSizer)
-	sizer.SetHorzPaddingFloat((self.expansion*self.restLength - self.restLength)/self.textLen)
+	// get and adjust sizer (we could have stored it earlier too, but no need)
+	sizer := self.text.GetSizer().(*sizer.PaddedKernSizer)
+	letterPad := (self.expansion*self.restLength - self.restLength)/self.textLen
+	sizer.SetPadding(fract.FromFloat64(letterPad))
 
-	// get some values that we will use later
-	w, h := screen.Size()
-	preVertAlign, preHorzAlign := self.txtRenderer.GetAlign()
-	startX := 16
-	if preHorzAlign == etxt.XCenter { startX = w/2 }
+	// get screen size
+	screenBounds := screen.Bounds()
+	sw, sh := screenBounds.Dx(), screenBounds.Dy()
 
 	// draw text
-	self.txtRenderer.SetTarget(screen)
-	self.txtRenderer.Draw(SpringText, startX, h/2)
+	self.text.SetSize(64)
+	self.text.SetAlign(etxt.YCenter | etxt.Left)
+	self.text.SetColor(color.RGBA{255, 255, 255, 255})
+	self.text.Draw(screen, SpringText, sw/16, sh/2)
 
 	// draw fps and instructions text
-	sizer.SetHorzPadding(0)
-	preSize := self.txtRenderer.GetSizePxFract()
+	sizer.SetPadding(0)
+	self.text.SetSize(14)
+	self.text.SetColor(color.RGBA{255, 255, 255, 128})
+	self.text.SetAlign(etxt.Baseline) // vertical
+	
+	// (fps on the right side)
+	self.text.SetAlign(etxt.Right)
+	self.text.Draw(screen, fmt.Sprintf("%.2f FPS", ebiten.ActualFPS()), sw - sh/32, sh - sh/32)
 
-	self.txtRenderer.SetColor(color.RGBA{255, 255, 255, 128})
-	self.txtRenderer.SetAlign(etxt.Baseline, etxt.Right)
-	self.txtRenderer.SetSizePx(int(14*ebiten.DeviceScaleFactor()))
-	self.txtRenderer.Draw(fmt.Sprintf("%.2f FPS", ebiten.CurrentFPS()), w - 8, h - 8)
-	self.txtRenderer.SetHorzAlign(etxt.Left)
-	txt := "click and drag horizontally to interact"
-	if self.holding { txt += " (holding)"}
-	self.txtRenderer.Draw(txt, 8, h - 8)
+	// (quantization in the middle)
+	self.text.SetAlign(etxt.XCenter)
+	horzQuant, _ := self.text.Fract().GetQuantization()
+	if horzQuant == etxt.QtFull {
+		self.text.Draw(screen, "Quantization ON [Q]", sw/2, sh - sh/32)
+	} else {
+		self.text.Draw(screen, "Quantization OFF [Q]", sw/2, sh - sh/32)
+	}	
 
-	// restore renderer state after fps/instructions
-	self.txtRenderer.SetColor(color.RGBA{255, 255, 255, 255})
-	self.txtRenderer.SetAlign(preVertAlign, preHorzAlign)
-	self.txtRenderer.SetSizePxFract(preSize)
+	// (instructions on the left side)
+	self.text.SetAlign(etxt.Left)
+	instructions := "Click and drag horizontally"
+	if self.holding { instructions += " (holding)" }
+	self.text.Draw(screen, instructions, sh/32, sh - sh/32)
 }
 
 func main() {
@@ -148,27 +174,25 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
+	glyphCache := cache.NewDefaultCache(1024*1024*1024) // 1GB cache
 
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(int(64*ebiten.DeviceScaleFactor()))
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.Left) // you can try etxt.XCenter too
-	renderer.SetSizer(&esizer.HorzPaddingSizer{})
-	renderer.SetQuantizerStep(1, 64) // *
+	renderer := etxt.NewRenderer()
+	renderer.SetCacheHandler(glyphCache.NewHandler())
+	renderer.SetScale(ebiten.DeviceScaleFactor())
+	renderer.SetFont(sfntFont)
+	renderer.SetSizer(&sizer.PaddedKernSizer{})
+	renderer.Fract().SetQuantization(etxt.QtNone, etxt.QtFull) // *
 	// * Disabling horizontal quantization is helpful here to get
 	//   smoother results. But it also means we have to cache each
 	//   glyph in 64 different positions! At big sizes this is not
-	//   cheap. You can try commenting it out to see the difference.
-	//   You may also use bigger step values and see how the animation
-	//   becomes more or less smooth.
+	//   cheap. The program allows pressing [Q] to see the results
+	//   with and without quantization.
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/elastic")
@@ -177,24 +201,21 @@ func main() {
 	if err != nil { log.Fatal(err) }
 }
 
-// This code has been added mostly to provide an example of how to manually
-// cache text at fractional px positions. It might serve as a nice example of
-// fixed.Int26_6 manipulation.
-//
-// More effective caching mechanisms may be added to etxt in the future,
-// but this is a good example of how to do it by hand if required.
-func precacheText(renderer *etxt.Renderer) {
-	tmpTarget := ebiten.NewImage(1, 1)
-	renderer.SetTarget(tmpTarget)
-	for i := 0; i < 64; i++ {
-		renderer.DrawFract(SpringText, fixed.Int26_6(i), 0)
+// This code has been added mostly to provide an example of
+// how to manually cache text at fractional px positions.
+func precacheText(renderer *etxt.Renderer, text string) {
+	for _, codePoint := range text {
+		index := renderer.Glyph().RuneIndex(codePoint)
+		for x := fract.Unit(0); x < fract.One; x++ {
+			dot := fract.UnitsToPoint(x, 0)
+			_ = renderer.Glyph().LoadMask(index, dot)
+		}
 	}
-	renderer.SetTarget(nil)
-	tmpTarget.Dispose()
 
 	// print info about cache size
-	cacheHandler := renderer.GetCacheHandler().(*ecache.DefaultCacheHandler)
+	cacheHandler := renderer.GetCacheHandler().(*cache.DefaultCacheHandler)
 	peakSize := cacheHandler.PeakCacheSize()
-	mbSize := float64(peakSize)/1024/1024
-	fmt.Printf("Cache size after pre-caching: %d bytes (%.2fMB)\n", peakSize, mbSize)
+	mbSize := float64(peakSize)/(1024*1024)
+	numEntries := cacheHandler.NumEntries()
+	fmt.Printf("Cache size after pre-caching: %d entries, %d bytes (%.2fMB)\n", numEntries, peakSize, mbSize)
 }

@@ -129,6 +129,14 @@ func (self *DefaultCache) PeakSize() int {
 	return int(atomic.LoadUint32(&self.byteSizeLimit) - atomic.LoadUint32(&self.lowestBytesLeft))
 }
 
+// Returns the number of cached masks currently in the cache.
+func (self *DefaultCache) NumEntries() int {
+	self.mutex.RLock()
+	numEntries := len(self.cachedMasks)
+	self.mutex.RUnlock()
+	return numEntries
+}
+
 // Gets the mask associated to the given key.
 func (self *DefaultCache) GetMask(key [3]uint64) (GlyphMask, bool) {
 	self.mutex.RLock()

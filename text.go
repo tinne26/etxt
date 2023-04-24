@@ -101,7 +101,7 @@ func (self *Text) AddPad(logicalPad fract.Unit) *Text {
 	return self
 }
 
-func (self *Text) AddGFX(gfxId uint8, logicalAdvance fract.Unit, payload uint16) *Text {
+func (self *Text) AddGraphic(gfxId uint8, logicalAdvance fract.Unit, payload uint16) *Text {
 	f1, f2, f3 := fractToBytes(logicalAdvance)
 	p1, p2 := uint8(payload), uint8(payload >> 8)
 	self.buffer = append(self.buffer, []byte{'\x1F', '\x02', gfxId, f1, f2, f3, p1, p2}...)
@@ -110,14 +110,14 @@ func (self *Text) AddGFX(gfxId uint8, logicalAdvance fract.Unit, payload uint16)
 
 // Formatting directive to set a background draw function.
 // To cancel the directive, use [Text.Pop]() or [Text.PopAll]().
-func (self *Text) PushBGND(gfxId uint8, logicalPad fract.Unit, payload uint16) *Text {
+func (self *Text) PushBackground(gfxId uint8, logicalPad fract.Unit, payload uint16) *Text {
 	f1, f2, f3 := fractToBytes(logicalPad)
 	p1, p2 := uint8(payload), uint8(payload >> 8)
 	self.buffer = append(self.buffer, []byte{'\x1F', '\x03', gfxId, f1, f2, f3, p1, p2}...)
 	return self
 }
 
-func (self *Text) PushFGND(gfxId uint8, logicalPad fract.Unit, payload uint16) *Text {
+func (self *Text) PushForeground(gfxId uint8, logicalPad fract.Unit, payload uint16) *Text {
 	f1, f2, f3 := fractToBytes(logicalPad)
 	p1, p2 := uint8(payload), uint8(payload >> 8)
 	self.buffer = append(self.buffer, []byte{'\x1F', '\x04', gfxId, f1, f2, f3, p1, p2}...)

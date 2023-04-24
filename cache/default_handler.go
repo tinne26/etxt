@@ -73,6 +73,11 @@ func (self *DefaultCacheHandler) PeakCacheSize() int {
 	return self.cache.PeakSize()
 }
 
+// Provides access to [DefaultCache.NumEntries]().
+func (self *DefaultCacheHandler) NumEntries() int {
+	return self.cache.NumEntries()
+}
+
 // Provides access to the underlying [DefaultCache].
 func (self *DefaultCacheHandler) Cache() *DefaultCache {
 	return self.cache

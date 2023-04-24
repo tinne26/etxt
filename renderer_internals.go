@@ -29,7 +29,8 @@ func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
 // loadGlyphMask loads the mask for the given glyph at the given fractional
 // pixel position. The renderer's cache handler, font, size, rasterizer and
 // mask format are all taken into account.
-// Precondition: !self.missingBasicProps()
+// Precondition: !self.missingBasicProps(), rasterizer initialized,
+// dot position communicated to the cache if relevant.
 func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, dot fract.Point) GlyphMask {
 	// if the mask is available in the cache, that's all
 	glyphMask, found := self.cacheHandler.GetMask(index)

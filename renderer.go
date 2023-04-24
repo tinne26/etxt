@@ -234,6 +234,38 @@ func (self *Renderer) GetColor() color.Color {
 	return self.fontColor
 }
 
+// Returns the current [sizer.Sizer].
+//
+// The most common use of sizers is adjusting line height or glyph
+// interspacing. Outside of that, sizers can also be relevant when
+// trying to obtain information about font metrics or when making
+// custom glyph mask rasterizers, but it's fairly uncommon for the
+// average user to have to worry about all these things.
+func (self *Renderer) GetSizer() sizer.Sizer {
+	self.initSizer()
+	return self.fontSizer
+}
+
+// Sets the sizer to be used on subsequent operations. Nil sizers are
+// not allowed.
+//
+// The most common use of sizers is adjusting line height or glyph
+// interspacing. Outside of that, sizers can also be relevant when
+// trying to obtain information about font metrics or when making
+// custom glyph mask rasterizers, but it's fairly uncommon for the
+// average user to have to worry about all these things.
+func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
+	self.fontSizer = fontSizer
+	self.internalFlags |= internalFlagSizer
+}
+
+func (self *Renderer) initSizer() {
+	if self.internalFlags & internalFlagSizer == 0 {
+		self.internalFlags |= internalFlagSizer
+		self.fontSizer = &sizer.DefaultSizer{}
+	}
+}
+
 // Returns the current glyph cache handler, which is nil by default.
 //
 // Rarely used unless you are examining the cache handler manually.
