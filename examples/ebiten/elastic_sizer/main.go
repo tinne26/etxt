@@ -155,7 +155,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	sizer.SetPadding(0)
 	self.text.SetSize(InfoTextSize)
 	self.text.SetColor(color.RGBA{255, 255, 255, 128})
-	self.text.SetAlign(etxt.Baseline) // vertical
+	self.text.SetAlign(etxt.TopBaseline) // vertical
 	
 	// (fps on the right side)
 	self.text.SetAlign(etxt.Right)

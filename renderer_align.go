@@ -53,7 +53,7 @@ const (
 // you can use calls like [Renderer.SetAlign](etxt.[Right]) to change only
 // one of the components (the horizontal one in this case).
 //
-// By default, the renderer's align is (etxt.[Baseline] | etxt.[Left]).
+// By default, the renderer's align is (etxt.[Left] | etxt.[TopBaseline]).
 //
 // [this image]: https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_aligns.png
 func (self *Renderer) SetAlign(align Align) {
