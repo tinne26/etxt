@@ -64,9 +64,10 @@ func (self *Game) Draw(screen *ebiten.Image) {
 
 	// draw fps and other info for fun
 	self.text.SetSize(14)
-	self.text.SetAlign(etxt.Baseline | etxt.Right)
+	self.text.SetAlign(etxt.Right | etxt.TopBaseline)
 	info := fmt.Sprintf("%d glyphs - %.2fFPS", len(self.content), ebiten.ActualFPS())
-	self.text.Draw(screen, info, w - w/32, h - h/32)
+	pad := int((ebiten.DeviceScaleFactor()*float64(h))/64)
+	self.text.Draw(screen, info, w - pad, h - pad)
 }
 
 func main() {
