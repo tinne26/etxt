@@ -1,4 +1,4 @@
-module github.com/tinne26/examples/v9/words
+module github.com/tinne26/examples/ebiten/words
 
 go 1.19
 

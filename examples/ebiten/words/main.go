@@ -2,7 +2,7 @@ package main
 
 import ( "math" ; "image/color" )
 import "github.com/hajimehoshi/ebiten/v2"
-import "github.com/tinne26/etxt" // v0.0.9+
+import "github.com/tinne26/etxt"
 import "github.com/tinne26/fonts/liberation/lbrtserif"
 
 const WordsPerSec = 2.71828

@@ -101,7 +101,7 @@ func (self *Renderer) initBasicProps() {
 	self.fontColor = color.RGBA{255, 255, 255, 255}
 	self.horzQuantization = uint8(QtFull)
 	self.vertQuantization = uint8(QtFull)
-	self.align = Left | Baseline
+	self.align = Left | TopBaseline
 	self.scale = 64
 	self.logicalSize = 16*64
 	self.scaledSize  = 16*64

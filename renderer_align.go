@@ -10,7 +10,8 @@ type Align uint8
 
 // Returns the vertical component of the align. If the
 // align is valid, the result can only be one of the
-// following: [Top], [YCenter], [Baseline], [Bottom].
+// following: [Top], [TopBaseline], [YCenter], [BottomBaseline],
+// [Bottom].
 func (self Align) Vert() Align { return alignVertBits & self }
 
 // Returns the horizontal component of the align. If the
@@ -22,19 +23,20 @@ func (self Align) Horz() Align { return alignHorzBits & self }
 // and horizontal aligns can be combined with a bitwise
 // OR (|).
 const (
-	Left    Align = 0b0001_0000 // horizontal align
-	XCenter Align = 0b0010_0000 // horizontal align
-	Right   Align = 0b0100_0000 // horizontal align
+	Left    Align = 0b0010_0000 // horizontal align
+	XCenter Align = 0b0100_0000 // horizontal align
+	Right   Align = 0b1000_0000 // horizontal align
 
-	Top      Align = 0b0000_0001 // vertical align
-	YCenter  Align = 0b0000_0010 // vertical align
-	Baseline Align = 0b0000_0100 // vertical align
-	Bottom   Align = 0b0000_1000 // vertical align
+	Top            Align = 0b0000_0001 // vertical align
+	TopBaseline    Align = 0b0000_0010 // vertical align
+	YCenter        Align = 0b0000_0100 // vertical align
+	BottomBaseline Align = 0b0000_1000 // vertical align
+	Bottom         Align = 0b0001_0000 // vertical align
 
 	Center Align = XCenter | YCenter // full align
 	
-	alignVertBits Align = 0b0000_1111 // bit mask
-	alignHorzBits Align = 0b1111_0000 // bit mask
+	alignVertBits Align = 0b0001_1111 // bit mask
+	alignHorzBits Align = 0b1110_0000 // bit mask
 )
 
 // The renderer's align defines how [Renderer.Draw]() and other operations
@@ -73,7 +75,7 @@ func (self *Renderer) SetAlign(align Align) {
 	vertAlign := align.Vert()
 	if vertAlign != 0 {
 		switch vertAlign {
-		case Top, YCenter, Baseline, Bottom:
+		case Top, TopBaseline, YCenter, BottomBaseline, Bottom:
 			self.align = vertAlign | (self.align & alignHorzBits)
 		default:
 			panic("invalid vertical component in align")

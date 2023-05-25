@@ -43,11 +43,20 @@ func (self *Renderer) fractDraw(target TargetImage, text string, x, y fract.Unit
 	switch self.align.Vert() {
 	case Top:
 		y = (y + ascent).QuantizeUp(fract.Unit(self.vertQuantization))
+	case TopBaseline:
+		y = y.QuantizeUp(fract.Unit(self.vertQuantization))
 	case YCenter:
 		height := self.fractMeasureHeight(text)
 		y = (y + ascent - (height >> 1)).QuantizeUp(fract.Unit(self.vertQuantization))
-	case Baseline:
-		y = y.QuantizeUp(fract.Unit(self.vertQuantization))
+	case BottomBaseline:
+		height := self.fractMeasureHeight(text)
+		lineHeight := self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
+		if height <= lineHeight {
+			y = (y - height).QuantizeUp(fract.Unit(self.vertQuantization))
+		} else {
+			height -= lineHeight
+			y = (y - height).QuantizeUp(fract.Unit(self.vertQuantization))
+		}
 	case Bottom:
 		height := self.fractMeasureHeight(text)
 		y = (y + ascent - height).QuantizeUp(fract.Unit(self.vertQuantization))
