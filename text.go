@@ -18,6 +18,7 @@ import "github.com/tinne26/etxt/fract"
 // - \x06 : directive to change the active font index.
 // [unimplemented] - \x07 : directive to set the vertical shake function.
 // [unimplemented] - \x08 : arbitrary configuration transform [func(*Renderer, isDraw, isUndo, payload)]
+//                          ^ this becomes specially useful now that we have custom draw funcs!
 // [unimplemented] - \x09 : move the start point to a given logical offset... or current position.
 // [unimplemented] - \x10 : set run direction
 // [unimplemented] - \x11 : define glyph pos adjustments

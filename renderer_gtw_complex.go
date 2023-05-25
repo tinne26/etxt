@@ -67,20 +67,14 @@ func (self *RendererComplex) GetFontIndex() int {
 	return int((*Renderer)(self).fontIndex)
 }
 
-// Same as [Renderer.Draw](), but expecting a [Text] instead of a string.
+// Same as [RendererFract.Draw](), but expecting a [Text] instead of a string.
 func (self *RendererComplex) Draw(screen TargetImage, text Text, x, y fract.Unit) {
 	panic("unimplemented / TODO")
 }
 
-// Same as [Renderer.DrawWithWrap](), but expecting a [Text] instead of a string.
-func (self *RendererComplex) DrawWithWrap(screen TargetImage, text Text, x, y, widthLimit fract.Unit) {
+// Same as [RendererFract.DrawWithWrap](), but expecting a [Text] instead of a string.
+func (self *RendererComplex) DrawWithWrap(screen TargetImage, text Text, x, y fract.Unit, widthLimit int) {
 	panic("unimplemented / TODO")
-}
-
-// Exposes the renderer's internal [*sfnt.Buffer].
-// Only exposed for advanced interaction with the sfnt package.
-func (self *RendererComplex) GetBuffer() *sfnt.Buffer {
-	return &((*Renderer)(self).buffer)
 }
 
 // ---- implementations ----

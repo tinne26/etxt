@@ -55,6 +55,7 @@ const (
 type Renderer struct {
 	fonts []*sfnt.Font
 	gfxFuncs []func(*Renderer, TargetImage, fract.Rect, uint16)
+	customDrawFn func(TargetImage, sfnt.GlyphIndex, fract.Point)
 
 	buffer sfnt.Buffer
 

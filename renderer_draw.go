@@ -149,8 +149,12 @@ func (self *Renderer) fractDrawLTR(target TargetImage, text string, reverse bool
 		latestFractX = newestFractX
 
 		// draw glyph
-		mask := self.loadGlyphMask(font, currGlyphIndex, dot)
-		self.defaultDrawFunc(target, dot, mask)
+		if self.customDrawFn != nil {
+			self.customDrawFn(target, currGlyphIndex, dot)
+		} else {
+			mask := self.loadGlyphMask(font, currGlyphIndex, dot)
+			self.defaultDrawFunc(target, dot, mask)
+		}
 
 		// advance
 		dot.X += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
@@ -214,8 +218,12 @@ func (self *Renderer) fractDrawRTL(target TargetImage, text string, reverse bool
 		}
 
 		// draw glyph
-		mask := self.loadGlyphMask(font, currGlyphIndex, dot)
-		self.defaultDrawFunc(target, dot, mask)
+		if self.customDrawFn != nil {
+			self.customDrawFn(target, currGlyphIndex, dot)
+		} else {
+			mask := self.loadGlyphMask(font, currGlyphIndex, dot)
+			self.defaultDrawFunc(target, dot, mask)
+		}
 
 		// apply kerning unless coming from line break
 		if lineBreakNth != 0 {
@@ -286,8 +294,12 @@ outerLoop:
 				}
 
 				// draw glyph
-				mask := self.loadGlyphMask(font, currGlyphIndex, dot)
-				self.defaultDrawFunc(target, dot, mask)
+				if self.customDrawFn != nil {
+					self.customDrawFn(target, currGlyphIndex, dot)
+				} else {
+					mask := self.loadGlyphMask(font, currGlyphIndex, dot)
+					self.defaultDrawFunc(target, dot, mask)
+				}
 
 				// advance
 				dot.X += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)

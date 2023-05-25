@@ -102,6 +102,10 @@ func (self *RendererFract) Draw(target TargetImage, text string, x, y fract.Unit
 	(*Renderer)(self).fractDraw(target, text, x, y)
 }
 
+func (self *RendererFract) DrawWithWrap(target TargetImage, text string, x, y fract.Unit, widthLimit int) {
+	(*Renderer)(self).fractDrawWithWrap(target, text, x, y, widthLimit)
+}
+
 // ---- underlying implementations ----
 
 func (self *Renderer) fractSetSize(size fract.Unit) {

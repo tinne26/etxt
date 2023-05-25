@@ -16,6 +16,8 @@ import "github.com/tinne26/etxt/font"
 
 // you can play around with these, but it can get out of hand quite easily
 const SpringText   = "Bouncy!"
+const MainTextSize = 64
+const InfoTextSize = 14
 const MinExpansion = 0.34 // must be strictly below 1.0
 const MaxExpansion = 4.0  // must be strictly above 1.0
 const Timescaling  = 0.8/40.0 // make the first factor smaller to slow down
@@ -35,9 +37,15 @@ type Game struct {
 }
 
 func NewGame(renderer *etxt.Renderer) *Game {
-	renderer.SetSize(64)
+	renderer.SetScale(ebiten.DeviceScaleFactor())
+	renderer.SetSize(MainTextSize)
 	textRect := renderer.Measure(SpringText)
-	precacheText(renderer, SpringText) // not necessary, but a useful example
+	
+	// caching example (not strictly necessary)
+	precacheText(renderer, SpringText)
+	renderer.SetSize(InfoTextSize)
+	precacheText(renderer, "0123456789QOCFPSacdeghklnoqrtuy[]()")
+	
 	return &Game {
 		text: renderer,
 		restLength: textRect.Width().ToFloat64(),
@@ -50,10 +58,14 @@ func NewGame(renderer *etxt.Renderer) *Game {
 	}
 }
 
-func (self *Game) Layout(w int, h int) (int, int) {
+func (self *Game) Layout(winWidth int, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
-	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+	self.text.SetScale(scale) // relevant for HiDPI
+	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
+	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	return canvasWidth, canvasHeight
 }
+
 func (self *Game) Update() error {
 	// Logic for switching quantization on / off
 	newQPressed := ebiten.IsKeyPressed(ebiten.KeyQ)
@@ -134,14 +146,14 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	sw, sh := screenBounds.Dx(), screenBounds.Dy()
 
 	// draw text
-	self.text.SetSize(64)
+	self.text.SetSize(MainTextSize)
 	self.text.SetAlign(etxt.YCenter | etxt.Left)
 	self.text.SetColor(color.RGBA{255, 255, 255, 255})
 	self.text.Draw(screen, SpringText, sw/16, sh/2)
 
 	// draw fps and instructions text
 	sizer.SetPadding(0)
-	self.text.SetSize(14)
+	self.text.SetSize(InfoTextSize)
 	self.text.SetColor(color.RGBA{255, 255, 255, 128})
 	self.text.SetAlign(etxt.Baseline) // vertical
 	
@@ -178,13 +190,12 @@ func main() {
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	glyphCache := cache.NewDefaultCache(1024*1024*1024) // 1GB cache
+	// create cache manually as we want it to be fairly big
+	glyphCache := cache.NewDefaultCache(512*1024*1024) // 512MiB cache
 
 	// create and configure renderer
 	renderer := etxt.NewRenderer()
 	renderer.SetCacheHandler(glyphCache.NewHandler())
-	renderer.SetScale(ebiten.DeviceScaleFactor())
 	renderer.SetFont(sfntFont)
 	renderer.SetSizer(&sizer.PaddedKernSizer{})
 	renderer.Fract().SetQuantization(etxt.QtNone, etxt.QtFull) // *
@@ -203,13 +214,14 @@ func main() {
 
 // This code has been added mostly to provide an example of
 // how to manually cache text at fractional px positions.
+//
+// Notice that the font, size, scale and quantization mode
+// must be already properly set if we want the caching to be
+// meaningful.
 func precacheText(renderer *etxt.Renderer, text string) {
 	for _, codePoint := range text {
 		index := renderer.Glyph().RuneIndex(codePoint)
-		for x := fract.Unit(0); x < fract.One; x++ {
-			dot := fract.UnitsToPoint(x, 0)
-			_ = renderer.Glyph().LoadMask(index, dot)
-		}
+		renderer.Glyph().CacheIndex(index)
 	}
 
 	// print info about cache size

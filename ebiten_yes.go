@@ -52,7 +52,7 @@ func (self *Renderer) defaultDrawFunc(target TargetImage, dot fract.Point, mask 
 
 	// TODO: maybe switch to DrawTriangles, but specially, move opts out (tricky due to gtxt)
 	//       and have color set only when necessary, translations reset, blend mode set only
-	//       when necessary, etc.
+	//       when necessary, etc. Or maybe not.
 	opts := ebiten.DrawImageOptions{}
 	srcRect := mask.Bounds()
 	opts.GeoM.Translate(float64(dot.X.ToIntFloor() + srcRect.Min.X), float64(dot.Y.ToIntFloor() + srcRect.Min.Y))
