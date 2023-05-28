@@ -258,8 +258,11 @@ func (self *Renderer) GetSizer() sizer.Sizer {
 // custom glyph mask rasterizers, but it's fairly uncommon for the
 // average user to have to worry about all these things.
 func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
-	self.fontSizer = fontSizer
 	self.internalFlags |= internalFlagSizer
+	if self.fontSizer == fontSizer { return }
+	self.fontSizer = fontSizer
+	if self.missingBasicProps() { self.initBasicProps() }
+	self.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.scaledSize)
 }
 
 func (self *Renderer) initSizer() {

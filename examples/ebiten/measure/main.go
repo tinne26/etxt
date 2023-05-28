@@ -8,11 +8,10 @@ import "fmt"
 import "github.com/hajimehoshi/ebiten/v2"
 
 import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/fract"
 import "github.com/tinne26/etxt/font"
 
 // This example allows you to interactively write text in an Ebitengine
-// program and see how the SelectionRect for the text changes. You
+// program and see how the measurement rect for the text changes. You
 // can use backspace to remove characters, and enter to create line
 // breaks.
 
@@ -24,8 +23,12 @@ type Game struct {
 
 func (self *Game) Layout(w int, h int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
-	return int(float64(w)*scale), int(float64(h)*scale)
+	self.text.SetScale(scale) // relevant for HiDPI
+	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
+	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	return canvasWidth, canvasHeight
 }
+
 func (self *Game) Update() error {
 	backspacePressed := ebiten.IsKeyPressed(ebiten.KeyBackspace)
 	enterPressed     := ebiten.IsKeyPressed(ebiten.KeyEnter)
@@ -54,7 +57,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	w, h := bounds.Dx(), bounds.Dy()
 	x, y := h/32, h/32
 	rect := self.text.Measure(string(self.content))
-	rect  = rect.AddUnits(fract.FromInt(x), fract.FromInt(y))
+	rect  = rect.AddInts(x, y)
 	area := screen.SubImage(rect.ImageRect()).(*ebiten.Image)
 	area.Fill(color.RGBA{ 8, 72, 88, 255 })
 
@@ -86,12 +89,11 @@ func main() {
 	// create and configure renderer
 	renderer := etxt.NewRenderer()
 	renderer.Utils().SetCache8MiB()
-	renderer.SetScale(ebiten.DeviceScaleFactor())
 	renderer.SetColor(color.RGBA{255, 255, 255, 255}) // white
 	renderer.SetFont(sfntFont)
 
 	// run the game
-	ebiten.SetWindowTitle("etxt/examples/ebiten/select_rect_viz")
+	ebiten.SetWindowTitle("etxt/examples/ebiten/measure")
 	ebiten.SetWindowSize(640, 480)
 	err = ebiten.RunGame(&Game { renderer, 0, []rune("Interactive text") })
 	if err != nil { log.Fatal(err) }

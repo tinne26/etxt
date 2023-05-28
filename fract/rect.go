@@ -65,6 +65,15 @@ func (self Rect) AddUnits(x, y Unit) Rect {
 	return self
 }
 
+func (self Rect) AddInts(x, y int) Rect {
+	xFract, yFract := FromInt(x), FromInt(y)
+	return self.AddUnits(xFract, yFract)
+}
+
+func (self Rect) AddImagePoint(point image.Point) Rect {
+	return self.AddInts(point.X, point.Y)
+}
+
 func (self Rect) AddPoint(pt Point) Rect {
 	return self.AddUnits(pt.X, pt.Y)
 }

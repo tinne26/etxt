@@ -1,4 +1,4 @@
-module github.com/tinne26/etxt/examples/ebiten/select_rect_viz
+module github.com/tinne26/etxt/examples/ebiten/measure
 
 go 1.19
 
