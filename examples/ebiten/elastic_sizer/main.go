@@ -220,7 +220,7 @@ func main() {
 // meaningful.
 func precacheText(renderer *etxt.Renderer, text string) {
 	for _, codePoint := range text {
-		index := renderer.Glyph().RuneIndex(codePoint)
+		index := renderer.Glyph().GetRuneIndex(codePoint)
 		renderer.Glyph().CacheIndex(index)
 	}
 
