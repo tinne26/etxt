@@ -47,7 +47,7 @@ type drawOptions *ebiten.DrawImageOptions
 // The default glyph drawing function used in renderers. Do not confuse with
 // the main [Renderer.Draw]() function. DefaultDrawFunc is a low level function,
 // rarely necessary except when paired with [Renderer.Traverse]*() operations.
-func (self *Renderer) defaultDrawFunc(target TargetImage, dot fract.Point, mask GlyphMask) {
+func (self *Renderer) defaultDrawFunc(target TargetImage, origin fract.Point, mask GlyphMask) {
 	if mask == nil { return } // spaces and empty glyphs will be nil
 
 	// TODO: maybe switch to DrawTriangles, but specially, move opts out (tricky due to gtxt)
@@ -55,7 +55,7 @@ func (self *Renderer) defaultDrawFunc(target TargetImage, dot fract.Point, mask 
 	//       when necessary, etc. Or maybe not.
 	opts := ebiten.DrawImageOptions{}
 	srcRect := mask.Bounds()
-	opts.GeoM.Translate(float64(dot.X.ToIntFloor() + srcRect.Min.X), float64(dot.Y.ToIntFloor() + srcRect.Min.Y))
+	opts.GeoM.Translate(float64(origin.X.ToIntFloor() + srcRect.Min.X), float64(origin.Y.ToIntFloor() + srcRect.Min.Y))
 	r, g, b, a := colorToFloat32(self.fontColor)
 	opts.ColorScale.Scale(r, g, b, a)
 	opts.Blend = self.blendMode

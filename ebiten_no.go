@@ -36,13 +36,13 @@ func convertAlphaImageToGlyphMask(i *image.Alpha) GlyphMask { return i }
 // The default glyph drawing function used in renderers. Do not confuse with
 // the main [Renderer.Draw]() function. DefaultDrawFunc is a low level function,
 // rarely necessary except when paired with [Renderer.Traverse]*() operations.
-func (self *Renderer) DefaultDrawFunc(dot fixed.Point26_6, mask GlyphMask, _ GlyphIndex) {
+func (self *Renderer) DefaultDrawFunc(origin fixed.Point26_6, mask GlyphMask, _ GlyphIndex) {
 	if mask == nil { return } // spaces and empty glyphs will be nil
 
 	// compute src and target rects within bounds
 	targetBounds := self.target.Bounds()
 	srcRect := mask.Rect
-	shift := image.Pt(dot.X.Floor(), dot.Y.Floor())
+	shift := image.Pt(origin.X.Floor(), origin.Y.Floor())
 	targetRect := targetBounds.Intersect(srcRect.Add(shift))
 	if targetRect.Empty() { return }
 	shift.X, shift.Y = -shift.X, -shift.Y

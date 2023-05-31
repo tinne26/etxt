@@ -4,13 +4,13 @@ import "image"
 
 import "github.com/tinne26/etxt/fract"
 
-// Given the glyph bounds and a dot position indicating the subpixel
+// Given the glyph bounds and an origin position indicating the subpixel
 // positioning (only lowest bits will be taken into account), it returns
 // the bounding integer width and heights, the normalization offset to be
 // applied to keep the coordinates in the positive plane, and the final
 // offset to be applied on the final mask to align its bounds to the glyph
 // origin. This is used in Rasterize() functions.
-func figureOutBounds(bounds fract.Rect, dot fract.Point) (int, int, fract.Point, image.Point) {
+func figureOutBounds(bounds fract.Rect, origin fract.Point) (int, int, fract.Point, image.Point) {
 	floorMinX := bounds.Min.X.Floor()
 	floorMinY := bounds.Min.Y.Floor()
 	var maskCorrection image.Point
@@ -18,8 +18,8 @@ func figureOutBounds(bounds fract.Rect, dot fract.Point) (int, int, fract.Point,
 	maskCorrection.Y = floorMinY.ToIntFloor()
 
 	var normOffset fract.Point
-	normOffset.X = -floorMinX + dot.X.FractShift()
-	normOffset.Y = -floorMinY + dot.Y.FractShift()
+	normOffset.X = -floorMinX + origin.X.FractShift()
+	normOffset.Y = -floorMinY + origin.Y.FractShift()
 	width  := (bounds.Max.X + normOffset.X).Ceil()
 	height := (bounds.Max.Y + normOffset.Y).Ceil()
 	return width.ToIntFloor(), height.ToIntFloor(), normOffset, maskCorrection

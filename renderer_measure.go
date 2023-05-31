@@ -56,7 +56,7 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 	self.initSizer()
 
 	// set up traversal variables
-	var dot fract.Point
+	var origin fract.Point
 	var maxLineWidth fract.Unit
 	var prevGlyphIndex sfnt.GlyphIndex
 	var lineBreakNth int = -1
@@ -72,21 +72,21 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 			lineBreakNth += 1
 
 			// update max width
-			if dot.X > maxLineWidth {
-				maxLineWidth = dot.X
+			if origin.X > maxLineWidth {
+				maxLineWidth = origin.X
 			}
 
-			// move dot to next line
-			dot.X = 0
-			dot.Y += self.fontSizer.LineAdvance(font, &self.buffer, self.scaledSize, lineBreakNth)
-			dot.Y = dot.Y.QuantizeUp(vertQuant)
+			// move pen position to next line
+			origin.X = 0
+			origin.Y += self.fontSizer.LineAdvance(font, &self.buffer, self.scaledSize, lineBreakNth)
+			origin.Y = origin.Y.QuantizeUp(vertQuant)
 			continue
 		}
 
 		// apply line height if first time hitting a non line break
 		if !hasLineHeight {
-			dot.Y += self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
-			dot.Y  = dot.Y.QuantizeUp(vertQuant)
+			origin.Y += self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
+			origin.Y  = origin.Y.QuantizeUp(vertQuant)
 			hasLineHeight = true
 		}
 
@@ -97,27 +97,27 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 		if lineBreakNth != 0 {
 			lineBreakNth = 0
 		} else {
-			dot.X += self.fontSizer.Kern(font, &self.buffer, self.scaledSize, prevGlyphIndex, currGlyphIndex)
-			dot.X = dot.X.QuantizeUp(horzQuant) // quantize
+			origin.X += self.fontSizer.Kern(font, &self.buffer, self.scaledSize, prevGlyphIndex, currGlyphIndex)
+			origin.X = origin.X.QuantizeUp(horzQuant) // quantize
 		}
 
 		// advance
-		dot.X += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
+		origin.X += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
 		
 		// update previous glyph
 		prevGlyphIndex = currGlyphIndex
 	}
 	
 	// compare x for the last line
-	if dot.X > maxLineWidth {
-		maxLineWidth = dot.X
+	if origin.X > maxLineWidth {
+		maxLineWidth = origin.X
 	}
 	
 	// set and quantize final result
-	dot.X = maxLineWidth.QuantizeUp(horzQuant)
+	origin.X = maxLineWidth.QuantizeUp(horzQuant)
 
 	// return result
-	return fract.Rect{ Min: fract.Point{}, Max: dot }
+	return fract.Rect{ Min: fract.Point{}, Max: origin }
 }
 
 func (self *Renderer) fractMeasureHeight(text string) fract.Unit {
@@ -176,7 +176,7 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 	self.initSizer()
 	
 	// set up traversal variables
-	var dot fract.Point
+	var origin fract.Point
 	var maxLineWidth fract.Unit
 	var prevGlyphIndex sfnt.GlyphIndex
 	var lineBreakNth int = -1
@@ -193,14 +193,14 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 
 		// --- line break case ---
 		if codePoint == '\n' {
-			if dot.X > maxLineWidth { maxLineWidth = dot.X }
+			if origin.X > maxLineWidth { maxLineWidth = origin.X }
 
-			// move dot to next line
+			// move pen position to next line
 			if lineBreakNth == -1 { lineBreakNth = 0 }
 			lineBreakNth += 1
-			dot.X = 0
-			dot.Y += self.fontSizer.LineAdvance(font, &self.buffer, self.scaledSize, lineBreakNth)
-			dot.Y = dot.Y.QuantizeUp(vertQuant)
+			origin.X = 0
+			origin.Y += self.fontSizer.LineAdvance(font, &self.buffer, self.scaledSize, lineBreakNth)
+			origin.Y = origin.Y.QuantizeUp(vertQuant)
 
 			// keep going
 			index += runeSize
@@ -214,13 +214,13 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 
 		// apply line height if first time hitting a non line break
 		if !hasLineHeight {
-			dot.Y += self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
-			dot.Y  = dot.Y.QuantizeUp(vertQuant)
+			origin.Y += self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
+			origin.Y  = origin.Y.QuantizeUp(vertQuant)
 			hasLineHeight = true
 		}
 
 		// memorize this as it may be needed later in some cases
-		memoX := dot.X
+		memoX := origin.X
 
 		// get glyph index
 		currGlyphIndex := self.getGlyphIndex(font, codePoint)
@@ -229,12 +229,12 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 		if lineBreakNth != 0 {
 			lineBreakNth = 0
 		} else {
-			dot.X += self.fontSizer.Kern(font, &self.buffer, self.scaledSize, prevGlyphIndex, currGlyphIndex)
-			dot.X = dot.X.QuantizeUp(horzQuant) // quantize
+			origin.X += self.fontSizer.Kern(font, &self.buffer, self.scaledSize, prevGlyphIndex, currGlyphIndex)
+			origin.X = origin.X.QuantizeUp(horzQuant) // quantize
 		}
 
 		// advance
-		dot.X += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
+		origin.X += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
 
 		// --- operation logic breakdown ---
 		// if the glyph fits in the line or is the first in the line, we advance.
@@ -242,7 +242,7 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 		// if it's part of the first word, we use the memorized X and force a jump
 		// to the next line too.
 
-		if dot.X <= widthLimit { // glyph fits in the line
+		if origin.X <= widthLimit { // glyph fits in the line
 			if codePoint == ' ' {
 				lastSafeIndex = index + 1
 				lastSafeX = memoX
@@ -250,22 +250,22 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 		} else { // glyph doesn't fit in the line
 			var wrapLinePoint fract.Unit
 			if index == lineStartIndex { // doesn't fit but it's first char, so force it anyway
-				wrapLinePoint = dot.X
+				wrapLinePoint = origin.X
 			} else if codePoint == ' ' { // we can discard space before wrapping
 				wrapLinePoint = memoX
 			} else if lastSafeIndex == lineStartIndex { // still on first word, force take up to previous char
 				wrapLinePoint = memoX
 			} else { // no fit, roll back
-				dot.X = lastSafeX
+				origin.X = lastSafeX
 				index = lastSafeIndex
 				continue
 			}
 
 			// line wrapping case
 			if wrapLinePoint > maxLineWidth { maxLineWidth = wrapLinePoint }
-			dot.Y += self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
-			dot.Y = dot.Y.QuantizeUp(vertQuant)
-			dot.X = 0
+			origin.Y += self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
+			origin.Y = origin.Y.QuantizeUp(vertQuant)
+			origin.X = 0
 			lastSafeIndex  = index + runeSize
 			lineStartIndex = index + runeSize
 		} 
@@ -276,13 +276,13 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 	}
 
 	// compare x for the last line
-	if dot.X > maxLineWidth {
-		maxLineWidth = dot.X
+	if origin.X > maxLineWidth {
+		maxLineWidth = origin.X
 	}
 
 	// quantize result
-	dot.X = maxLineWidth.QuantizeUp(horzQuant)
+	origin.X = maxLineWidth.QuantizeUp(horzQuant)
 
 	// return result
-	return fract.Rect{ Min: fract.Point{}, Max: dot }
+	return fract.Rect{ Min: fract.Point{}, Max: origin }
 }

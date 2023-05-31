@@ -128,7 +128,7 @@ func (self *EdgeMarkerRasterizer) CubeTo(controlA, controlB, target fract.Point)
 }
 
 // Satisfies the [Rasterizer] interface.
-func (self *EdgeMarkerRasterizer) Rasterize(outline sfnt.Segments, dot fract.Point) (*image.Alpha, error) {
+func (self *EdgeMarkerRasterizer) Rasterize(outline sfnt.Segments, origin fract.Point) (*image.Alpha, error) {
 	// get outline bounds
 	fbounds := outline.Bounds()
 	bounds := fract.Rect{
@@ -138,7 +138,7 @@ func (self *EdgeMarkerRasterizer) Rasterize(outline sfnt.Segments, dot fract.Poi
 	
 	// prepare rasterizer
 	var width, height int
-	width, height, self.normOffset, self.rectOffset = figureOutBounds(bounds, dot)
+	width, height, self.normOffset, self.rectOffset = figureOutBounds(bounds, origin)
 	buffer := &self.rasterizer.Buffer
 	buffer.Resize(width, height)
 

@@ -10,7 +10,7 @@ import "github.com/tinne26/etxt/mask"
 // raw font glyphs, rasterizers and sfnt.
 //
 // In general, this type is used through method chaining:
-//   renderer.Glyph().LoadMask(glyphIndex, dot)
+//   renderer.Glyph().LoadMask(glyphIndex, origin)
 //
 // This type also uses fractional units for many operations, so it's
 // advisable to be familiar with [RendererFract] and the [etxt/fract]
@@ -29,23 +29,23 @@ func (self *Renderer) Glyph() *RendererGlyph {
 // Default draw glyph function. This is a very low level function,
 // almost only relevant if you are trying to implement custom draw
 // functions for [RendererGlyph.SetDrawFunc]().
-func (self *RendererGlyph) DrawMask(target TargetImage, mask GlyphMask, dot fract.Point) {
-	(*Renderer)(self).glyphDrawMask(target, mask, dot)
+func (self *RendererGlyph) DrawMask(target TargetImage, mask GlyphMask, origin fract.Point) {
+	(*Renderer)(self).glyphDrawMask(target, mask, origin)
 }
 
 // Loads a glyph mask. This is a very low level function, almost only
 // relevant if you are trying to implement custom draw functions for
 // [RendererGlyph.SetDrawFunc]().
-func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, dot fract.Point) GlyphMask {
-	return (*Renderer)(self).glyphLoadMask(index, dot)
+func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) GlyphMask {
+	return (*Renderer)(self).glyphLoadMask(index, origin)
 }
 
 // Overrides the renderer's glyph drawing function with a custom
 // one. You can set it to nil to go back to the default behavior.
 //
 // The default implementation is an optimized equivalent to:
-//   mask := renderer.Glyph().LoadMask(glyphIndex, dot)
-//   renderer.Glyph().DrawMask(mask, dot)
+//   mask := renderer.Glyph().LoadMask(glyphIndex, origin)
+//   renderer.Glyph().DrawMask(mask, origin)
 // See [examples/ebiten/colorful] and examples/ebiten/shaking for
 // further customization examples.
 //
@@ -99,18 +99,18 @@ func (self *RendererComplex) GetBuffer() *sfnt.Buffer {
 
 // ---- underlying implementations ----
 
-func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, dot fract.Point) GlyphMask {
+func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, origin fract.Point) GlyphMask {
 	if self.missingBasicProps() { self.initBasicProps() }
 	self.initRasterizer()
-	self.cacheHandler.NotifyFractChange(dot)
-	return self.loadGlyphMask(self.GetFont(), index, dot)
+	self.cacheHandler.NotifyFractChange(origin)
+	return self.loadGlyphMask(self.GetFont(), index, origin)
 }
 
-func (self *Renderer) glyphDrawMask(target TargetImage, mask GlyphMask, dot fract.Point) {
+func (self *Renderer) glyphDrawMask(target TargetImage, mask GlyphMask, origin fract.Point) {
 	if self.missingBasicProps() { self.initBasicProps() }
 	self.initRasterizer()
-	self.cacheHandler.NotifyFractChange(dot)
-	self.defaultDrawFunc(target, dot, mask)
+	self.cacheHandler.NotifyFractChange(origin)
+	self.defaultDrawFunc(target, origin, mask)
 }
 
 func (self *Renderer) glyphRuneIndex(codePoint rune) sfnt.GlyphIndex {
@@ -120,8 +120,8 @@ func (self *Renderer) glyphRuneIndex(codePoint rune) sfnt.GlyphIndex {
 func (self *Renderer) glyphCacheIndex(index sfnt.GlyphIndex) {
 	for y := fract.Unit(0); y < fract.One; y += fract.Unit(self.vertQuantization) {
 		for x := fract.Unit(0); x < fract.One; x += fract.Unit(self.horzQuantization) {
-			dot := fract.UnitsToPoint(x, y)
-			_ = self.glyphLoadMask(index, dot)
+			origin := fract.UnitsToPoint(x, y)
+			_ = self.glyphLoadMask(index, origin)
 		}
 	}
 }

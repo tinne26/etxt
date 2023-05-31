@@ -62,21 +62,21 @@ type vectorTracer interface {
 // A low level method to rasterize glyph masks.
 //
 // Returned masks have their coordinates adjusted so the mask is drawn at
-// dot origin (0, 0) + the given fractional position by default. To draw it at
-// a specific dot with a matching fractional position, translate the mask by
-// dot.X.Floor() and dot.Y.Floor(). If you don't want to adjust the fractional
+// origin (0, 0) + the given fractional position by default. To draw it at
+// a specific origin with a matching fractional position, translate the mask by
+// origin.X.Floor() and origin.Y.Floor(). If you don't want to adjust the fractional
 // pixel position, you can call Rasterize with a zero-value fract.Point{}.
 //
-// The given drawing coordinate can be your current drawing dot, but as
+// The given drawing coordinate can be your current drawing origin, but as
 // indicated above, only its fractional part will be considered.
 //
 // The image returned will be nil if the segments are empty or do
 // not include any active lines or curves (e.g.: space glyphs).
-func Rasterize(outline sfnt.Segments, rasterizer Rasterizer, dot fract.Point) (*image.Alpha, error) {
+func Rasterize(outline sfnt.Segments, rasterizer Rasterizer, origin fract.Point) (*image.Alpha, error) {
 	// return nil if the outline don't include lines or curves
 	for _, segment := range outline {
 		if segment.Op == sfnt.SegmentOpMoveTo { continue }
-		return rasterizer.Rasterize(outline, dot)
+		return rasterizer.Rasterize(outline, origin)
 	}
 	return nil, nil // nothing to draw
 }

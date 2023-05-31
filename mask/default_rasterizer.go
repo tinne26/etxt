@@ -61,7 +61,7 @@ func (self *DefaultRasterizer) CubeTo(controlA, controlB, target fract.Point) {
 }
 
 // Satisfies the [Rasterizer] interface.
-func (self *DefaultRasterizer) Rasterize(outline sfnt.Segments, dot fract.Point) (*image.Alpha, error) {
+func (self *DefaultRasterizer) Rasterize(outline sfnt.Segments, origin fract.Point) (*image.Alpha, error) {
 	// get outline bounds
 	fbounds := outline.Bounds()
 	bounds := fract.Rect{
@@ -72,7 +72,7 @@ func (self *DefaultRasterizer) Rasterize(outline sfnt.Segments, dot fract.Point)
 	// prepare rasterizer
 	var width, height int
 	var rectOffset image.Point
-	width, height, self.normOffset, rectOffset = figureOutBounds(bounds, dot)
+	width, height, self.normOffset, rectOffset = figureOutBounds(bounds, origin)
 	self.rasterizer.Reset(width, height)
 	self.rasterizer.DrawOp = draw.Src
 

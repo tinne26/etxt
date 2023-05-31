@@ -165,8 +165,8 @@ func (self *FauxRasterizer) pointToFloat32Coords(point fract.Point) (float32, fl
 }
 
 // Satisfies the [Rasterizer] interface.
-func (self *FauxRasterizer) Rasterize(outline sfnt.Segments, dot fract.Point) (*image.Alpha, error) {
-	rectOffset := self.prepareForOutline(outline, dot)
+func (self *FauxRasterizer) Rasterize(outline sfnt.Segments, origin fract.Point) (*image.Alpha, error) {
+	rectOffset := self.prepareForOutline(outline, origin)
 	mask := image.NewAlpha(self.rasterizer.Bounds())
 	processOutline(self, outline)
 	self.rasterizer.Draw(mask, mask.Bounds(), image.Opaque, image.Point{})
@@ -190,7 +190,7 @@ func (self *FauxRasterizer) notifyChange() {
 	if self.auxOnChange != nil { self.auxOnChange(self) }
 }
 
-func (self *FauxRasterizer) prepareForOutline(outline sfnt.Segments, dot fract.Point) image.Point {
+func (self *FauxRasterizer) prepareForOutline(outline sfnt.Segments, origin fract.Point) image.Point {
 	// get outline bounds
 	fbounds := outline.Bounds()
 	bounds := fract.Rect{
@@ -218,7 +218,7 @@ func (self *FauxRasterizer) prepareForOutline(outline sfnt.Segments, dot fract.P
 	// similar to default rasterizer
 	var width, height int
 	var rectOffset image.Point
-	width, height, self.normOffset, rectOffset = figureOutBounds(bounds, dot)
+	width, height, self.normOffset, rectOffset = figureOutBounds(bounds, origin)
 	self.rasterizer.Reset(width, height)
 	self.rasterizer.DrawOp = draw.Src
 	return rectOffset

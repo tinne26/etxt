@@ -30,8 +30,8 @@ func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
 // pixel position. The renderer's cache handler, font, size, rasterizer and
 // mask format are all taken into account.
 // Precondition: !self.missingBasicProps(), rasterizer initialized,
-// dot position communicated to the cache if relevant.
-func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, dot fract.Point) GlyphMask {
+// origin position communicated to the cache if relevant.
+func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, origin fract.Point) GlyphMask {
 	// if the mask is available in the cache, that's all
 	glyphMask, found := self.cacheHandler.GetMask(index)
 	if found { return glyphMask }
@@ -46,7 +46,7 @@ func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, dot 
 	}
 
 	// rasterize the glyph mask
-	alphaMask, err := mask.Rasterize(segments, self.rasterizer, dot)
+	alphaMask, err := mask.Rasterize(segments, self.rasterizer, origin)
 	if err != nil { panic("RasterizeGlyphMask failed: " + err.Error()) }
 
 	// pass to cache and return

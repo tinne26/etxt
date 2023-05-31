@@ -1,5 +1,5 @@
 # etxt
-[![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt.svg)](https://pkg.go.dev/github.com/tinne26/etxt)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt@v0.0.9-alpha.4.svg)](https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.4)
 
 **NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
@@ -18,6 +18,8 @@ What **etxt** doesn't do:
 - Poor or no support for [complex scripts](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) like Arabic.
 - None of the things people actually want: shadows and outlines, gamma correction, subpixel antialiasing, Knuth-Plass line breaking, better support for shaders, etc. Some can already be crudely faked, some will be added in the future... but this is the situation right now.
 
+If you are unfamiliar with typography terms and concepts, [FreeType Glyph Conventions](https://freetype.org/freetype2/docs/glyphs/index.html) may be the best reference on the internet. I highly recommend reading the first three or four chapters.
+
 ## Code example
 Less talk and more code!
 ```Golang
@@ -25,7 +27,7 @@ package main
 
 import ( "math" ; "image/color" )
 import "github.com/hajimehoshi/ebiten/v2"
-import "github.com/tinne26/etxt" // v0.0.9+
+import "github.com/tinne26/etxt"
 import "github.com/tinne26/fonts/liberation/lbrtserif"
 
 const WordsPerSec = 2.71828
