@@ -55,20 +55,29 @@ func (self *RendererGlyph) SetDrawFunc(drawFn func(TargetImage, sfnt.GlyphIndex,
 	(*Renderer)(self).customDrawFn = drawFn
 }
 
-// Obtains the corresponding glyph index for the given rune in the
-// current renderer's font. Panics if the glyph index can't be found.
-func (self *RendererGlyph) RuneIndex(codePoint rune) sfnt.GlyphIndex {
+// Obtains the glyph index for the given rune in the current renderer's
+// font. Panics if the glyph index can't be found.
+//
+// If you need to know whether the glyph mapping exists or not, consider
+// [font.GetMissingRunes]() instead... or the manual approach:
+//   buffer := renderer.Complex().GetBuffer()
+//   index, err := renderer.GetFont().GlyphIndex(buffer, codePoint)
+//   if err != nil { /* handle */ }
+//   if index == 0 { /* handle notdef glyph */ }
+//
+// [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt/font#GetMissingRunes
+func (self *RendererGlyph) GetRuneIndex(codePoint rune) sfnt.GlyphIndex {
 	return (*Renderer)(self).glyphRuneIndex(codePoint)
 }
 
-// Caches the given glyph with the current font and size. The
-// caching is attempted for each fractional position allowed by 
-// the current quantization configuration.
+// Caches the given glyph with the current font and scaled size.
+// The caching is attempted for each fractional position allowed
+// by the current quantization configuration.
 //
 // Notice that the success of this method depends on the renderer's
 // cache configuration too. If there's no cache, the cache doesn't
 // have enough capacity or you are using a custom cache with an
-// unusual caching policy, results may not be what you expected.
+// unusual caching policy, results may not be what you expect.
 func (self *RendererGlyph) CacheIndex(index sfnt.GlyphIndex) {
 	(*Renderer)(self).glyphCacheIndex(index)
 }

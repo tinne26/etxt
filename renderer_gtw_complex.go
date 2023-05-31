@@ -70,6 +70,7 @@ func (self *RendererComplex) GetFontIndex() int {
 // Same as [RendererFract.Draw](), but expecting a [Text] instead of a string.
 func (self *RendererComplex) Draw(screen TargetImage, text Text, x, y fract.Unit) {
 	panic("unimplemented / TODO")
+	// TODO: consider Drawi or Drawf() for the fractional versions?
 }
 
 // Same as [RendererFract.DrawWithWrap](), but expecting a [Text] instead of a string.

@@ -33,11 +33,11 @@ const (
 //  - Simple functions to draw and measure text.
 //  - Gateways to access other more specific functions.
 //
-// Gateways are auxiliary types that group specialized or advanced
-// functions together and keep them out of the way for most workflows
-// that won't require them. The current gateways are the following:
+// Gateways are auxiliary types that group specialized functions together
+// and keep them out of the way for most workflows that won't require them.
+// The current gateways are the following:
 //  - [Renderer.Utils](), to access non-essential but handy functions.
-//  - [Renderer.Fract](), to access specialized fractional functionality.
+//  - [Renderer.Fract](), to access specialized fractional positioning functionality.
 //  - [Renderer.Glyph](), to access low level functions for glyphs and
 //    glyph masks.
 //  - [Renderer.Complex](), to access advanced functionality related to

@@ -10,10 +10,8 @@ import "github.com/tinne26/etxt/fract"
 // [Renderer.SetAlign]() rules).
 //
 // Missing glyphs in the current font will cause the renderer to panic.
-// Consider using [font.GetMissingRunes]() if you need to make your
-// system more robust.
-//
-// [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt/font#GetMissingRunes
+// See [RendererGlyph.GetRuneIndex]() for further advice if you need to
+// make your system more robust.
 func (self *Renderer) Draw(target TargetImage, text string, x, y int) {
 	self.fractDraw(target, text, fract.FromInt(x), fract.FromInt(y))
 }
