@@ -3,7 +3,7 @@
 
 **NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
-**etxt** is a package for text rendering in Golang designed to be used with [**Ebitengine**](https://github.com/hajimehoshi/ebiten), the 2D game engine made by [Hajime Hoshi](https://github.com/hajimehoshi) for Golang.
+**etxt** is a package for [vectorial](https://github.com/tinne26/etxt/blob/main/docs/panorama.md) text rendering in Golang designed to be used with [**Ebitengine**](https://github.com/hajimehoshi/ebiten), the 2D game engine made by [Hajime Hoshi](https://github.com/hajimehoshi) for Golang.
 
 While Ebitengine already includes a basic [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package, **etxt** improves it in the following ways:
 - Makes text size and text align easy to change.

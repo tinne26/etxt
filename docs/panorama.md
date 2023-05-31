@@ -2,7 +2,7 @@
 
 There are two main approaches when it comes to fonts in Ebitengine games:
 - Use vectorial fonts, either with [`ebiten/text`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) or [`etxt`](https://pkg.go.dev/github.com/tinne26/etxt). This is the main way to do text rendering.
-- If you are making a pure pixel art game, you may consider using bitmaps (pixel art fonts rendered for one or more specific sizes). Sadly, you will have to roll your own code as I don't think any good package for Ebitengine exists yet. The rest of this document doesn't really deal with bitmap fonts, only vectorial fonts.
+- If you are making a pure pixel art game, you may consider using bitmaps (pixel art fonts rendered for one or more specific sizes). Sadly, as far as I know, the only package that does this for Ebitengine is [ingenten](https://github.com/Frabjous-Studios/ingenten), which is fairly basic. The rest of this document doesn't really deal with bitmap fonts, only vectorial fonts.
 
 Now I would start writing a FAQ for common problems with text rendering... but there are basically only two common issues:
 - **"I don't understand font.Face, DPI, origin position...**: this part refers to the technical properties, concepts and implementation of font renderers. Some people don't care about this and can make fonts work anyway. That's ok. But if you care about it and want to know what you are doing, I have three pieces of advice:
