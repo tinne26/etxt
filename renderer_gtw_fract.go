@@ -62,6 +62,14 @@ func (self *RendererFract) GetSize() fract.Unit {
 	return (*Renderer)(self).fractGetSize()
 }
 
+// Returns the scaled text size (logicalSize*scale).
+// 
+// This method is only intended be used when you want to
+// access specific metrics through the renderer's sizer.
+func (self *RendererFract) GetScaledSize() fract.Unit {
+	return (*Renderer)(self).fractGetScaledSize()
+}
+
 // Same as [Renderer.SetScale](), but avoiding a conversion from float64
 // to [fract.Unit].
 func (self *RendererFract) SetScale(scale fract.Unit) {
@@ -124,6 +132,11 @@ func (self *Renderer) fractSetSize(size fract.Unit) {
 	if self.logicalSize == size { return }
 	self.logicalSize = size
 	self.refreshScaledSize()
+}
+
+func (self *Renderer) fractGetScaledSize() fract.Unit {
+	if self.missingBasicProps() { self.initBasicProps() }
+	return self.scaledSize
 }
 
 func (self *Renderer) fractGetSize() fract.Unit {

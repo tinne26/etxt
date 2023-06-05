@@ -1,5 +1,5 @@
 # etxt
-[![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt@v0.0.9-alpha.4.svg)](https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.4)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt@v0.0.9-alpha.4.svg)](https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.5)
 
 **NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
@@ -18,7 +18,7 @@ What **etxt** doesn't do:
 - Poor or no support for [complex scripts](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) like Arabic.
 - None of the things people actually want: shadows and outlines, gamma correction, subpixel antialiasing, Knuth-Plass line breaking, better support for shaders, etc. Some can already be crudely faked, some will be added in the future... but this is the situation right now.
 
-If you are unfamiliar with typography terms and concepts, [FreeType Glyph Conventions](https://freetype.org/freetype2/docs/glyphs/index.html) may be the best reference on the internet. I highly recommend reading the first three or four chapters.
+*If you are unfamiliar with typography terms and concepts, I highly recommend reading the first chapters of [FreeType Glyph Conventions](https://freetype.org/freetype2/docs/glyphs/index.html).*
 
 ## Code example
 Less talk and more code!
@@ -90,7 +90,7 @@ func main() {
 
 You can try running this yourself with[^1]:
 ```
-go run github.com/tinne26/etxt/examples/ebiten/words@v0.0.9-alpha.2
+go run github.com/tinne26/etxt/examples/ebiten/words@v0.0.9-alpha.4
 ```
 
 [^1]: You will need Golang >=1.18, and if you have never used Ebitengine before, you may need to [install some dependencies](https://ebitengine.org/en/documents/install.html?os=linux) (typically only on Linux or FreeBSD).

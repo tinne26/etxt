@@ -313,3 +313,10 @@ func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 		cacheHandler.NotifyRasterizerChange(self.rasterizer)
 	}
 }
+
+// Exposes the renderer's internal [*sfnt.Buffer].
+// Only exposed for advanced interaction with the sfnt package
+// or the sizer interface.
+func (self *Renderer) GetBuffer() *sfnt.Buffer {
+	return &((*Renderer)(self).buffer)
+}

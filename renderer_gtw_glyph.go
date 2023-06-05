@@ -7,7 +7,7 @@ import "github.com/tinne26/etxt/mask"
 
 // This type exists only for documentation and structuring purposes,
 // acting as a [gateway] to perform low level operations related to
-// raw font glyphs, rasterizers and sfnt.
+// raw font glyphs and rasterizers.
 //
 // In general, this type is used through method chaining:
 //   renderer.Glyph().LoadMask(glyphIndex, origin)
@@ -60,7 +60,7 @@ func (self *RendererGlyph) SetDrawFunc(drawFn func(TargetImage, sfnt.GlyphIndex,
 //
 // If you need to know whether the glyph mapping exists or not, consider
 // [font.GetMissingRunes]() instead... or the manual approach:
-//   buffer := renderer.Complex().GetBuffer()
+//   buffer := renderer.GetBuffer()
 //   index, err := renderer.GetFont().GlyphIndex(buffer, codePoint)
 //   if err != nil { /* handle */ }
 //   if index == 0 { /* handle notdef glyph */ }
@@ -97,13 +97,6 @@ func (self *RendererGlyph) SetRasterizer(rasterizer mask.Rasterizer) {
 // what you do and where you put them.
 func (self *RendererGlyph) GetRasterizer() mask.Rasterizer {
 	return (*Renderer)(self).glyphGetRasterizer()
-}
-
-// Exposes the renderer's internal [*sfnt.Buffer].
-// Only exposed for advanced interaction with the sfnt package
-// or the sizer interface.
-func (self *RendererComplex) GetBuffer() *sfnt.Buffer {
-	return &((*Renderer)(self).buffer)
 }
 
 // ---- underlying implementations ----

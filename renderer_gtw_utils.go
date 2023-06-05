@@ -38,6 +38,16 @@ func (self *RendererUtils) SetCache8MiB() {
 	(*Renderer)(self).utilsSetCache8MiB()
 }
 
+// Utility method to get the current line height. Equivalent to:
+//   buffer := renderer.GetBuffer()
+//   font   := renderer.GetFont()
+//   size   := renderer.Fract().GetScaledSize()
+//   sizer  := renderer.GetSizer()
+//   lineHeight := sizer.LineHeight(buffer, font, size).ToFloat64()
+func (self *RendererUtils) GetLineHeight() float64 {
+	return (*Renderer)(self).utilsGetLineHeight()
+}
+
 // Utility method to set the font by passing its raw data and letting
 // the renderer parse it. This method should be avoided if you want
 // to reuse the font data at different points in your application; in
@@ -69,4 +79,8 @@ func (self *Renderer) utilsSetFontBytes(data []byte) error {
 	if err != nil { return err }
 	self.SetFont(font)
 	return nil
+}
+
+func (self *Renderer) utilsGetLineHeight() float64 {
+	return self.GetSizer().LineHeight(self.GetFont(), &self.buffer, self.fractGetScaledSize()).ToFloat64()
 }
