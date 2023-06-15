@@ -18,7 +18,7 @@ What **etxt** doesn't do:
 - Poor or no support for [complex scripts](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) like Arabic.
 - None of the things people actually want: shadows and outlines, gamma correction, subpixel antialiasing, Knuth-Plass line breaking, better support for shaders, etc. Some can already be crudely faked, some will be added in the future... but this is the situation right now.
 
-*If you are unfamiliar with typography terms and concepts, I highly recommend reading the first chapters of [FreeType Glyph Conventions](https://freetype.org/freetype2/docs/glyphs/index.html).*
+*If you are unfamiliar with typography terms and concepts, I highly recommend reading the first chapters of [FreeType Glyph Conventions](https://freetype.org/freetype2/docs/glyphs/index.html); one the best references on the topic you can find on the internet.*
 
 ## Code example
 Less talk and more code!
