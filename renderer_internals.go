@@ -26,6 +26,17 @@ func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
 	//   either case, but this reduces the maximum potential error.
 }
 
+// Notice: this is slightly slow, uncached. I'm leaving it like this because
+// it's rarely used anyway, and in the grand scheme of things, when this is
+// actually required, most of the runtime will go to actual font rendering
+// anyway.
+func (self *Renderer) xheight(font *sfnt.Font) fract.Unit {
+	const hintingNone = 0
+	metrics, err := font.Metrics(&self.buffer, fixed.Int26_6(self.scaledSize), hintingNone)
+	if err != nil { panic("font.Metrics error: " + err.Error()) }
+	return fract.Unit(metrics.XHeight)
+}
+
 // loadGlyphMask loads the mask for the given glyph at the given fractional
 // pixel position. The renderer's cache handler, font, size, rasterizer and
 // mask format are all taken into account.

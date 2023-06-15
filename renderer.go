@@ -99,9 +99,9 @@ func (self *Renderer) missingBasicProps() bool {
 // Virtually always preceded by if self.missingBasicProps().
 func (self *Renderer) initBasicProps() {
 	self.fontColor = color.RGBA{255, 255, 255, 255}
-	self.horzQuantization = uint8(QtFull)
+	self.horzQuantization = uint8(Qt4th)
 	self.vertQuantization = uint8(QtFull)
-	self.align = Left | TopBaseline
+	self.align = Left | Baseline
 	self.scale = 64
 	self.logicalSize = 16*64
 	self.scaledSize  = 16*64

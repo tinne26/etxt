@@ -81,19 +81,32 @@ func (self *RendererFract) GetScale() fract.Unit {
 	return (*Renderer)(self).fractGetScale()
 }
 
-// Sets the quantization levels to be used on subsequent operations.
-// Recommended values are [QtNone], [Qt4th], [QtHalf], [QtFull] and
-// the other existing constants.
+// Sets the horizontal quantization level to be used on subsequent
+// operations. Recommended values are the existing Qt constants (e.g.
+// [QtNone], [QtFull], [QtHalf]).
 //
-// Non-equispaced values are technically allowed but are not recommended,
+// By default, the horizontal quantization is [Qt4th]. Values below
+// 1 or above 64 fractional units will panic.
+//
+// Non-equispaced values are technically allowed but strongly discouraged,
 // as drawing and measuring algorithms may break in subtle ways in
 // different edge cases.
+func (self *RendererFract) SetHorzQuantization(horz fract.Unit) {
+	(*Renderer)(self).fractSetHorzQuantization(horz)
+}
+
+// Sets the vertical quantization level to be used on subsequent
+// operations. Recommended values are the existing Qt constants (e.g.
+// [QtFull], [Qt4th], [Qt8th]).
 //
-// By default, quantization is fully enabled ([QtFull], [QtFull]).
+// By default, the vertical quantization is [QtFull]. Values below
+// 1 or above 64 fractional units will panic.
 //
-// Values below 1 or above 64 fractional units will panic.
-func (self *RendererFract) SetQuantization(horz, vert fract.Unit) {
-	(*Renderer)(self).fractSetQuantization(horz, vert)
+// Non-equispaced values are technically allowed but strongly discouraged,
+// as drawing and measuring algorithms may break in subtle ways in
+// different edge cases.
+func (self *RendererFract) SetVertQuantization(horz fract.Unit) {
+	(*Renderer)(self).fractSetVertQuantization(horz)
 }
 
 // Returns the current quantization levels.
@@ -176,14 +189,23 @@ func (self *Renderer) refreshScaledSize() {
 	}
 }
 
-func (self *Renderer) fractSetQuantization(horz, vert fract.Unit) {
-	if horz > 64 || horz < 1 || vert > 64 || vert < 1 {
-		panic("quantization levels must be in the [1, 64] range")
+func (self *Renderer) fractSetHorzQuantization(horz fract.Unit) {
+	if horz > 64 || horz < 1 {
+		panic("horizontal quantization must be in the [1, 64] range")
 	}
+	if self.missingBasicProps() { self.initBasicProps() }
 	self.horzQuantization = uint8(horz)
+}
+
+func (self *Renderer) fractSetVertQuantization(vert fract.Unit) {
+	if vert > 64 || vert < 1 {
+		panic("vertical quantization must be in the [1, 64] range")
+	}
+	if self.missingBasicProps() { self.initBasicProps() }
 	self.vertQuantization = uint8(vert)
 }
 
 func (self *Renderer) fractGetQuantization() (horz, vert fract.Unit) {
+	if self.missingBasicProps() { self.initBasicProps() }
 	return fract.Unit(self.horzQuantization), fract.Unit(self.vertQuantization)
 }

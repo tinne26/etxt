@@ -165,7 +165,7 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 
 	// preconditions
 	font := self.GetFont()
-	if font == nil { panic("can't measure text with nil font") }
+	if font == nil { panic("can't measure text with nil font (tip: Renderer.SetFont())") }
 	if widthLimit < 0 { panic("can't use a negative widthLimit") }
 	
 	// return directly on superfluous invocations
