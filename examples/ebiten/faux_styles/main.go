@@ -76,9 +76,9 @@ func (self *Game) Update() error {
 	// quantization switch
 	if ebiten.IsKeyPressed(ebiten.KeyQ) {
 		if self.quantized {
-			self.fauxRenderer.Fract().SetQuantization(etxt.QtNone, etxt.QtFull)
+			self.fauxRenderer.Fract().SetHorzQuantization(etxt.QtNone)
 		} else {
-			self.fauxRenderer.Fract().SetQuantization(etxt.QtFull, etxt.QtFull)
+			self.fauxRenderer.Fract().SetHorzQuantization(etxt.QtFull)
 		}
 		self.quantized = !self.quantized
 		self.sinceLastKey = 0
@@ -250,6 +250,7 @@ func main() {
 	renderer.SetFont(sfntFont)
 	renderer.SetAlign(etxt.Center)
 	renderer.SetColor(color.RGBA{255, 255, 255, 255})
+	renderer.Fract().SetHorzQuantization(etxt.QtFull)
 
 	// create helper renderer for other text
 	helpRend := etxt.NewRenderer()

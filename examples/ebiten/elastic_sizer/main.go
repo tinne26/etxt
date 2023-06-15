@@ -73,9 +73,9 @@ func (self *Game) Update() error {
 		if !self.qPressed {
 			horzQuant, _ := self.text.Fract().GetQuantization()
 			if horzQuant == etxt.QtFull {
-				self.text.Fract().SetQuantization(etxt.QtNone, etxt.QtFull)
+				self.text.Fract().SetHorzQuantization(etxt.QtNone)
 			} else {
-				self.text.Fract().SetQuantization(etxt.QtFull, etxt.QtFull)
+				self.text.Fract().SetHorzQuantization(etxt.QtFull)
 			}
 		}
 		self.qPressed = newQPressed
@@ -147,7 +147,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 
 	// draw text
 	self.text.SetSize(MainTextSize)
-	self.text.SetAlign(etxt.YCenter | etxt.Left)
+	self.text.SetAlign(etxt.VertCenter | etxt.Left)
 	self.text.SetColor(color.RGBA{255, 255, 255, 255})
 	self.text.Draw(screen, SpringText, sw/16, sh/2)
 
@@ -155,14 +155,14 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	sizer.SetPadding(0)
 	self.text.SetSize(InfoTextSize)
 	self.text.SetColor(color.RGBA{255, 255, 255, 128})
-	self.text.SetAlign(etxt.TopBaseline) // vertical
+	self.text.SetAlign(etxt.Baseline) // vertical
 	
 	// (fps on the right side)
 	self.text.SetAlign(etxt.Right)
 	self.text.Draw(screen, fmt.Sprintf("%.2f FPS", ebiten.ActualFPS()), sw - sh/32, sh - sh/32)
 
 	// (quantization in the middle)
-	self.text.SetAlign(etxt.XCenter)
+	self.text.SetAlign(etxt.HorzCenter)
 	horzQuant, _ := self.text.Fract().GetQuantization()
 	if horzQuant == etxt.QtFull {
 		self.text.Draw(screen, "Quantization ON [Q]", sw/2, sh - sh/32)
@@ -198,7 +198,7 @@ func main() {
 	renderer.SetCacheHandler(glyphCache.NewHandler())
 	renderer.SetFont(sfntFont)
 	renderer.SetSizer(&sizer.PaddedKernSizer{})
-	renderer.Fract().SetQuantization(etxt.QtNone, etxt.QtFull) // *
+	renderer.Fract().SetHorzQuantization(etxt.QtNone) // *
 	// * Disabling horizontal quantization is helpful here to get
 	//   smoother results. But it also means we have to cache each
 	//   glyph in 64 different positions! At big sizes this is not

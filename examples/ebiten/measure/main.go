@@ -1,9 +1,10 @@
 package main
 
 import "os"
-import "image/color"
 import "log"
 import "fmt"
+import "math"
+import "image/color"
 
 import "github.com/hajimehoshi/ebiten/v2"
 
@@ -21,7 +22,7 @@ type Game struct {
 	content []rune // not very efficient, but AppendInputChars uses runes
 }
 
-func (self *Game) Layout(w int, h int) (int, int) {
+func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	self.text.SetScale(scale) // relevant for HiDPI
 	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
@@ -67,7 +68,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 
 	// draw fps and other info for fun
 	self.text.SetSize(14)
-	self.text.SetAlign(etxt.Right | etxt.TopBaseline)
+	self.text.SetAlign(etxt.Right | etxt.Baseline)
 	info := fmt.Sprintf("%d glyphs - %.2fFPS", len(self.content), ebiten.ActualFPS())
 	pad := int((ebiten.DeviceScaleFactor()*float64(h))/64)
 	self.text.Draw(screen, info, w - pad, h - pad)

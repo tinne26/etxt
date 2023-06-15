@@ -7,8 +7,8 @@ github.com/hajimehoshi/ebiten/v2 v2.5.4 h1:NvUU6LvVc6oc+u+rD9KfHMjruRdpNwbpalVUI
 github.com/hajimehoshi/ebiten/v2 v2.5.4/go.mod h1:mnHSOVysTr/nUZrN1lBTRqhK4NG+T9NR3JsJP2rCppk=
 github.com/jezek/xgb v1.1.0 h1:wnpxJzP1+rkbGclEkmwpVFQWpuE2PUGNUzP8SbfFobk=
 github.com/jezek/xgb v1.1.0/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
-github.com/tinne26/etxt v0.0.9-alpha.4.0.20230525161650-4b0bdee214bd h1:hm3oL+L5eTf/MeDOkN/u2dPhjOHsCfDIzlQguHno4rc=
-github.com/tinne26/etxt v0.0.9-alpha.4.0.20230525161650-4b0bdee214bd/go.mod h1:rpIkWvDlypRlEo+aeTwugfaqYBRfvAiGk23MIsPnvz0=
+github.com/tinne26/etxt v0.0.9-alpha.5.0.20230615112630-9bdac0259855 h1:jPgyyY3TNBWA2G5z904mzZfKWCZLlnhjJ4SvVDZsGAA=
+github.com/tinne26/etxt v0.0.9-alpha.5.0.20230615112630-9bdac0259855/go.mod h1:yM7yXPESWb/0krZXjEtjZ4pG+NclezVfaLWSHIRgta8=
 github.com/tinne26/fonts/liberation/lbrtserif v0.0.0-20230317183620-0b634734e4ec h1:CUSt85il4uQxLjlVhup44P7gpaZmkYooIHmCLjq85vg=
 github.com/tinne26/fonts/liberation/lbrtserif v0.0.0-20230317183620-0b634734e4ec/go.mod h1:4BN4bFDBeF9+E97yjko9Pe7x8WgY4Ek6oiOYa1KDgpE=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
