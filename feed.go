@@ -50,6 +50,7 @@ func (self *Feed) At(x, y int) *Feed {
 	renderer := self.Renderer
 	vertAlign := renderer.GetAlign().Vert()
 	self.Position.X = fract.FromInt(x)
+	self.LineBreakX = self.Position.X
 	fractY := fract.FromInt(y)
 	if vertAlign == Baseline || vertAlign == LastBaseline {
 		self.Position.Y = fractY
