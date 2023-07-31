@@ -15,7 +15,6 @@ import "github.com/tinne26/etxt/fract"
 const (
 	internalFlagRasterizer uint8 = 0b00000001
 	internalFlagSizer      uint8 = 0b00000010
-	internalFlagCache      uint8 = 0b00000100 // TODO: implement with pkgNoCacheHandler
 	internalFlagBasicProps uint8 = 0b00001000
 	internalFlagDirIsRTL   uint8 = 0b10000000 // by default it's LTR
 )
@@ -31,7 +30,7 @@ const (
 //  - Simple functions to adjust basic text properties like font,
 //    size, color or align.
 //  - Simple functions to draw and measure text.
-//  - Gateways to access other more specific functions.
+//  - Gateways to access more advanced or specific functionality.
 //
 // Gateways are auxiliary types that group specialized functions together
 // and keep them out of the way for most workflows that won't require them.
@@ -48,11 +47,12 @@ const (
 // a cache, the text size, the text color and the align.
 //
 // If you need further help or guidance, I recommend reading ["advice on 
-// renderers"] and simply going through the code on the [examples] folder.
+// renderers"] or going through the code on the [examples] folder.
 //
 // ["advice on renderers"]: https://github.com/tinne26/etxt/blob/main/docs/renderer.md
 // [examples]: https://github.com/tinne26/etxt/blob/main/examples
 type Renderer struct {
+	stateRestorePoints []stateSnapshot
 	fonts []*sfnt.Font
 	gfxFuncs []func(*Renderer, TargetImage, fract.Rect, uint16)
 	customDrawFn func(TargetImage, sfnt.GlyphIndex, fract.Point)
@@ -169,8 +169,8 @@ func (self *Renderer) GetScale() float64 {
 // set this up.
 //
 // Further pointers and advice:
-//  - If you only have the font data, consider [RendererUtils.SetFontBytes]().
-//  - If you need more robust font management, consider [font.Library].
+//  - If you only have the unparsed font file data, consider [RendererUtils.SetFontBytes]().
+//  - If you need more robust font management, consider a [font.Library].
 //
 // [font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font
 func (self *Renderer) SetFont(font *sfnt.Font) {
@@ -316,7 +316,7 @@ func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 
 // Exposes the renderer's internal [*sfnt.Buffer].
 // Only exposed for advanced interaction with the sfnt package
-// or the sizer interface.
+// or the [sizer.Sizer] interface.
 func (self *Renderer) GetBuffer() *sfnt.Buffer {
 	return &((*Renderer)(self).buffer)
 }
