@@ -3,7 +3,7 @@ module github.com/tinne26/etxt
 go 1.18
 
 require (
-	github.com/hajimehoshi/ebiten/v2 v2.5.2
+	github.com/hajimehoshi/ebiten/v2 v2.5.0
 	golang.org/x/image v0.6.0
 )
 
