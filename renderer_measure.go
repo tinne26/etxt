@@ -12,10 +12,12 @@ import "github.com/tinne26/etxt/fract"
 // The results are affected by the renderer's font, size, quantization and
 // sizer.
 // 
-// Notice that spilling (content falling outside the returned rect) is possible.
-// In general it will be non-existent or very minor, but italics, fancy display
-// fonts and script fonts are common offenders that you may want to watch out
-// for.
+// Notice that overshoot or spilling (content falling outside the returned rect)
+// are possible, but in general you shouldn't be worrying about it. Barring
+// extreme cases and bad fonts, you should use small margins for your text
+// and just trust that typographers know what they are doing with overshoot.
+// That being said, italics, fancy display fonts and script fonts are more
+// likely to spill and may require bigger margins than other types of fonts.
 func (self *Renderer) Measure(text string) fract.Rect {
 	return self.fractMeasure(text)
 }

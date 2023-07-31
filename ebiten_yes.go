@@ -15,7 +15,7 @@ import "github.com/tinne26/etxt/fract"
 type TargetImage = *ebiten.Image
 
 // A GlyphMask is the image that results from rasterizing a glyph.
-// You rarely need to use GlyphMasks directly unless you are working
+// You rarely need to use glyph masks directly unless you are working
 // with advanced functions.
 //
 // Without Ebitengine, GlyphMask defaults to [*image.Alpha]. The
@@ -24,7 +24,7 @@ type TargetImage = *ebiten.Image
 // negative, with y = 0 corresponding to the glyph's baseline, y < 0
 // to the ascending portions and y > 0 to the descending ones.
 //
-// With Ebitengine, GlyphMask defaults to *ebiten.Image.
+// With Ebitengine, GlyphMask defaults to [*ebiten.Image].
 type GlyphMask = *ebiten.Image
 
 // The blend mode specifies how to compose colors when drawing glyphs:

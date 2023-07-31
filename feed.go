@@ -10,15 +10,16 @@ import "github.com/tinne26/etxt/fract"
 // and modifying positions or configurations in between.
 //
 // As a rule of thumb, you should only resort to feeds if
-// neither renderer's Draw* nor Traverse* methods give you
-// enough control to do what you want. Make sure you are
-// well acquainted with those methods first.
+// neither [Renderer.Draw](), [RendererComplex.Draw](), nor
+// [RendererGlyph.SetDrawFunc]() give you enough control to do
+// what you want. Make sure you are well acquainted with the
+// basic methods first.
 type Feed struct {
 	Renderer *Renderer             // associated renderer
 	Position fract.Point           // the feed's working pen position or origin
 	LineBreakX fract.Unit          // the x coordinate set after a line break
 	LineBreakAcc uint16            // consecutive accumulated line breaks
-	PrevGlyphIndex sfnt.GlyphIndex // previous glyph index. used for kern.
+	PrevGlyphIndex sfnt.GlyphIndex // previous glyph index. used for kern
 }
 
 // Creates a [Feed] associated to the given [Renderer].
@@ -41,8 +42,8 @@ func NewFeed(renderer *Renderer) *Feed {
 // Notice that the given y will be adjusted based on the associated
 // renderer's align. While feeds can't automatically align text because 
 // the content to work with isn't known ahead of time, the vertical
-// align is considered in this method in order to set the Position.y
-// field to the baseline.
+// align is considered in this method in order to set the Position.Y
+// field to its baseline value.
 //
 // For more precise positioning, you can always manipulate the Position
 // field directly. This method also sets the LineBreakX field.
@@ -93,7 +94,7 @@ func (self *Feed) Reset() {
 	self.PrevGlyphIndex = 0
 }
 
-// Draws the given rune and advances the [Feed].Position.
+// Draws the given rune and advances the feed's Position.
 //
 // The drawing configuration is taken from the feed's associated renderer.
 //
@@ -108,7 +109,7 @@ func (self *Feed) DrawGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex) {
 	self.traverseGlyph(target, glyphIndex, true)
 }
 
-// Draws the given shape and advances the Feed's position based on
+// Draws the given shape and advances the feed's position based on
 // the image bounds width (rect.Dx). Notice that shapes are not cached,
 // so they may be expensive to use. See also DrawImage.
 // func (self *Feed) DrawShape(shape emask.Shape) {
@@ -118,7 +119,7 @@ func (self *Feed) DrawGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex) {
 // TODO: ebiten version vs gtxt version
 // func (self *Feed) DrawImage(img image.Image)
 
-// Advances the Feed's position without drawing anything.
+// Advances the feed's position without drawing anything.
 func (self *Feed) Advance(codePoint rune) {
 	// Note: while this method may seem superfluous, at least it can be
 	//       useful when drawing paragraphs at an abitrary scroll position.
@@ -132,12 +133,12 @@ func (self *Feed) Advance(codePoint rune) {
 	}
 }
 
-// Advances the Feed's position without drawing anything.
+// Advances the feed's position without drawing anything.
 func (self *Feed) AdvanceGlyph(glyphIndex sfnt.GlyphIndex) {
 	self.traverseGlyph(nil, glyphIndex, false)
 }
 
-// Advances the Feed's position with a line break.
+// Advances the feed's position with a line break.
 func (self *Feed) LineBreak() {
 	renderer := self.Renderer
 	if renderer.missingBasicProps() { renderer.initBasicProps() }

@@ -26,7 +26,7 @@ func (self *Renderer) Glyph() *RendererGlyph {
 	return (*RendererGlyph)(self)
 }
 
-// Default draw glyph function. This is a very low level function,
+// Default glyph drawing function. This is a very low level function,
 // almost only relevant if you are trying to implement custom draw
 // functions for [RendererGlyph.SetDrawFunc]().
 func (self *RendererGlyph) DrawMask(target TargetImage, mask GlyphMask, origin fract.Point) {
@@ -43,11 +43,11 @@ func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 // Overrides the renderer's glyph drawing function with a custom
 // one. You can set it to nil to go back to the default behavior.
 //
-// The default implementation is an optimized equivalent to:
+// The default implementation is an optimized equivalent of:
 //   mask := renderer.Glyph().LoadMask(glyphIndex, origin)
-//   renderer.Glyph().DrawMask(mask, origin)
-// See [examples/ebiten/colorful] and examples/ebiten/shaking for
-// further customization examples.
+//   renderer.Glyph().DrawMask(target, mask, origin)
+// See [examples/ebiten/colorful] and [examples/ebiten/shaking]
+// for further customization examples.
 //
 // [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/main/examples/ebiten/colorful/main.go
 // [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/main/examples/ebiten/shaking/main.go
@@ -61,7 +61,8 @@ func (self *RendererGlyph) SetDrawFunc(drawFn func(TargetImage, sfnt.GlyphIndex,
 // If you need to know whether the glyph mapping exists or not, consider
 // [font.GetMissingRunes]() instead... or the manual approach:
 //   buffer := renderer.GetBuffer()
-//   index, err := renderer.GetFont().GlyphIndex(buffer, codePoint)
+//   font := renderer.GetFont()
+//   index, err := font.GlyphIndex(buffer, codePoint)
 //   if err != nil { /* handle */ }
 //   if index == 0 { /* handle notdef glyph */ }
 //
