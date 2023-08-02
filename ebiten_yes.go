@@ -56,9 +56,9 @@ func (self *Renderer) defaultDrawFunc(target TargetImage, origin fract.Point, ma
 	opts := ebiten.DrawImageOptions{}
 	srcRect := mask.Bounds()
 	opts.GeoM.Translate(float64(origin.X.ToIntFloor() + srcRect.Min.X), float64(origin.Y.ToIntFloor() + srcRect.Min.Y))
-	r, g, b, a := colorToFloat32(self.fontColor)
+	r, g, b, a := colorToFloat32(self.state.fontColor)
 	opts.ColorScale.Scale(r, g, b, a)
-	opts.Blend = self.blendMode
+	opts.Blend = self.state.blendMode
 	target.DrawImage(mask, &opts)
 }
 

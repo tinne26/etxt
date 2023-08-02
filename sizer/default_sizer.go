@@ -66,7 +66,6 @@ func (self *DefaultSizer) NotifyChange(font *Font, buffer *Buffer, size fract.Un
 		self.cachedAscent     = 0
 		self.cachedDescent    = 0
 		self.cachedLineHeight = 0
-		return
 	} else {
 		metrics, err := font.Metrics(buffer, fixed.Int26_6(size), hintingNone)
 		if err != nil { panic("font.Metrics error: " + err.Error()) }

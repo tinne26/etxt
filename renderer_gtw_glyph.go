@@ -84,7 +84,6 @@ func (self *RendererGlyph) CacheIndex(index sfnt.GlyphIndex) {
 }
 
 // Sets the glyph mask rasterizer to be used on subsequent operations.
-// Nil rasterizers are not allowed.
 func (self *RendererGlyph) SetRasterizer(rasterizer mask.Rasterizer) {
 	(*Renderer)(self).glyphSetRasterizer(rasterizer)
 }
@@ -103,15 +102,11 @@ func (self *RendererGlyph) GetRasterizer() mask.Rasterizer {
 // ---- underlying implementations ----
 
 func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, origin fract.Point) GlyphMask {
-	if self.missingBasicProps() { self.initBasicProps() }
-	self.initRasterizer()
 	self.cacheHandler.NotifyFractChange(origin)
 	return self.loadGlyphMask(self.GetFont(), index, origin)
 }
 
 func (self *Renderer) glyphDrawMask(target TargetImage, mask GlyphMask, origin fract.Point) {
-	if self.missingBasicProps() { self.initBasicProps() }
-	self.initRasterizer()
 	self.cacheHandler.NotifyFractChange(origin)
 	self.defaultDrawFunc(target, origin, mask)
 }
@@ -121,8 +116,9 @@ func (self *Renderer) glyphRuneIndex(codePoint rune) sfnt.GlyphIndex {
 }
 
 func (self *Renderer) glyphCacheIndex(index sfnt.GlyphIndex) {
-	for y := fract.Unit(0); y < fract.One; y += fract.Unit(self.vertQuantization) {
-		for x := fract.Unit(0); x < fract.One; x += fract.Unit(self.horzQuantization) {
+	horzQuant, vertQuant := self.fractGetQuantization()
+	for y := fract.Unit(0); y < fract.One; y += vertQuant {
+		for x := fract.Unit(0); x < fract.One; x += horzQuant {
 			origin := fract.UnitsToPoint(x, y)
 			_ = self.glyphLoadMask(index, origin)
 		}
@@ -130,32 +126,17 @@ func (self *Renderer) glyphCacheIndex(index sfnt.GlyphIndex) {
 }
 
 func (self *Renderer) glyphGetRasterizer() mask.Rasterizer {
-	self.initRasterizer()
-	return self.rasterizer
-}
-
-func (self *Renderer) initRasterizer() {
-	if self.internalFlags & internalFlagRasterizer == 0 {
-		self.internalFlags |= internalFlagRasterizer
-		self.rasterizer = &mask.DefaultRasterizer{}
-	}
+	return self.state.rasterizer
 }
 
 func (self *Renderer) glyphSetRasterizer(rasterizer mask.Rasterizer) {
-	// assertion
-	if rasterizer == nil { panic("nil rasterizers not allowed") }
-
-	// clear rasterizer onChangeFunc
-	if self.rasterizer != nil {
-		self.rasterizer.SetOnChangeFunc(nil)
+	// clear existing rasterizer onChangeFunc
+	if self.state.rasterizer != nil {
+		self.state.rasterizer.SetOnChangeFunc(nil)
 	}
 
-	// set rasterizer and mark it as initialized
-	self.rasterizer = rasterizer
-	self.internalFlags |= internalFlagRasterizer
-
-	// link new rasterizer to the cache handler
-	if self.missingBasicProps() { self.initBasicProps() }
+	// set new rasterizer and link it to the cache handler
+	self.state.rasterizer = rasterizer
 	if self.cacheHandler == nil {
 		rasterizer.SetOnChangeFunc(nil)
 	} else {

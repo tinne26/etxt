@@ -9,16 +9,6 @@ import "github.com/tinne26/etxt/cache"
 import "github.com/tinne26/etxt/sizer"
 import "github.com/tinne26/etxt/fract"
 
-// Initialization flags used to determine which fields of the *Renderer 
-// are ready to be used or still need to be manually initialized. This
-// allows the zero value of the renderer to be as valid as possible.
-const (
-	internalFlagRasterizer uint8 = 0b00000001
-	internalFlagSizer      uint8 = 0b00000010
-	internalFlagBasicProps uint8 = 0b00001000
-	internalFlagDirIsRTL   uint8 = 0b10000000 // by default it's LTR
-)
-
 // This file contains the Renderer type definition and all the
 // getter and setter methods. Actual operations are split in other
 // files.
@@ -28,7 +18,7 @@ const (
 //
 // Renderers have three groups of functions:
 //  - Simple functions to adjust basic text properties like font,
-//    size, color or align.
+//    size, color, align, etc.
 //  - Simple functions to draw and measure text.
 //  - Gateways to access more advanced or specific functionality.
 //
@@ -42,9 +32,12 @@ const (
 //  - [Renderer.Complex](), to access advanced functionality related to
 //    rich text and complex scripts.
 //
-// The zero value is valid, but you must set a font before drawing or
-// measuring text. In most practical scenarios, you will also want to set
-// a cache, the text size, the text color and the align.
+// To create a renderer, using [NewRenderer]() is recommended. Otherwise,
+// you will need to set lots of properties manually or depend on
+// [RendererUtils.FillMissingProperties]() before you can start using it.
+// In all cases, you still need to set a font before drawing or measuring
+// text, and in most practical scenarios you will also want to set a cache,
+// the text size, the text color and the align.
 //
 // If you need further help or guidance, I recommend reading ["advice on 
 // renderers"] or going through the code on the [examples] folder.
@@ -52,62 +45,35 @@ const (
 // ["advice on renderers"]: https://github.com/tinne26/etxt/blob/main/docs/renderer.md
 // [examples]: https://github.com/tinne26/etxt/blob/main/examples
 type Renderer struct {
-	stateRestorePoints []stateSnapshot
-	fonts []*sfnt.Font
+	state restorableState
+	restorableStates []restorableState
+	
+	cacheHandler cache.GlyphCacheHandler
 	gfxFuncs []func(*Renderer, TargetImage, fract.Rect, uint16)
 	customDrawFn func(TargetImage, sfnt.GlyphIndex, fract.Point)
-
 	buffer sfnt.Buffer
-
-	fontColor color.Color
-	fontSizer sizer.Sizer
-	rasterizer mask.Rasterizer
-	cacheHandler cache.GlyphCacheHandler
-
-	internalFlags uint8 // see internalFlag* constants
-	horzQuantization uint8
-	vertQuantization uint8
-	align Align
-
-	scale fract.Unit
-	logicalSize fract.Unit
-	scaledSize fract.Unit
-	
-	blendMode BlendMode
-	fontIndex uint8
-	_ uint8
-	_ uint8
 }
 
-// Creates a new [Renderer].
+// Creates a new [Renderer], intialized with default values.
 //
 // Setting a font through [Renderer.SetFont]() or [RendererUtils.SetFontBytes]()
 // is required before being able to operate with it. It's also heavily
 // recommended to set a cache (none by default) right from the start, for
 // example with [RendererUtils.SetCache8MiB]().
 func NewRenderer() *Renderer {
-	renderer := &Renderer{}
-	renderer.initBasicProps()
-	return renderer
-}
-
-// To be chained with initBasicProps().
-func (self *Renderer) missingBasicProps() bool {
-	return (self.internalFlags & internalFlagBasicProps) == 0
-}
-
-// Virtually always preceded by if self.missingBasicProps().
-func (self *Renderer) initBasicProps() {
-	self.fontColor = color.RGBA{255, 255, 255, 255}
-	self.horzQuantization = uint8(Qt4th)
-	self.vertQuantization = uint8(QtFull)
-	self.align = Left | Baseline
-	self.scale = 64
-	self.logicalSize = 16*64
-	self.scaledSize  = 16*64
-	self.internalFlags |= internalFlagBasicProps
-	if self.cacheHandler == nil {
-		self.cacheHandler = pkgNoCacheHandler
+	// No font sizer change notification required (there's no font yet)
+	return &Renderer{
+		state: restorableState{
+			fontColor: color.RGBA{255, 255, 255, 255},
+			fontSizer: &sizer.DefaultSizer{},
+			rasterizer: &mask.DefaultRasterizer{},
+			horzQuantization: uint8(Qt4th),
+			vertQuantization: uint8(QtFull),
+			align: Left | Baseline,
+			scale: fract.One,
+			logicalSize: 16*fract.One,
+			scaledSize: 16*fract.One,
+		},
 	}
 }
 
@@ -178,17 +144,17 @@ func (self *Renderer) SetFont(font *sfnt.Font) {
 	//         only if you *really really have to ensure* that the
 	//         font can be released by the garbage collector while
 	//         this renderer still exists... which is almost never.
-	fontIndex := int(self.fontIndex)
+	fontIndex := int(self.state.fontIndex)
 
 	// skip if trying to assign a nil font beyond current slice bounds
-	if font == nil && len(self.fonts) <= fontIndex { return }
+	if font == nil && len(self.state.fonts) <= fontIndex { return }
 
 	// ensure there's enough space in the fonts slice
-	self.fonts = ensureSliceSize(self.fonts, fontIndex + 1)
+	self.state.fonts = ensureSliceSize(self.state.fonts, fontIndex + 1)
 
 	// assign font if new
-	if font == self.fonts[fontIndex] { return }
-	self.fonts[fontIndex] = font
+	if font == self.state.fonts[fontIndex] { return }
+	self.state.fonts[fontIndex] = font
 	
 	// notify font change
 	self.notifyFontChange(font)
@@ -198,43 +164,41 @@ func (self *Renderer) notifyFontChange(font *sfnt.Font) {
 	if self.cacheHandler != nil {
 		self.cacheHandler.NotifyFontChange(font)
 	}
-	if self.fontSizer != nil {
-		self.fontSizer.NotifyChange(font, &self.buffer, self.scaledSize)
+	if self.state.fontSizer != nil {
+		self.state.fontSizer.NotifyChange(font, &self.buffer, self.state.scaledSize)
 	}
 }
 
 // Returns the current font. The font is nil by default.
 func (self *Renderer) GetFont() *sfnt.Font {
-	id := int(self.fontIndex)
-	if len(self.fonts) <= id { return nil }
-	return self.fonts[id]
+	id := int(self.state.fontIndex)
+	if len(self.state.fonts) <= id { return nil }
+	return self.state.fonts[id]
 }
 
 // Sets the blend mode to be used on subsequent operations.
 // The default blend mode will compose glyphs over the active
 // target with regular alpha blending.
 func (self *Renderer) SetBlendMode(blendMode BlendMode) {
-	self.blendMode = blendMode
+	self.state.blendMode = blendMode
 }
 
 // Returns the renderer's [BlendMode]. As far as I know, this is only
 // strictly necessary when implementing draw operations with custom
 // shaders.
 func (self *Renderer) GetBlendMode() BlendMode {
-	return self.blendMode
+	return self.state.blendMode
 }
 
 // Sets the color to be used on subsequent draw operations.
 // The default color is white.
 func (self *Renderer) SetColor(fontColor color.Color) {
-	if self.missingBasicProps() { self.initBasicProps() }
-	self.fontColor = fontColor
+	self.state.fontColor = fontColor
 }
 
 // Returns the current drawing color.
 func (self *Renderer) GetColor() color.Color {
-	if self.missingBasicProps() { self.initBasicProps() }
-	return self.fontColor
+	return self.state.fontColor
 }
 
 // Returns the current [sizer.Sizer].
@@ -245,12 +209,10 @@ func (self *Renderer) GetColor() color.Color {
 // custom glyph mask rasterizers, but it's fairly uncommon for the
 // average user to have to worry about all these things.
 func (self *Renderer) GetSizer() sizer.Sizer {
-	self.initSizer()
-	return self.fontSizer
+	return self.state.fontSizer
 }
 
-// Sets the sizer to be used on subsequent operations. Nil sizers are
-// not allowed.
+// Sets the sizer to be used on subsequent operations.
 //
 // The most common use of sizers is adjusting line height or glyph
 // interspacing. Outside of that, sizers can also be relevant when
@@ -258,26 +220,15 @@ func (self *Renderer) GetSizer() sizer.Sizer {
 // custom glyph mask rasterizers, but it's fairly uncommon for the
 // average user to have to worry about all these things.
 func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
-	self.internalFlags |= internalFlagSizer
-	if self.fontSizer == fontSizer { return }
-	self.fontSizer = fontSizer
-	if self.missingBasicProps() { self.initBasicProps() }
-	self.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.scaledSize)
-}
-
-func (self *Renderer) initSizer() {
-	if self.internalFlags & internalFlagSizer == 0 {
-		self.internalFlags |= internalFlagSizer
-		self.fontSizer = &sizer.DefaultSizer{}
-		self.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.scaledSize)
-	}
+	if self.state.fontSizer == fontSizer { return }
+	self.state.fontSizer = fontSizer
+	self.state.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.state.scaledSize)
 }
 
 // Returns the current glyph cache handler, which is nil by default.
 //
 // Rarely used unless you are examining the cache handler manually.
 func (self *Renderer) GetCacheHandler() cache.GlyphCacheHandler {
-	if self.cacheHandler == pkgNoCacheHandler { return nil }
 	return self.cacheHandler
 }
 
@@ -297,20 +248,19 @@ func (self *Renderer) GetCacheHandler() cache.GlyphCacheHandler {
 func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 	self.cacheHandler = cacheHandler
 	if cacheHandler == nil {
-		if !self.missingBasicProps() { self.cacheHandler = pkgNoCacheHandler }
-		if self.rasterizer != nil { self.rasterizer.SetOnChangeFunc(nil) }
+		if self.state.rasterizer != nil { self.state.rasterizer.SetOnChangeFunc(nil) }
 		return
 	}
 
-	if self.rasterizer != nil {
-		self.rasterizer.SetOnChangeFunc(cacheHandler.NotifyRasterizerChange)
+	if self.state.rasterizer != nil {
+		self.state.rasterizer.SetOnChangeFunc(cacheHandler.NotifyRasterizerChange)
 	}
 
-	cacheHandler.NotifySizeChange(self.scaledSize)
+	cacheHandler.NotifySizeChange(self.state.scaledSize)
 	font := self.GetFont()
 	if font != nil { cacheHandler.NotifyFontChange(font) }
-	if self.rasterizer != nil {
-		cacheHandler.NotifyRasterizerChange(self.rasterizer)
+	if self.state.rasterizer != nil {
+		cacheHandler.NotifyRasterizerChange(self.state.rasterizer)
 	}
 }
 
@@ -318,5 +268,5 @@ func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 // Only exposed for advanced interaction with the sfnt package
 // or the [sizer.Sizer] interface.
 func (self *Renderer) GetBuffer() *sfnt.Buffer {
-	return &((*Renderer)(self).buffer)
+	return &self.buffer
 }

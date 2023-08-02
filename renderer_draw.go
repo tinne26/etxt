@@ -29,37 +29,38 @@ func (self *Renderer) fractDraw(target TargetImage, text string, x, y fract.Unit
 	if font == nil { panic("can't draw text with nil font (tip: Renderer.SetFont())") }
 
 	// ensure relevant properties are initialized
-	if self.missingBasicProps() { self.initBasicProps() }
-	self.initSizer()
-	self.initRasterizer()
+	if self.state.fontSizer  == nil { panic("can't draw with a nil sizer (tip: NewRenderer())") }
+	if self.state.rasterizer == nil { panic("can't draw with a nil rasterizer (tip: NewRenderer())") }
+	sizer := self.state.fontSizer
+	vertQuant := fract.Unit(self.state.vertQuantization)
 
 	// adjust Y position
-	ascent := self.fontSizer.Ascent(font, &self.buffer, self.scaledSize)
-	switch self.align.Vert() {
+	ascent := sizer.Ascent(font, &self.buffer, self.state.scaledSize)
+	switch self.state.align.Vert() {
 	case Top:
-		y = (y + ascent).QuantizeUp(fract.Unit(self.vertQuantization))
+		y = (y + ascent).QuantizeUp(vertQuant)
 	case Midline:
 		xheight := self.xheight(font) // note: slower to obtain than the other metrics
-		y = (y + ascent - xheight).QuantizeUp(fract.Unit(self.vertQuantization))
+		y = (y + ascent - xheight).QuantizeUp(vertQuant)
 	case VertCenter:
 		height := self.fractMeasureHeight(text)
-		y = (y + ascent - (height >> 1)).QuantizeUp(fract.Unit(self.vertQuantization))
+		y = (y + ascent - (height >> 1)).QuantizeUp(vertQuant)
 	case Baseline:
-		y = y.QuantizeUp(fract.Unit(self.vertQuantization))
+		y = y.QuantizeUp(vertQuant)
 	case LastBaseline:
 		height := self.fractMeasureHeight(text)
-		lineHeight := self.fontSizer.LineHeight(font, &self.buffer, self.scaledSize)
+		lineHeight := sizer.LineHeight(font, &self.buffer, self.state.scaledSize)
 		if height <= lineHeight {
-			y = (y - height).QuantizeUp(fract.Unit(self.vertQuantization))
+			y = (y - height).QuantizeUp(vertQuant)
 		} else {
 			height -= lineHeight
-			y = (y - height).QuantizeUp(fract.Unit(self.vertQuantization))
+			y = (y - height).QuantizeUp(vertQuant)
 		}
 	case Bottom:
 		height := self.fractMeasureHeight(text)
-		y = (y + ascent - height).QuantizeUp(fract.Unit(self.vertQuantization))
+		y = (y + ascent - height).QuantizeUp(vertQuant)
 	default:
-		panic(self.align.Vert())
+		panic(self.state.align.Vert())
 	}
 
 	// skip non-visible portions of the text in the target
@@ -73,8 +74,8 @@ func (self *Renderer) fractDraw(target TargetImage, text string, x, y fract.Unit
 			if codePoint == '\n' {
 				if lineBreakNth == -1 { lineBreakNth = 0 }
 				lineBreakNth += 1
-				y += self.fontSizer.LineAdvance(font, &self.buffer, self.scaledSize, lineBreakNth)
-				y  = y.QuantizeUp(fract.Unit(self.vertQuantization))
+				y += sizer.LineAdvance(font, &self.buffer, self.state.scaledSize, lineBreakNth)
+				y  = y.QuantizeUp(vertQuant)
 				if y >= minBaselineY {
 					text = text[i + 1 : ]
 					break
@@ -84,19 +85,18 @@ func (self *Renderer) fractDraw(target TargetImage, text string, x, y fract.Unit
 	}
 
 	// subdelegate to drawLTR, drawRTL or drawCenter
-	dir := self.complexGetDirection()
-	switch self.align.Horz() {
+	switch self.state.align.Horz() {
 	case Left:
-		reverse := (dir != LeftToRight)
+		reverse := (self.state.textDirection != LeftToRight)
 		self.fractDrawLTR(target, text, reverse, font, lineBreakNth, x, y, maxBaselineY)
 	case Right:
-		reverse := (dir != RightToLeft)
+		reverse := (self.state.textDirection != RightToLeft)
 		self.fractDrawRTL(target, text, reverse, font, lineBreakNth, x, y, maxBaselineY)
 	case HorzCenter:
-		reverse := (dir != LeftToRight)
+		reverse := (self.state.textDirection != LeftToRight)
 		self.fractDrawCenter(target, text, reverse, font, lineBreakNth, x, y, maxBaselineY)
 	default:
-		panic(self.align.Horz())
+		panic(self.state.align.Horz())
 	}
 }
 
@@ -116,12 +116,16 @@ func (self *Renderer) fractDrawLTR(target TargetImage, text string, reverse bool
 	// set up traversal variables
 	var origin fract.Point = fract.UnitsToPoint(x, y)
 	var prevGlyphIndex sfnt.GlyphIndex
-	horzQuant, vertQuant := fract.Unit(self.horzQuantization), fract.Unit(self.vertQuantization)
+	horzQuant, vertQuant := self.fractGetQuantization()
+	sizer := self.state.fontSizer
+	size := self.state.scaledSize
 
 	latestFractY := origin.Y.FractShift()
 	latestFractX := origin.X.FractShift().QuantizeUp(horzQuant)
 	startX := origin.X.QuantizeUp(horzQuant)
-	self.cacheHandler.NotifyFractChange(origin)
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(origin)
+	}
 
 	// neither text direction nor align matter in this context.
 	// only font, size and quantization. go traverse the text.
@@ -135,15 +139,17 @@ func (self *Renderer) fractDrawLTR(target TargetImage, text string, reverse bool
 			if lineBreakNth == -1 { lineBreakNth = 0 }
 			lineBreakNth += 1
 			origin.X = startX
-			origin.Y += self.fontSizer.LineAdvance(font, &self.buffer, self.scaledSize, lineBreakNth)
+			origin.Y += sizer.LineAdvance(font, &self.buffer, size, lineBreakNth)
 			origin.Y = origin.Y.QuantizeUp(vertQuant)
 			if origin.Y > maxY { return } // early return
 			newestFractY := origin.Y.FractShift()
 			if newestFractY != latestFractY || startX != latestFractX {
-				self.cacheHandler.NotifyFractChange(origin)
+				latestFractY = newestFractY
+				latestFractX = startX
+				if self.cacheHandler != nil {
+					self.cacheHandler.NotifyFractChange(origin)
+				}
 			}
-			latestFractY = newestFractY
-			latestFractX = startX
 			continue
 		}
 		
@@ -154,28 +160,25 @@ func (self *Renderer) fractDrawLTR(target TargetImage, text string, reverse bool
 		if lineBreakNth != 0 {
 			lineBreakNth = 0
 		} else {
-			origin.X += self.fontSizer.Kern(font, &self.buffer, self.scaledSize, prevGlyphIndex, currGlyphIndex)
+			origin.X += sizer.Kern(font, &self.buffer, size, prevGlyphIndex, currGlyphIndex)
 			origin.X = origin.X.QuantizeUp(horzQuant) // quantize
 		}
 
 		newestFractX := origin.X.FractShift()
 		if newestFractX != latestFractX {
 			self.cacheHandler.NotifyFractChange(origin)
+			latestFractX = newestFractX
 		}
-		latestFractX = newestFractX
 
 		// draw glyph
 		self.internalGlyphDraw(target, currGlyphIndex, origin, font)
 
 		// advance
-		origin.X += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
+		origin.X += sizer.GlyphAdvance(font, &self.buffer, size, currGlyphIndex)
 		
 		// update tracking variables
 		prevGlyphIndex = currGlyphIndex
 	}
-
-	// return unquantized pen position
-	// return origin
 }
 
 func (self *Renderer) fractDrawRTL(target TargetImage, text string, reverse bool, font *sfnt.Font, lineBreakNth int, x, y, maxY fract.Unit) {
@@ -185,12 +188,16 @@ func (self *Renderer) fractDrawRTL(target TargetImage, text string, reverse bool
 	// set up traversal variables
 	var origin fract.Point = fract.UnitsToPoint(x, y)
 	var prevGlyphIndex sfnt.GlyphIndex
-	horzQuant, vertQuant := fract.Unit(self.horzQuantization), fract.Unit(self.vertQuantization)
+	horzQuant, vertQuant := self.fractGetQuantization()
+	sizer := self.state.fontSizer
+	size := self.state.scaledSize
 
 	latestFractY := origin.Y.FractShift()
 	latestFractX := origin.X.FractShift()
 	startX := origin.X
-	self.cacheHandler.NotifyFractChange(origin)
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(origin)
+	}
 
 	// neither text direction nor align matter in this context.
 	// only font, size and quantization. go traverse the text.
@@ -204,14 +211,16 @@ func (self *Renderer) fractDrawRTL(target TargetImage, text string, reverse bool
 			if lineBreakNth == -1 { lineBreakNth = 0 }
 			lineBreakNth += 1
 			origin.X = startX
-			origin.Y += self.fontSizer.LineAdvance(font, &self.buffer, self.scaledSize, lineBreakNth)
+			origin.Y += sizer.LineAdvance(font, &self.buffer, size, lineBreakNth)
 			origin.Y = origin.Y.QuantizeUp(vertQuant)
 			if origin.Y > maxY { return } // early return
 			newestFractY := origin.Y.FractShift()
 			if newestFractY != latestFractY || startX != latestFractX {
 				latestFractY = newestFractY
 				latestFractX = startX
-				self.cacheHandler.NotifyFractChange(origin)
+				if self.cacheHandler != nil {
+					self.cacheHandler.NotifyFractChange(origin)
+				}
 			}
 			continue
 		}
@@ -220,13 +229,13 @@ func (self *Renderer) fractDrawRTL(target TargetImage, text string, reverse bool
 		currGlyphIndex := self.getGlyphIndex(font, codePoint)
 		
 		// advance
-		origin.X -= self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
+		origin.X -= sizer.GlyphAdvance(font, &self.buffer, size, currGlyphIndex)
 
 		// apply kerning unless coming from line break
 		if lineBreakNth != 0 {
 			lineBreakNth = 0
 		} else {
-			origin.X -= self.fontSizer.Kern(font, &self.buffer, self.scaledSize, prevGlyphIndex, currGlyphIndex)
+			origin.X -= sizer.Kern(font, &self.buffer, size, prevGlyphIndex, currGlyphIndex)
 		}
 		
 		// quantize and notify changes
@@ -234,7 +243,9 @@ func (self *Renderer) fractDrawRTL(target TargetImage, text string, reverse bool
 		newestFractX := origin.X.FractShift()
 		if newestFractX != latestFractX {
 			latestFractX = newestFractX
-			self.cacheHandler.NotifyFractChange(origin)
+			if self.cacheHandler != nil {
+				self.cacheHandler.NotifyFractChange(origin)
+			}
 		}
 
 		// draw glyph
@@ -244,8 +255,8 @@ func (self *Renderer) fractDrawRTL(target TargetImage, text string, reverse bool
 		prevGlyphIndex = currGlyphIndex
 	}
 
-	// return unquantized pen position
-	// return origin
+	// TODO: I could store the unquantized pen position so it can be retrieved,
+	//       even if it's through a different method. hmmmm...
 }
 
 func (self *Renderer) fractDrawCenter(target TargetImage, text string, reverse bool, font *sfnt.Font, lineBreakNth int, x, y, maxY fract.Unit) {
@@ -255,12 +266,16 @@ func (self *Renderer) fractDrawCenter(target TargetImage, text string, reverse b
 	// set up traversal variables
 	var origin fract.Point = fract.UnitsToPoint(x, y)
 	var prevGlyphIndex sfnt.GlyphIndex
-	horzQuant, vertQuant := fract.Unit(self.horzQuantization), fract.Unit(self.vertQuantization)
+	horzQuant, vertQuant := self.fractGetQuantization()
+	sizer := self.state.fontSizer
+	size := self.state.scaledSize
 
 	latestFractY := origin.Y.FractShift()
 	latestFractX := origin.X.FractShift()
 	centerX := origin.X // better not quantize here
-	self.cacheHandler.NotifyFractChange(origin)
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(origin)
+	}
 
 	// traverse text
 	memo := iterator.MemorizePosition()
@@ -272,7 +287,9 @@ outerLoop:
 			newestFractX := origin.X.FractShift()
 			newestFractY := origin.Y.FractShift()
 			if newestFractY != latestFractY || newestFractX != latestFractX {
-				self.cacheHandler.NotifyFractChange(origin)
+				if self.cacheHandler != nil {
+					self.cacheHandler.NotifyFractChange(origin)
+				}
 				latestFractX, latestFractY = newestFractX, newestFractY
 			}
 			
@@ -290,13 +307,15 @@ outerLoop:
 				if lineBreakNth != 0 {
 					lineBreakNth = 0
 				} else {
-					origin.X += self.fontSizer.Kern(font, &self.buffer, self.scaledSize, prevGlyphIndex, currGlyphIndex)
+					origin.X += sizer.Kern(font, &self.buffer, size, prevGlyphIndex, currGlyphIndex)
 					origin.X = origin.X.QuantizeUp(horzQuant) // quantize
 				}
 
 				newestFractX := origin.X.FractShift()
 				if newestFractX != latestFractX {
-					self.cacheHandler.NotifyFractChange(origin)
+					if self.cacheHandler != nil {
+						self.cacheHandler.NotifyFractChange(origin)
+					}
 					latestFractX = newestFractX
 				}
 
@@ -304,7 +323,7 @@ outerLoop:
 				self.internalGlyphDraw(target, currGlyphIndex, origin, font)
 
 				// advance
-				origin.X += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
+				origin.X += sizer.GlyphAdvance(font, &self.buffer, size, currGlyphIndex)
 				
 				// update prev glyph and go to next code point
 				prevGlyphIndex = currGlyphIndex
@@ -317,7 +336,7 @@ outerLoop:
 			for codePoint == '\n' {
 				// switch to handle line breaks
 				lineBreakNth += 1
-				origin.Y += self.fontSizer.LineAdvance(font, &self.buffer, self.scaledSize, lineBreakNth)
+				origin.Y += sizer.LineAdvance(font, &self.buffer, size, lineBreakNth)
 				origin.Y = origin.Y.QuantizeUp(vertQuant)
 				if origin.Y > maxY { return } // early return
 				newestFractY = origin.Y.FractShift()
@@ -345,12 +364,12 @@ outerLoop:
 				if lineBreakNth != 0 {
 					lineBreakNth = 0
 				} else {
-					lineWidth += self.fontSizer.Kern(font, &self.buffer, self.scaledSize, prevGlyphIndex, currGlyphIndex)
+					lineWidth += sizer.Kern(font, &self.buffer, size, prevGlyphIndex, currGlyphIndex)
 					lineWidth = lineWidth.QuantizeUp(horzQuant) // quantize
 				}
 
 				// advance
-				lineWidth += self.fontSizer.GlyphAdvance(font, &self.buffer, self.scaledSize, currGlyphIndex)
+				lineWidth += sizer.GlyphAdvance(font, &self.buffer, size, currGlyphIndex)
 				
 				// update prev glyph and go to next code point
 				prevGlyphIndex = currGlyphIndex
@@ -358,7 +377,4 @@ outerLoop:
 			}
 		}
 	}
-
-	// return unquantized pen position
-	// return origin
 }

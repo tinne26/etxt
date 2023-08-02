@@ -20,7 +20,7 @@ func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) sfnt.GlyphI
 }
 
 func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
-	return logicalSize.MulDown(self.scale) // *
+	return logicalSize.MulDown(self.state.scale) // *
 	// * I prefer MulDown to compensate having used FromFloat64Up()
 	//   on both size and scale conversions. It's not a big deal in
 	//   either case, but this reduces the maximum potential error.
@@ -32,7 +32,7 @@ func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
 // anyway.
 func (self *Renderer) xheight(font *sfnt.Font) fract.Unit {
 	const hintingNone = 0
-	metrics, err := font.Metrics(&self.buffer, fixed.Int26_6(self.scaledSize), hintingNone)
+	metrics, err := font.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
 	if err != nil { panic("font.Metrics error: " + err.Error()) }
 	return fract.Unit(metrics.XHeight)
 }
@@ -48,7 +48,7 @@ func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, orig
 	if found { return glyphMask }
 
 	// glyph mask not cached, let's rasterize on our own
-	segments, err := font.LoadGlyph(&self.buffer, index, fixed.Int26_6(self.scaledSize), nil)
+	segments, err := font.LoadGlyph(&self.buffer, index, fixed.Int26_6(self.state.scaledSize), nil)
 	if err != nil {
 		// if you need to deal with missing glyphs, you should do so before
 		// reaching this point with functions like GetMissingRunes() and
@@ -57,7 +57,7 @@ func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, orig
 	}
 
 	// rasterize the glyph mask
-	alphaMask, err := mask.Rasterize(segments, self.rasterizer, origin)
+	alphaMask, err := mask.Rasterize(segments, self.state.rasterizer, origin)
 	if err != nil { panic("RasterizeGlyphMask failed: " + err.Error()) }
 
 	// pass to cache and return

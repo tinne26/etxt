@@ -59,23 +59,22 @@ func (self *Feed) At(x, y int) *Feed {
 	}
 	
 	// prepare for complex cases
-	if renderer.missingBasicProps() { renderer.initBasicProps() }
 	font   := renderer.GetFont()
 	sizer  := renderer.GetSizer()
-	ascent := sizer.Ascent(font, &renderer.buffer, renderer.scaledSize)
+	ascent := sizer.Ascent(font, &renderer.buffer, renderer.state.scaledSize)
 
 	// code based on Renderer.fractDraw // adjust Y position
-	qtVert := fract.Unit(renderer.vertQuantization)
+	qtVert := fract.Unit(renderer.state.vertQuantization)
 	switch vertAlign {
 	case Top:	
 		self.Position.Y = (fractY + ascent).QuantizeUp(qtVert)
 	case Midline, LastMidline:
 		self.Position.Y = (fractY + ascent - renderer.xheight(font)).QuantizeUp(qtVert)
 	case VertCenter:
-		height := sizer.LineHeight(font, &renderer.buffer, renderer.scaledSize)
+		height := sizer.LineHeight(font, &renderer.buffer, renderer.state.scaledSize)
 		self.Position.Y = (fractY + ascent - (height >> 1)).QuantizeUp(qtVert)
 	case Bottom:
-		height := sizer.LineHeight(font, &renderer.buffer, renderer.scaledSize)
+		height := sizer.LineHeight(font, &renderer.buffer, renderer.state.scaledSize)
 		self.Position.Y = (fractY + ascent - height).QuantizeUp(qtVert)
 	default:
 		panic(vertAlign)
@@ -141,16 +140,15 @@ func (self *Feed) AdvanceGlyph(glyphIndex sfnt.GlyphIndex) {
 // Advances the feed's position with a line break.
 func (self *Feed) LineBreak() {
 	renderer := self.Renderer
-	if renderer.missingBasicProps() { renderer.initBasicProps() }
 
 	// advance
 	self.Position.Y += renderer.GetSizer().LineAdvance(
 		renderer.GetFont(), &renderer.buffer, 
-		renderer.scaledSize, int(self.LineBreakAcc),
+		renderer.state.scaledSize, int(self.LineBreakAcc),
 	)
 	
 	// y position must be quantized for conformity with Renderer operations
-	qtVert := fract.Unit(renderer.vertQuantization)
+	qtVert := fract.Unit(renderer.state.vertQuantization)
 	self.Position.Y = self.Position.Y.QuantizeUp(qtVert)
 	self.Position.X = self.LineBreakX // doesn't matter if it's unquantized
 	self.LineBreakAcc += 1
@@ -160,11 +158,9 @@ func (self *Feed) LineBreak() {
 func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, drawMode bool) {
 	// make sure all relevant properties are initialized
 	renderer := self.Renderer
-	if renderer.missingBasicProps() { renderer.initBasicProps() }
 	font   := renderer.GetFont()
 	sizer  := renderer.GetSizer()
-	qtVert := fract.Unit(renderer.vertQuantization)
-	qtHorz := fract.Unit(renderer.horzQuantization)
+	qtHorz, qtVert := renderer.fractGetQuantization()
 
 	// traverse in the proper direction
 	dir := self.Renderer.Complex().GetDirection()
@@ -172,7 +168,7 @@ func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, 
 	case LeftToRight:
 		// apply kerning unless coming from line break
 		if self.LineBreakAcc == 0 {
-			self.Position.X += sizer.Kern(font, &renderer.buffer, renderer.scaledSize, self.PrevGlyphIndex, glyphIndex)	
+			self.Position.X += sizer.Kern(font, &renderer.buffer, renderer.state.scaledSize, self.PrevGlyphIndex, glyphIndex)	
 		}
 
 		// always apply quantization inconditionally before drawing.
@@ -188,14 +184,14 @@ func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, 
 		}
 
 		// advance
-		self.Position.X += sizer.GlyphAdvance(font, &renderer.buffer, renderer.scaledSize, glyphIndex)
+		self.Position.X += sizer.GlyphAdvance(font, &renderer.buffer, renderer.state.scaledSize, glyphIndex)
 	case RightToLeft:
 		// advance
-		self.Position.X -= sizer.GlyphAdvance(font, &renderer.buffer, renderer.scaledSize, glyphIndex)
+		self.Position.X -= sizer.GlyphAdvance(font, &renderer.buffer, renderer.state.scaledSize, glyphIndex)
 
 		// apply kerning unless coming from line break
 		if self.LineBreakAcc == 0 {
-			self.Position.X -= sizer.Kern(font, &renderer.buffer, renderer.scaledSize, self.PrevGlyphIndex, glyphIndex)	
+			self.Position.X -= sizer.Kern(font, &renderer.buffer, renderer.state.scaledSize, self.PrevGlyphIndex, glyphIndex)	
 		}
 
 		// quantize

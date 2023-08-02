@@ -20,9 +20,9 @@ func figureOutBounds(bounds fract.Rect, origin fract.Point) (int, int, fract.Poi
 	var normOffset fract.Point
 	normOffset.X = -floorMinX + origin.X.FractShift()
 	normOffset.Y = -floorMinY + origin.Y.FractShift()
-	width  := (bounds.Max.X + normOffset.X).Ceil()
-	height := (bounds.Max.Y + normOffset.Y).Ceil()
-	return width.ToIntFloor(), height.ToIntFloor(), normOffset, maskCorrection
+	width  := (bounds.Max.X + normOffset.X).ToIntCeil()
+	height := (bounds.Max.Y + normOffset.Y).ToIntCeil()
+	return width, height, normOffset, maskCorrection
 }
 
 // Around 9 times as fast as using a regular for loop.

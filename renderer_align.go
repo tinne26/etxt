@@ -80,14 +80,13 @@ const (
 // [this image]: https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_aligns.png
 func (self *Renderer) SetAlign(align Align) {
 	if align == 0 { panic("invalid zero align") }
-	if self.missingBasicProps() { self.initBasicProps() }
 	
 	// configure horizontal align
 	horzAlign := align.Horz()
 	if horzAlign != 0 {
 		switch horzAlign {
 		case Left, HorzCenter, Right:
-			self.align = horzAlign | (self.align & alignVertBits)
+			self.state.align = horzAlign | (self.state.align & alignVertBits)
 		default:
 			panic("invalid horizontal component in align")
 		}
@@ -98,7 +97,7 @@ func (self *Renderer) SetAlign(align Align) {
 	if vertAlign != 0 {
 		switch vertAlign {
 		case Top, Midline, Baseline, VertCenter, LastMidline, LastBaseline, Bottom:
-			self.align = vertAlign | (self.align & alignHorzBits)
+			self.state.align = vertAlign | (self.state.align & alignHorzBits)
 		default:
 			panic("invalid vertical component in align")
 		}
@@ -108,6 +107,5 @@ func (self *Renderer) SetAlign(align Align) {
 // Returns the current align. See [Renderer.SetAlign]() documentation
 // for more details on renderer aligns.
 func (self *Renderer) GetAlign() Align {
-	if self.missingBasicProps() { self.initBasicProps() }
-	return self.align
+	return self.state.align
 }
