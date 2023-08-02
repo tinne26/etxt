@@ -7,8 +7,8 @@ github.com/hajimehoshi/ebiten/v2 v2.5.0 h1:jnz5dngMflIbsIZoj19Vs4zF3kDv1hPUFSeu4
 github.com/hajimehoshi/ebiten/v2 v2.5.0/go.mod h1:mnHSOVysTr/nUZrN1lBTRqhK4NG+T9NR3JsJP2rCppk=
 github.com/jezek/xgb v1.1.0 h1:wnpxJzP1+rkbGclEkmwpVFQWpuE2PUGNUzP8SbfFobk=
 github.com/jezek/xgb v1.1.0/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
-github.com/tinne26/etxt v0.0.9-alpha.5.0.20230802173111-3c59f708e4b8 h1:vbbMuVfuIe/T755/XvM6jXOONKl91uJZ4Jv1m6/IOEI=
-github.com/tinne26/etxt v0.0.9-alpha.5.0.20230802173111-3c59f708e4b8/go.mod h1:Icbd4bDjrXag1oYIhB51CrkMYqRb7YMv0AsrOSfNKfU=
+github.com/tinne26/etxt v0.0.9-alpha.5.0.20230802174042-acb1b54661da h1:0InrN+/xbVmzpMsMC153kEzw+yw7VUBtI7vWErv4GNs=
+github.com/tinne26/etxt v0.0.9-alpha.5.0.20230802174042-acb1b54661da/go.mod h1:Icbd4bDjrXag1oYIhB51CrkMYqRb7YMv0AsrOSfNKfU=
 github.com/tinne26/sfntshape v0.0.0-20230729081304-d822bfbf3ab3 h1:/7oPQdEhyb53q0LscRzoZtg5bDk0rLUqWnR0yLAt+DQ=
 github.com/tinne26/sfntshape v0.0.0-20230729081304-d822bfbf3ab3/go.mod h1:pvUq3muqOFLbqlrsUjy0TfTQuwCsoeKfRUutcsBzRNQ=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
