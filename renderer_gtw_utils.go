@@ -101,9 +101,6 @@ func (self *Renderer) utilsFillMissingProperties() {
 		self.state.fontSizer = &sizer.DefaultSizer{}
 		self.state.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.state.scaledSize)
 	}
-
-	// TODO: there's a lot left to communicate here with regards to the cache handler.
-	//       in fact, the same should happen at init too.
 }
 
 // Utility method to set the font by passing its raw data and letting
