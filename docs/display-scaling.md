@@ -1,21 +1,22 @@
 # Display scaling
 
-One of the top mistakes among Ebitengine game devs is failing to use [`ebiten.DeviceScaleFactor()`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#DeviceScaleFactor) correctly. There are some reasons for this:
-- Many developers haven't internalized that pixels in physical monitors are not all the same size.
+One of the most common mistakes among Ebitengine game devs is failing to use [`ebiten.DeviceScaleFactor()`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#DeviceScaleFactor) correctly. There are some reasons for this:
+- We tend to forget that pixel size and density can vary between monitors.
 - Ebitengine treats display scaling as an optional feature instead of as a primary concern.
 - UI frameworks for Ebitengine also have an unhealthy tendency to neglect display scaling.
 - Almost no one understands how `Game.Layout` really works.
 
-The main victim in all this? Text. According to scientific studies™, text looks jaggy in 13 out of 14 Ebitengine games.
+A common victim of all this? Text. The solution? Learn how `Game.Layout` works by [reading this guide](https://github.com/tinne26/kage-desk/blob/main/docs/tutorials/ebitengine_game.md#layout).
 
-Thankfully, the path towards betterment is only five steps away:
-1. Repent.
-2. Learn how `Game.Layout` works by [reading this guide](https://github.com/tinne26/kage-desk/blob/main/docs/tutorials/ebitengine_game.md#layout).
-3. Repent harder.
-4. Delete your whole game and rewrite it using what you have learned.
-5. Meditate until enlightened.
+In the case of `etxt`, you can adjust the text scale through the `Renderer.SetScale()` function. If you want crisp text, the summary is that you need to use the full resolution of the player's screen, and that can only be achieved by understanding `Game.Layout` and using `DeviceScaleFactor()` correctly. From there on, `etxt` makes your life easy by separating logical sizes (`Renderer.SetSize()`) and scale (`Renderer.SetScale()`).
 
-Technically, the critical code when using `etxt` can be as simple as this:
+## Text scaling contexts
+
+There are two main ways in which you may want to scale your text:
+
+The first one is scaling text based on the `DeviceScaleFactor()`, but preserving text size regardless of the window size. This is common for general GUI applications. You may make the window bigger or smaller, but you still want the text to be rendered at the same size. *Text size is independent from the window size*.
+
+To achieve this, you simply need to apply `Renderer.SetScale(ebiten.DeviceScaleFactor())` on the `Game.Layout()` function or similar:
 ```Golang
 func (game *Game) Layout(_, _ int) (int, int) { panic("use Ebitengine >=v2.5.0") }
 func (game *Game) LayoutF(logicWinWidth, logicWinHeight float64) (float64, float64) {
@@ -26,15 +27,34 @@ func (game *Game) LayoutF(logicWinWidth, logicWinHeight float64) (float64, float
 	return canvasWidth, canvasHeight
 }
 ```
-The main problem is that if you have already a game half written and you are only understanding `Game.Layout` now, this code will most likely break everything for you.
 
-The summary would be that if you want crisp text you need to use the full resolution of the player's screen, and that can only be achieved by understanding `Game.Layout` and using `DeviceScaleFactor()` correctly. From there on, `etxt` makes your life easy by separating logical sizes (`Renderer.SetSize()`) and scale (`Renderer.SetScale()`).
+The second approach is having text size scale along the window size, as it happens in many games. You make the window bigger? Everything gets bigger. You make the window smaller? Everything get smaller. *Text size is proportional to the window size*.
+
+In this case, you have to do two or three things:
+1. Apply `ebiten.DeviceScaleFactor()` on the `Game.Layout` function to get a canvas of the maximum possible resolution.
+2. If your game graphics are made with pixel art and you expect a specific canvas size for them, draw that on an offscreen and then project it to the high-resolution canvas.
+3. Draw your text directly on the high-resolution canvas. Your text scale should be set to `HighResolution/LogicalResolution`. For example, if your logical canvas for pixel art is 640x360, but you are projecting to a screen of resolution 1920x1080, your scaling factor would be `3.0`. There can be many intricacies here if you want to do stretching, integer scaling or stuff like that, but this is the main idea.
+
+Here's some *bad but illustrative* code for this approach:
+```Golang
+func (game *Game) Draw(canvas *ebiten.Image) {
+	// draw pixel art stuff
+	game.LogicalCanvas.Clear()
+	game.DrawPixelArt(g.LogicalCanvas)
+
+	// project from logical resolution to high-resolution
+	uiCanvas, uiScale := game.Project(game.LogicalCanvas, canvas) // *
+	// * The uiCanvas may be the same as 'canvas', or it may
+	//   be a canvas.SubImage() that accounts for black borders
+	//   (e.g., caused by integer scaling or to avoid stretching).
+
+	// draw UI
+	game.TextRenderer.SetScale(uiScale)
+	game.DrawUI(uiCanvas, uiScale)
+}
+```
 
 ## FAQ
-
-**You haven't actually explained anything.**
-
-Yeah, the explanations are actually on the [`Game.Layout` tutorial](https://github.com/tinne26/kage-desk/blob/main/docs/tutorials/ebitengine_game.md#layout). You either understand how to make full use of the player screen's resolution through `Game.Layout` and `ebiten.DeviceScaleFactor()` or you don't. If you do, `etxt` makes it trivial to adapt to that with `Renderer.SetScale()`, and there's not much more to say. If you don't, you are missing the pre-required knowledge, so don't ask me for miracles.
 
 **But what if I'm making a low-resolution pixel art game? Do I still need display scaling?**
 
@@ -44,7 +64,7 @@ But yeah, you can actually work on many parts of your game without display scali
 
 **I've been following your teachings diligently, but... I don't see any difference?**
 
-Some developers work with screens that have a standard display scaling of 100% and they never notice. You can go to your system configuration and play around with the display scaling to test. Notice, though, that Ebitengine doesn't detect the display scaling changes dynamically once your game is already running, so you will have to restart the game each time you change the display scaling.
+Many developers work with screens that have a standard display scaling of 100% and they never notice. You can go to your system configuration and play around with the display scaling to test. Notice, though, that Ebitengine doesn't detect the display scaling changes dynamically once your game is already running, so you will have to restart the game each time you change the display scaling.
 
 **Ok, now I've seen the difference... but it doesn't look that bad to me.**
 
