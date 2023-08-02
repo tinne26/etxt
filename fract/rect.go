@@ -78,6 +78,15 @@ func (self Rect) AddPoint(pt Point) Rect {
 	return self.AddUnits(pt.X, pt.Y)
 }
 
+func (self Rect) CenteredAtIntCoords(x, y int) Rect {
+	ux, uy := FromInt(x), FromInt(y)
+	hw, hh := self.Width() >> 1, self.Height() >> 1
+	return Rect{
+		Min: Point{ X: ux - hw, Y: uy - hh },
+		Max: Point{ X: ux + hw, Y: uy + hh },
+	}
+}
+
 func (self Rect) Contains(pt Point) bool {
 	return pt.In(self)
 }

@@ -12,6 +12,10 @@ func UnitsToPoint(x, y Unit) Point {
 	return Point{ X: x, Y: y }
 }
 
+func IntsToPoint(x, y int) Point {
+	return Point{ X: FromInt(x), Y: FromInt(y) }
+}
+
 func (self Point) ImagePoint() image.Point {
 	x, y := self.ToInts()
 	return image.Pt(x, y)
