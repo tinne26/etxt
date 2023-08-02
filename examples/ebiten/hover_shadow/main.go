@@ -4,66 +4,80 @@ import "os"
 import "log"
 import "fmt"
 import "math"
-import "image"
 import "image/color"
 
 import "github.com/hajimehoshi/ebiten/v2"
+
 import "github.com/tinne26/etxt"
-import "golang.org/x/image/math/fixed"
+import "github.com/tinne26/etxt/font"
+import "github.com/tinne26/etxt/fract"
+
+// This example shows how to combine a couple draws and some 
+// very basic logic in order to create a simple effect when
+// hovering text with the mouse. There are still a few interesting
+// details here and there if you are still getting started with
+// etxt and Ebitengine, like measuring the text and manipulating
+// its fract.Rect, or adjusting the animation based on the display
+// scaling for consistent results across different setups.
+// You can run this example with:
+//   go run github.com/tinne26/etxt/examples/ebiten/hover_shadow@latest path/to/font.ttf
 
 const HoverText = "Hover me please!"
 
 type Game struct {
-	txtRenderer *etxt.Renderer
+	text *etxt.Renderer
 	focus float64
+	canvasWidth int
+	canvasHeight int
 }
 
-func (self *Game) Layout(w int, h int) (int, int) {
+func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
-	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+	self.text.SetScale(scale) // relevant for HiDPI
+	self.canvasWidth  = int(math.Ceil(float64(winWidth)*scale))
+	self.canvasHeight = int(math.Ceil(float64(winHeight)*scale))
+	return self.canvasWidth, self.canvasHeight
 }
+
 func (self *Game) Update() error {
-	// calculate target area. in general you don't need to recalculate
-	// this at every frame, but we are being lazy and wasteful here
-	targetArea := self.txtRenderer.SelectionRect(HoverText)
-	uw, uh := ebiten.WindowSize()
-	scale := ebiten.DeviceScaleFactor()
-	w, h := int(math.Ceil(float64(uw)*scale)), int(math.Ceil(float64(uh)*scale))
-	tw, th := targetArea.Width.Ceil(), targetArea.Height.Ceil()
-	tRect := image.Rect(w/2 - tw/2, h/2 - th/2, w/2 + tw/2, h/2 + th/2)
+	// calculate target area. you could easily optimize this,
+	// but we are being lazy and wasteful... and it's still ok
+	targetRect := self.text.Measure(HoverText)
+	ox, oy := self.canvasWidth/2, self.canvasHeight/2
+	targetRect = targetRect.CenteredAtIntCoords(ox, oy)
 
-	// determine if we are inside or outside the hover
-	// area and adjust the "focus" level
-	if image.Pt(ebiten.CursorPosition()).In(tRect) {
-		self.focus += 0.06
+	// determine if we are inside or outside the
+	// hover area and adjust the "focus" level
+	cursorPt := fract.IntsToPoint(ebiten.CursorPosition())
+	if targetRect.Contains(cursorPt) {
+		self.focus += 0.05
 		if self.focus > 1.0 { self.focus = 1.0 }
 	} else {
-		self.focus -= 0.06
+		self.focus -= 0.05
 		if self.focus < 0.0 { self.focus = 0.0 }
 	}
+
 	return nil
 }
 
-func (self *Game) Draw(screen *ebiten.Image) {
+func (self *Game) Draw(canvas *ebiten.Image) {
 	const MaxOffsetX = 4 // max shadow x offset
 	const MaxOffsetY = 4 // max shadow y offset
 
 	// dark background
-	screen.Fill(color.RGBA{ 0, 0, 0, 255 })
+	canvas.Fill(color.RGBA{ 0, 0, 0, 255 })
 
 	// draw text
-	w, h := screen.Size()
-	self.txtRenderer.SetTarget(screen)
 	if self.focus > 0 {
-		self.txtRenderer.SetColor(color.RGBA{255, 0, 255, 128}) // sharp shadow
+		self.text.SetColor(color.RGBA{200, 0, 200, 200}) // sharp shadow
 		scale := ebiten.DeviceScaleFactor()
-		hx := fixed.Int26_6((w/2)*64) + fixed.Int26_6(self.focus*MaxOffsetX*scale*64)
-		hy := fixed.Int26_6((h/2)*64) + fixed.Int26_6(self.focus*MaxOffsetY*scale*64)
-		self.txtRenderer.DrawFract(HoverText, hx, hy)
+		hx := self.canvasWidth/2  + int(self.focus*MaxOffsetX*scale)
+		hy := self.canvasHeight/2 + int(self.focus*MaxOffsetY*scale)
+		self.text.Draw(canvas, HoverText, hx, hy)
 	}
 
-	self.txtRenderer.SetColor(color.RGBA{255, 255, 255, 255}) // main color
-	self.txtRenderer.Draw(HoverText, w/2, h/2)
+	self.text.SetColor(color.RGBA{255, 255, 255, 255}) // main color
+	self.text.Draw(canvas, HoverText, self.canvasWidth/2, self.canvasHeight/2)
 }
 
 func main() {
@@ -75,23 +89,20 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
-
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(int(64*ebiten.DeviceScaleFactor()))
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
+	renderer.SetSize(64)
+	renderer.SetFont(sfntFont)
+	renderer.SetAlign(etxt.Center)
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/hover_shadow")
 	ebiten.SetWindowSize(640, 480)
-	err = ebiten.RunGame(&Game { renderer, 0.0 })
+	err = ebiten.RunGame(&Game{ text: renderer })
 	if err != nil { log.Fatal(err) }
 }

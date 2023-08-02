@@ -15,6 +15,11 @@ import "github.com/tinne26/etxt/sizer"
 import "github.com/tinne26/etxt/font"
 import "github.com/tinne26/etxt/fract"
 
+// This example shows how to use different mask rasterizers in order to
+// get faux bold and faux oblique text, while also modifying some advanced
+// properties like quantization and sizers. You can run it like this:
+//   go run github.com/tinne26/etxt/examples/ebiten/faux_styles@latest path/to/font.ttf
+
 const MainText = "The lazy programmer jumps\nover the brown codebase."
 
 type Game struct {
@@ -40,6 +45,7 @@ func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
 	return canvasWidth, canvasHeight
 }
+
 func (self *Game) Update() error {
 	// update counter to prevent excessive key repeat triggering
 	self.sinceLastKey += 1

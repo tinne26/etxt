@@ -3,33 +3,40 @@ package main
 import "os"
 import "log"
 import "fmt"
-import "time"
 import "math"
 import "image/color"
 import "math/rand"
 
 import "github.com/hajimehoshi/ebiten/v2"
-import "golang.org/x/image/math/fixed"
+import "golang.org/x/image/font/sfnt"
+import "github.com/tinne26/sfntshape"
 
 import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/emask"
+import "github.com/tinne26/etxt/font"
+import "github.com/tinne26/etxt/fract"
 
 // mmmmm... no, this wasn't social commentary on parenting
 
 type Game struct {
-	txtRenderer *etxt.Renderer
+	text *etxt.Renderer
 	childX float64
 	parentX float64
 	parent *ebiten.Image
 	child *ebiten.Image
+	shakeLevel fract.Unit
 	// ...add a variable for prolonged trauma?
 }
 
-func (self *Game) Layout(w int, h int) (int, int) {
+func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
-	return int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
+	self.text.SetScale(scale) // relevant for HiDPI
+	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
+	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	return canvasWidth, canvasHeight
 }
+
 func (self *Game) Update() error {
+	// make child move towards parent
 	scale := ebiten.DeviceScaleFactor()
 	parentX, _ := ebiten.CursorPosition()
 	self.parentX = float64(parentX)
@@ -54,36 +61,39 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	if shakeLevel < 0 { shakeLevel = -shakeLevel }
 	if shakeLevel >= 22*scale { shakeLevel -= 22*scale } else { shakeLevel = 0 }
 	shakeLevel = shakeLevel/16
+	if shakeLevel > 0.2 {
+		self.shakeLevel = fract.FromFloat64(shakeLevel + 1)
+	} else {
+		self.shakeLevel = 1
+	}
 
-	// draw parent
+	// draw both parent and child
 	w, h := screen.Size()
 	opts := ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(self.parentX - 6*scale, float64(h) - 32*scale)
+	bounds := self.parent.Bounds()
+	opts.GeoM.Translate(self.parentX + float64(bounds.Min.X), float64(h + bounds.Min.Y))
 	screen.DrawImage(self.parent, &opts)
-
-	// draw children
-	opts  = ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(self.childX - 5*scale, float64(h) - 20*scale)
-	opts.ColorM.Scale(0.5, 0.5, 0.5, 1.0)
-	screen.DrawImage(self.child, &opts)
+	opts.GeoM.Reset()
+	bounds = self.child.Bounds()
+	opts.GeoM.Translate(self.childX + float64(bounds.Min.X), float64(h + bounds.Min.Y))
+	screen.DrawImage(self.child , &opts)
 
 	// draw text
-	self.txtRenderer.SetTarget(screen)
-	self.txtRenderer.Traverse("I'm not afraid!", fixed.P(w/2, h/2),
-		func(dot fixed.Point26_6, _ rune, glyphIndex etxt.GlyphIndex) {
-			if shakeLevel > 0 {
-				dot.X += fixed.Int26_6(rand.Intn(int(shakeLevel) + 1)*64)
-				dot.Y += fixed.Int26_6(rand.Intn(int(shakeLevel) + 1)*64)
-			}
-			mask := self.txtRenderer.LoadGlyphMask(glyphIndex, dot)
-			self.txtRenderer.DefaultDrawFunc(dot, mask, glyphIndex)
-		})
+	self.text.Draw(screen, "I'm not afraid!", w/2, h/2)
+}
+
+// This is the key part for this example. It's a custom glyph drawing
+// function that we set directly for our text renderer and allows us
+// to create a shaking effect. Notice that the shaking is not even
+// centered, it's intentionally very messy.
+func (self *Game) drawShakyGlyph(target *ebiten.Image, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
+	origin.X += fract.Unit(rand.Intn(int(self.shakeLevel)))
+	origin.Y += fract.Unit(rand.Intn(int(self.shakeLevel)))
+	mask := self.text.Glyph().LoadMask(glyphIndex, origin)
+	self.text.Glyph().DrawMask(target, mask, origin)
 }
 
 func main() {
-	// seed rand
-	rand.Seed(time.Now().UnixNano())
-
 	// get font path
 	if len(os.Args) != 2 {
 		msg := "Usage: expects one argument with the path to the font to be used\n"
@@ -92,77 +102,62 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
-
 	// create and configure renderer
-	scale := ebiten.DeviceScaleFactor()
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(int(58*scale))
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
 	renderer.SetColor(color.RGBA{255, 255, 255, 255}) // white
+	renderer.SetFont(sfntFont)
+	renderer.SetSize(58)
+	renderer.SetAlign(etxt.Center)
 
-	// create the parent (human) shape with a trapezoid and a circle
-	expectedParts := 10
-	shape := emask.NewShape(expectedParts)
-	moveTo(&shape, -2, 24, scale) // move to the top of the trapezoid
-	lineTo(&shape, -7,  0, scale)
-	lineTo(&shape,  7,  0, scale)
-	lineTo(&shape,  2, 24, scale)
-	lineTo(&shape, -2, 24, scale) // close the trapezoid
-	moveTo(&shape,  0, 24, scale) // move to the start of the circle (bottom)
-	quadTo(&shape, -8, 24, -8, 32, scale)// draw first quarter (to left-middle)
-	quadTo(&shape, -8, 40,  0, 40, scale)// draw second quarter (to top)
-	quadTo(&shape,  8, 40,  8, 32, scale)// draw third quarter (to right-middle)
-	quadTo(&shape,  8, 24,  0, 24, scale)// close the shape
-	pixelAligned := fixed.Point26_6{}
-	mask, err := emask.Rasterize(shape.Segments(), renderer.GetRasterizer(), pixelAligned)
-	if err != nil { log.Fatal(err) }
-	parentImg := ebiten.NewImageFromImage(mask) // *
-	// * Notice that Ebitengine won't preserve the mask bounds, so we won't be
-	//   able to use them to position the image... we will do it by hand.
+	// create game object so we can set one of its
+	// methods as our custom draw function
+	game := Game{ text: renderer, parentX: 500, childX: 500 }
+	renderer.Glyph().SetDrawFunc(game.drawShakyGlyph)
 
-	// create the kid, which is the same but smaller
+	// create the parent (human) shape with a trapezoid
+	// and a circle (well, some lazy round shape)
+	shape := sfntshape.New()
+	shape.SetScale(ebiten.DeviceScaleFactor())
+	shape.MoveTo(-2, 16) // move to the top of the trapezoid
+	shape.LineTo( 2, 16)
+	shape.LineTo( 7, -8)
+	shape.LineTo(-7, -8)
+	shape.LineTo(-2, 16) // close the trapezoid
+	shape.MoveTo( 0, 16) // move to the start of the circle (bottom)
+	shape.QuadTo(-8, 16, -8, 24)// draw first quarter (to left-middle)
+	shape.QuadTo(-8, 32,  0, 32)// draw second quarter (to top)
+	shape.QuadTo( 8, 32,  8, 24)// draw third quarter (to right-middle)
+	shape.QuadTo( 8, 16,  0, 16)// close the shape
+	white := color.RGBA{255, 255, 255, 255}
+	trans := color.RGBA{0, 0, 0, 0}
+	img := shape.Paint(white, trans)
+	opts := &ebiten.NewImageFromImageOptions{ PreserveBounds: true }
+	game.parent = ebiten.NewImageFromImageWithOptions(img, opts)
+
+	// create the child, which is the same but smaller
 	shape.Reset()
-	moveTo(&shape, -2, 16, scale) // move to the top of the trapezoid
-	lineTo(&shape, -5,  0, scale)
-	lineTo(&shape,  5,  0, scale)
-	lineTo(&shape,  2, 16, scale)
-	lineTo(&shape, -2, 16, scale) // close the trapezoid
-	moveTo(&shape,  0, 16, scale) // move to the start of the circle (bottom)
-	quadTo(&shape, -6, 16, -6, 22, scale)// draw first quarter (to left-middle)
-	quadTo(&shape, -6, 28,  0, 28, scale)// draw second quarter (to top)
-	quadTo(&shape,  6, 28,  6, 22, scale)// draw third quarter (to right-middle)
-	quadTo(&shape,  6, 16,  0, 16, scale)// close the shape
-	mask, err = emask.Rasterize(shape.Segments(), renderer.GetRasterizer(), pixelAligned)
-	if err != nil { log.Fatal(err) }
-	childImg := ebiten.NewImageFromImage(mask)
+	shape.MoveTo(-2, 10) // move to the top of the trapezoid
+	shape.LineTo( 2, 10)
+	shape.LineTo( 5, -6)
+	shape.LineTo(-5, -6)
+	shape.LineTo(-2, 10) // close the trapezoid
+	shape.MoveTo( 0, 10) // move to the start of the circle (bottom)
+	shape.QuadTo(-6, 10, -6, 16)// draw first quarter (to left-middle)
+	shape.QuadTo(-6, 22,  0, 22)// draw second quarter (to top)
+	shape.QuadTo( 6, 22,  6, 16)// draw third quarter (to right-middle)
+	shape.QuadTo( 6, 10,  0, 10)// close the shape
+	gray := color.RGBA{128, 128, 128, 255}
+	img = shape.Paint(gray, trans)
+	game.child = ebiten.NewImageFromImageWithOptions(img, opts)
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/shaking")
 	ebiten.SetWindowSize(640, 480)
-	err = ebiten.RunGame(&Game { renderer, 500, 500, parentImg, childImg })
+	err = ebiten.RunGame(&game)
 	if err != nil { log.Fatal(err) }
-}
-
-func moveTo(shape *emask.Shape, x, y int, scale float64) {
-	sx, sy := int(float64(x)*scale), int(float64(y)*scale)
-	shape.MoveTo(sx, sy)
-}
-
-func lineTo(shape *emask.Shape, x, y int, scale float64) {
-	sx, sy := int(float64(x)*scale), int(float64(y)*scale)
-	shape.LineTo(sx, sy)
-}
-
-func quadTo(shape *emask.Shape, ctrlX, ctrlY, x, y int, scale float64) {
-	scx, scy := int(float64(ctrlX)*scale), int(float64(ctrlY)*scale)
-	sx , sy  := int(float64(x)*scale), int(float64(y)*scale)
-	shape.QuadTo(scx, scy, sx, sy)
 }

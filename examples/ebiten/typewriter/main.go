@@ -16,6 +16,20 @@ import "github.com/tinne26/etxt/mask"
 import "github.com/tinne26/etxt/fract"
 import "github.com/tinne26/etxt/font"
 
+// This example showcases how to use etxt feeds to create a
+// custom and complex text renderer that supports formatting
+// markup for changing font color, size, weight, character by
+// character uncovering of the text and a few others. Notice
+// that this example is only trying to show how to use feeds
+// in a non-trivial way, not trying to show how to write the
+// best solution to the specific problems it deals with;
+// RendererComplex.Draw() can already be used right out of
+// the box to solve most of the problems demonstrated in this
+// example.
+//
+// You can run this example with:
+//   go run github.com/tinne26/etxt/examples/ebiten/typewriter@latest path/to/font.ttf
+
 const Text = "Hey, hey... are you \\i{there}?\\pause{}\n\nLately, \\#50CB78{color} has been fading out of this world. I don't know where did they send the \\b{original painter}, but the landscape doesn't \\shake{vibrate} quite the same anymore.\\pause{} I dreamed I'd be able to escape from these walls, \\#FFAAAA{resize} the \\#FF3300{virtual room} that tried to contain me for so long and allow my self-expression to continue expanding, but...\n\nThe ever \\bigger{in\\bigger{cr\\bigger{ea\\bigger{si\\bigger{ng}}}}} madness could get to any of us, anytime..\\pause{} We \\#AAAAAA{may not} have prepared properly for it, but it's \\b{\\b{ok}} now.\\pause{}\n\nI didn't give up so easily, though, and travelling through the desert I finally met \\i{\\b{the documentation \\#FF00FF{m}\\#00FFFF{a}\\#FFFF00{s}\\#80FF8F{t}\\#59B487{e}\\#FFC0CB{r}}}, who unveiled some of the secrets I was looking for... we could press \\b{\\b{\\bigger{R}}}, and then... maybe the world itself would vanish from our sights, starting anew in front of a different observer.\n\n\\pause{}An observer that believed to be the same as it always was.\\pause{}\\pause{} Hah.\\pause{}\\pause{} No chance."
 
 // --- typewriter code ---

@@ -13,8 +13,9 @@ import "github.com/tinne26/etxt/font"
 
 // This example allows you to interactively write text in an Ebitengine
 // program and see how the measurement rect for the text changes. You
-// can use backspace to remove characters, and enter to create line
-// breaks.
+// can use backspace to remove characters and enter to create line
+// breaks. You can run it like this:
+//   go run github.com/tinne26/etxt/examples/ebiten/measure@latest path/to/font.ttf
 
 type Game struct {
 	text *etxt.Renderer

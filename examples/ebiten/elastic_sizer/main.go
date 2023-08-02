@@ -14,6 +14,16 @@ import "github.com/tinne26/etxt/sizer"
 import "github.com/tinne26/etxt/cache"
 import "github.com/tinne26/etxt/font"
 
+// This example showcases how to modify the text quantization level,
+// and how this can be critical for smooth text animations when they
+// involve movement. You can run the example like this:
+//   go run github.com/tinne26/etxt/examples/ebiten/elastic_sizer@latest path/to/font.ttf
+//
+// This example also shows how to use a cache in slightly more advanced
+// ways than most other examples. In particular, this example does
+// pre-caching and creates the cache manually instead of relying on
+// Renderer.Utils().SetCache8MiB().
+
 // you can play around with these, but it can get out of hand quite easily
 const SpringText   = "Bouncy!"
 const MainTextSize = 64
@@ -82,7 +92,7 @@ func (self *Game) Update() error {
 	}
 
 	// Spring simulation logic. This part of the code doesn't have
-	// anything to do with text rendering, so you should just ignore it.
+	// anything to do with text rendering, so you can ignore it.
 	// It's not like the spring simulation is even good (too linear).
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		// manual spring manipulation with the mouse
