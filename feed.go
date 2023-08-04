@@ -59,8 +59,8 @@ func (self *Feed) At(x, y int) *Feed {
 	}
 	
 	// prepare for complex cases
-	font   := renderer.GetFont()
-	sizer  := renderer.GetSizer()
+	font   := renderer.state.activeFont
+	sizer  := renderer.state.fontSizer
 	ascent := sizer.Ascent(font, &renderer.buffer, renderer.state.scaledSize)
 
 	// code based on Renderer.fractDraw // adjust Y position
@@ -142,8 +142,8 @@ func (self *Feed) LineBreak() {
 	renderer := self.Renderer
 
 	// advance
-	self.Position.Y += renderer.GetSizer().LineAdvance(
-		renderer.GetFont(), &renderer.buffer, 
+	self.Position.Y += renderer.state.fontSizer.LineAdvance(
+		renderer.state.activeFont, &renderer.buffer, 
 		renderer.state.scaledSize, int(self.LineBreakAcc),
 	)
 	
@@ -158,8 +158,8 @@ func (self *Feed) LineBreak() {
 func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, drawMode bool) {
 	// make sure all relevant properties are initialized
 	renderer := self.Renderer
-	font   := renderer.GetFont()
-	sizer  := renderer.GetSizer()
+	font   := renderer.state.activeFont
+	sizer  := renderer.state.fontSizer
 	qtHorz, qtVert := renderer.fractGetQuantization()
 
 	// traverse in the proper direction

@@ -8,6 +8,11 @@ import "golang.org/x/image/math/fixed"
 import "github.com/tinne26/etxt/fract"
 import "github.com/tinne26/etxt/mask"
 
+func maxInt(a, b int) int {
+	if a >= b { return a }
+	return b
+}
+
 func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) sfnt.GlyphIndex {
 	index, err := font.GlyphIndex(&self.buffer, codePoint)
 	if err != nil { panic("font.GlyphIndex error: " + err.Error()) }
@@ -64,4 +69,36 @@ func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, orig
 	glyphMask = convertAlphaImageToGlyphMask(alphaMask)
 	self.cacheHandler.PassMask(index, glyphMask)
 	return glyphMask
+}
+
+// --- internal functions for draw and renderer ---
+// Precondition: sizer and font have been validated to be initialized.
+
+// TODO: apply on most parts of the measuring and rendering pipeline, instead of
+//       using variable-stored sizer, font and sizes.
+func (self *Renderer) getOpKernBetween(prevGlyphIndex, currGlyphIndex sfnt.GlyphIndex) fract.Unit {
+	return self.state.fontSizer.Kern(
+		self.state.activeFont, &self.buffer, self.state.scaledSize,
+		prevGlyphIndex, currGlyphIndex,
+	)
+}
+
+// TODO: same as above
+func (self *Renderer) getOpAdvance(currGlyphIndex sfnt.GlyphIndex) fract.Unit {
+	return self.state.fontSizer.GlyphAdvance(
+		self.state.activeFont, &self.buffer, self.state.scaledSize, currGlyphIndex,
+	)
+}
+
+// TODO: same as above
+func (self *Renderer) getOpLineAdvance(lineBreakNth int) fract.Unit {
+	return self.state.fontSizer.LineAdvance(
+		self.state.activeFont, &self.buffer, self.state.scaledSize, lineBreakNth,
+	)
+}
+
+func (self *Renderer) getOpLineHeight() fract.Unit {
+	return self.state.fontSizer.LineHeight(
+		self.state.activeFont, &self.buffer, self.state.scaledSize,
+	)
 }

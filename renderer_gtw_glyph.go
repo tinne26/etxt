@@ -49,10 +49,18 @@ func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 // See [examples/ebiten/colorful] and [examples/ebiten/shaking]
 // for further customization examples.
 //
+// Changing renderer properties dynamically on the glyph drawing
+// function is generally unsafe and many behaviors are undefined.
+// Only the text color can be safely changed at the moment.
+//
 // [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/main/examples/ebiten/colorful/main.go
 // [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/main/examples/ebiten/shaking/main.go
 func (self *RendererGlyph) SetDrawFunc(drawFn func(TargetImage, sfnt.GlyphIndex, fract.Point)) {
-	(*Renderer)(self).customDrawFn = drawFn
+	// Note: we could actually allow the font and the sizer to be changed, but this
+	//       has implications on measuring. We wouldn't be able to measure properly,
+	//       which also has impact on centering and other relative positioning
+	//       operations. So, it's complicated.
+	self.customDrawFn = drawFn
 }
 
 // Obtains the glyph index for the given rune in the current renderer's
@@ -103,7 +111,7 @@ func (self *RendererGlyph) GetRasterizer() mask.Rasterizer {
 
 func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, origin fract.Point) GlyphMask {
 	self.cacheHandler.NotifyFractChange(origin)
-	return self.loadGlyphMask(self.GetFont(), index, origin)
+	return self.loadGlyphMask(self.state.activeFont, index, origin)
 }
 
 func (self *Renderer) glyphDrawMask(target TargetImage, mask GlyphMask, origin fract.Point) {
@@ -112,7 +120,7 @@ func (self *Renderer) glyphDrawMask(target TargetImage, mask GlyphMask, origin f
 }
 
 func (self *Renderer) glyphRuneIndex(codePoint rune) sfnt.GlyphIndex {
-	return self.getGlyphIndex(self.GetFont(), codePoint)
+	return self.getGlyphIndex(self.state.activeFont, codePoint)
 }
 
 func (self *Renderer) glyphCacheIndex(index sfnt.GlyphIndex) {

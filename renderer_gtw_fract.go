@@ -67,7 +67,7 @@ func (self *RendererFract) GetSize() fract.Unit {
 // This method is only intended be used when you want to
 // access specific metrics through the renderer's sizer.
 func (self *RendererFract) GetScaledSize() fract.Unit {
-	return (*Renderer)(self).fractGetScaledSize()
+	return self.state.scaledSize
 }
 
 // Same as [Renderer.SetScale](), but avoiding a conversion from float64
@@ -124,7 +124,7 @@ func (self *RendererFract) Draw(target TargetImage, text string, x, y fract.Unit
 }
 
 func (self *RendererFract) DrawWithWrap(target TargetImage, text string, x, y fract.Unit, widthLimit int) {
-	(*Renderer)(self).fractDrawWithWrap(target, text, x, y, widthLimit)
+	(*Renderer)(self).fractDrawWithWrap(target, text, x, y, fract.FromInt(widthLimit))
 }
 
 // ---- underlying implementations ----
@@ -144,10 +144,6 @@ func (self *Renderer) fractSetSize(size fract.Unit) {
 	if self.state.logicalSize == size { return }
 	self.state.logicalSize = size
 	self.refreshScaledSize()
-}
-
-func (self *Renderer) fractGetScaledSize() fract.Unit {
-	return self.state.scaledSize
 }
 
 func (self *Renderer) fractGetSize() fract.Unit {

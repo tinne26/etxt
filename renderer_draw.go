@@ -24,13 +24,11 @@ func (self *Renderer) fractDraw(target TargetImage, text string, x, y fract.Unit
 	if bounds.Empty() { return }
 	
 	// preconditions
-	font := self.GetFont()
 	if target == nil { panic("can't draw on nil TargetImage") }
-	if font == nil { panic("can't draw text with nil font (tip: Renderer.SetFont())") }
-
-	// ensure relevant properties are initialized
+	if self.state.activeFont == nil { panic("can't draw text with nil font (tip: Renderer.SetFont())") }
 	if self.state.fontSizer  == nil { panic("can't draw with a nil sizer (tip: NewRenderer())") }
 	if self.state.rasterizer == nil { panic("can't draw with a nil rasterizer (tip: NewRenderer())") }
+	font  := self.state.activeFont
 	sizer := self.state.fontSizer
 	vertQuant := fract.Unit(self.state.vertQuantization)
 
@@ -260,6 +258,8 @@ func (self *Renderer) fractDrawRTL(target TargetImage, text string, reverse bool
 }
 
 func (self *Renderer) fractDrawCenter(target TargetImage, text string, reverse bool, font *sfnt.Font, lineBreakNth int, x, y, maxY fract.Unit) {
+	// TODO: is the algorithm correct for centered LTR? verify.
+	
 	// create string iterator
 	iterator := newStrIterator(text, reverse)
 
