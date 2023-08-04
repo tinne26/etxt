@@ -99,7 +99,7 @@ func (self *Renderer) utilsFillMissingProperties() {
 
 	if self.state.fontSizer == nil {
 		self.state.fontSizer = &sizer.DefaultSizer{}
-		self.state.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.state.scaledSize)
+		self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
 	}
 }
 
@@ -109,9 +109,8 @@ func (self *Renderer) utilsFillMissingProperties() {
 // that case, parsing the font only once and setting it with
 // [Renderer.SetFont]() is the way to go.
 //
-// For further font management functionality, consider [font.Library].
-//
-// [font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font
+// For more advanced font management functionality, see
+// [github.com/tinne26/etxt/font.Library].
 func (self *RendererUtils) SetFontBytes(data []byte) error {
 	return (*Renderer)(self).utilsSetFontBytes(data)
 }
@@ -120,14 +119,15 @@ func (self *RendererUtils) SetFontBytes(data []byte) error {
 // into an internal stack. Stored states can be recovered with
 // [RendererUtils.RestoreState]() in last-in first-out order.
 // 
-// The memorized state includes the following properties:
-//  - Align, color, size, scale, blend mode, fonts, rasterizer,
-//    sizer, quantization and text direction.
-// Notably, the custom rendering function and cache handler are
-// not memorized.
+// The stored state includes the following properties:
+//  - [Align], color, size, scale, [BlendMode], [FontIndex],
+//    active font, rasterizer, sizer, quantization and
+//    text [Direction].
+// Notably, the custom rendering function, the inactive font set
+// and the cache handler are not stored.
 //
-// For improved safety when using renderer state restore points, you
-// may also want to consider [RendererUtils.AssertMaxStoredStates]().
+// For improved safety when storing states, consider looking
+// into [RendererUtils.AssertMaxStoredStates]().
 func (self *RendererUtils) StoreState() {
 	(*Renderer)(self).utilsStoreState()
 }
@@ -180,7 +180,7 @@ func (self *Renderer) utilsSetFontBytes(data []byte) error {
 }
 
 func (self *Renderer) utilsGetLineHeight() float64 {
-	return self.GetSizer().LineHeight(self.GetFont(), &self.buffer, self.fractGetScaledSize()).ToFloat64()
+	return self.state.fontSizer.LineHeight(self.state.activeFont, &self.buffer, self.state.scaledSize).ToFloat64()
 }
 
 func (self *Renderer) utilsStoreState() {
@@ -190,7 +190,7 @@ func (self *Renderer) utilsStoreState() {
 func (self *Renderer) utilsRestoreState() bool {
 	if len(self.restorableStates) == 0 { return false }
 	
-	initFont  := self.GetFont()
+	initFont  := self.state.activeFont
 	initSizer := self.state.fontSizer
 	initSize  := self.state.scaledSize
 	initRast  := self.state.rasterizer
@@ -201,16 +201,15 @@ func (self *Renderer) utilsRestoreState() bool {
 
 	// notify changes where relevant
 	refreshSizer := (self.state.scaledSize != initSize || self.state.fontSizer != initSizer)
-	newFont := self.GetFont()
-	if initFont != newFont {
-		if self.cacheHandler != nil {
-			self.cacheHandler.NotifyFontChange(newFont)
-		}
+	if initFont != self.state.activeFont {
 		refreshSizer = true
+		if self.cacheHandler != nil {
+			self.cacheHandler.NotifyFontChange(self.state.activeFont)
+		}
 	}
 
 	if refreshSizer && self.state.fontSizer != nil {
-		self.state.fontSizer.NotifyChange(newFont, &self.buffer, self.state.scaledSize)
+		self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
 	}
 
 	if self.state.rasterizer != initRast {

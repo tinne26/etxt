@@ -12,7 +12,7 @@ type restorableState struct {
 	fontColor color.Color
 	fontSizer sizer.Sizer
 	rasterizer mask.Rasterizer
-	fonts []*sfnt.Font
+	activeFont *sfnt.Font
 
 	textDirection Direction
 	horzQuantization uint8
@@ -22,9 +22,6 @@ type restorableState struct {
 	scale fract.Unit
 	logicalSize fract.Unit
 	scaledSize fract.Unit
-	fontIndex uint8
-	
+	fontIndex FontIndex
 	blendMode BlendMode
-	//_ uint8
-	//_ uint8
 }

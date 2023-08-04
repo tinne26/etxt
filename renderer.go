@@ -51,6 +51,7 @@ type Renderer struct {
 	cacheHandler cache.GlyphCacheHandler
 	gfxFuncs []func(*Renderer, TargetImage, fract.Rect, uint16)
 	customDrawFn func(TargetImage, sfnt.GlyphIndex, fract.Point)
+	fonts []*sfnt.Font
 	buffer sfnt.Buffer
 }
 
@@ -74,6 +75,7 @@ func NewRenderer() *Renderer {
 			logicalSize: 16*fract.One,
 			scaledSize: 16*fract.One,
 		},
+		fonts: make([]*sfnt.Font, 0, 1),
 	}
 }
 
@@ -136,25 +138,16 @@ func (self *Renderer) GetScale() float64 {
 //
 // Further pointers and advice:
 //  - If you only have the unparsed font file data, consider [RendererUtils.SetFontBytes]().
-//  - If you need more robust font management, consider a [font.Library].
-//
-// [font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font
+//  - If you need more robust font management, see [github.com/tinne26/etxt/font.Library].
 func (self *Renderer) SetFont(font *sfnt.Font) {
-	// Notice: you *can* call this function with a nil font, but
-	//         only if you *really really have to ensure* that the
-	//         font can be released by the garbage collector while
-	//         this renderer still exists... which is almost never.
-	fontIndex := int(self.state.fontIndex)
-
-	// skip if trying to assign a nil font beyond current slice bounds
-	if font == nil && len(self.state.fonts) <= fontIndex { return }
-
 	// ensure there's enough space in the fonts slice
-	self.state.fonts = ensureSliceSize(self.state.fonts, fontIndex + 1)
+	fontIndex := int(self.state.fontIndex)
+	self.fonts = ensureSliceSize(self.fonts, fontIndex + 1)
 
 	// assign font if new
-	if font == self.state.fonts[fontIndex] { return }
-	self.state.fonts[fontIndex] = font
+	if font == self.state.activeFont { return }
+	self.fonts[fontIndex] = font
+	self.state.activeFont = font
 	
 	// notify font change
 	self.notifyFontChange(font)
@@ -171,9 +164,7 @@ func (self *Renderer) notifyFontChange(font *sfnt.Font) {
 
 // Returns the current font. The font is nil by default.
 func (self *Renderer) GetFont() *sfnt.Font {
-	id := int(self.state.fontIndex)
-	if len(self.state.fonts) <= id { return nil }
-	return self.state.fonts[id]
+	return self.state.activeFont
 }
 
 // Sets the blend mode to be used on subsequent operations.
@@ -222,7 +213,7 @@ func (self *Renderer) GetSizer() sizer.Sizer {
 func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
 	if self.state.fontSizer == fontSizer { return }
 	self.state.fontSizer = fontSizer
-	self.state.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.state.scaledSize)
+	self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
 }
 
 // Returns the current glyph cache handler, which is nil by default.

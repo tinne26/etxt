@@ -4,6 +4,18 @@ import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
 
+// See [RendererComplex.RegisterFont]() and related functions.
+//
+// When using multiple fonts, you are encouraged to define
+// and use your own named constants in the relevant context,
+// like:
+//   const (
+//	      RegularFont FontIndex = iota
+//       BoldFont
+//       ItalicFont
+//   )
+type FontIndex uint8
+
 // This type exists only for documentation and structuring purposes,
 // acting as a [gateway] to access advanced [Renderer] properties and
 // operating directly with glyphs and the more flexible [Text] type.
@@ -42,39 +54,67 @@ func (self *RendererComplex) GetDirection() Direction {
 	return self.state.textDirection
 }
 
-// Sets the renderer's fonts. Having multiple fonts is mostly relevant
-// when working with rich text, for example when trying to combine regular,
-// bold and italic subfamilies in the same draw call.
+// Registers the given font at the given index. Having multiple fonts
+// is relevant when working with rich text, for example when trying to
+// combine regular, bold and italic subfamilies in the same draw call.
 //
-// To change the main font statically, use [RendererComplex.SetFontIndex]().
-func (self *RendererComplex) SetFonts(fonts []*sfnt.Font) {
-	(*Renderer)(self).complexSetFonts(fonts)
+// To change the active font, use [RendererComplex.SetFontIndex]().
+// The more basic [Renderer.SetFont]() method operates exclusively
+// on the active font.
+//
+// Additional technical details:
+//  - Registering a font on the active font index is safe and equivalent
+//    to [Renderer.SetFont]().
+//  - There is no way to release the underlying font slice except letting
+//    the whole renderer be garbage collected.
+//  - Setting a nil font to an index beyond the bounds of the underlying
+//    slice won't panic or be ignored, it will make the slice grow.
+func (self *RendererComplex) RegisterFont(font *sfnt.Font, index FontIndex) {
+	(*Renderer)(self).complexRegisterFont(font, index)
 }
 
 // Returns the renderer fonts available for use with rich text.
+// 
+// The returned slice should be treated as read only. At the very
+// least, know that modifying the active font externally will
+// leave it unsynced with the renderer's cache handler and sizer.
 func (self *RendererComplex) GetFonts() []*sfnt.Font {
-	return self.state.fonts
+	return self.fonts
 }
 
-// Sets the active font index to the given value.
-// Returns the newly active font.
-func (self *RendererComplex) SetFontIndex(index uint8) *sfnt.Font {
-	return (*Renderer)(self).complexSetFontIndex(index)
+// Sets the active font index to the given value. If the index
+// exceeds the bounds of the underlying slice, the slice will be
+// resized to make the index referenceable.
+func (self *RendererComplex) SetFontIndex(index FontIndex) {
+	(*Renderer)(self).complexSetFontIndex(index)
 }
 
 // Returns the index of the renderer's main font.
-func (self *RendererComplex) GetFontIndex() int {
-	return int(self.state.fontIndex)
+func (self *RendererComplex) GetFontIndex() FontIndex {
+	return self.state.fontIndex
+}
+
+// Same as [Renderer.Draw](), but expecting a [Text] value instead of a string.
+func (self *RendererComplex) Draw(target TargetImage, text Text, x, y int) {
+	self.FractDraw(target, text, fract.FromInt(x), fract.FromInt(y))
 }
 
 // Same as [RendererFract.Draw](), but expecting a [Text] value instead of a string.
-func (self *RendererComplex) Draw(screen TargetImage, text Text, x, y fract.Unit) {
+//
+// This is the fractional version of [RendererComplex.Draw]().
+func (self *RendererComplex) FractDraw(target TargetImage, text Text, x, y fract.Unit) {
 	panic("unimplemented / TODO")
-	// TODO: consider Drawi or Drawf() for the fractional versions?
+}
+
+// Same as [Renderer.DrawWithWrap](), but expecting a [Text] value instead of a string.
+func (self *RendererComplex) DrawWithWrap(target TargetImage, text Text, x, y int, widthLimit int) {
+	self.FractDrawWithWrap(target, text, fract.FromInt(x), fract.FromInt(y), widthLimit)
 }
 
 // Same as [RendererFract.DrawWithWrap](), but expecting a [Text] value instead of a string.
-func (self *RendererComplex) DrawWithWrap(screen TargetImage, text Text, x, y fract.Unit, widthLimit int) {
+//
+// This is the fractional version of [RendererComplex.DrawWithWrap]().
+func (self *RendererComplex) FractDrawWithWrap(target TargetImage, text Text, x, y fract.Unit, widthLimit int) {
 	panic("unimplemented / TODO")
 }
 
@@ -91,39 +131,25 @@ func (self *Renderer) complexSetDirection(dir Direction) {
 	}
 }
 
-func (self *Renderer) complexSetFonts(fonts []*sfnt.Font) {
-	oldFont := self.GetFont()
-	self.state.fonts = fonts
-	newFont := self.GetFont()
-	if oldFont != newFont {
-		self.notifyFontChange(newFont)
+func (self *Renderer) complexRegisterFont(font *sfnt.Font, index FontIndex) {
+	if index == self.state.fontIndex {
+		self.SetFont(font)
+	} else {
+		fontIndex := int(self.state.fontIndex)
+		self.fonts = ensureSliceSize(self.fonts, fontIndex + 1)
+		self.fonts[fontIndex] = font
 	}
 }
 
-func (self *Renderer) complexSetFontIndex(index uint8) *sfnt.Font {
+func (self *Renderer) complexSetFontIndex(index FontIndex) {
+	// grow the slice if necessary (as per spec)
+	self.fonts = ensureSliceSize(self.fonts, int(index) + 1)
+
 	// change active font index and notify change if relevant
-	oldFont := self.GetFont()
-	self.state.fontIndex = uint8(index)
-	newFont := self.GetFont()
-	if oldFont != newFont {
+	self.state.fontIndex = index
+	newFont := self.fonts[index]
+	if newFont != self.state.activeFont {
+		self.state.activeFont = newFont
 		self.notifyFontChange(newFont)
 	}
-
-	// return the new selected font
-	return newFont
 }
-
-// func (self *Renderer) complexSetFont(font *sfnt.Font, key uint8) {
-// 	ikey := int(key)
-// 	if len(self.fonts) <= ikey {
-// 		if cap(self.fonts) <= ikey {
-// 			newFonts := make([]*sfnt.Font, ikey + 1)
-// 			copy(newFonts, self.fonts)
-// 			self.fonts = newFonts
-// 		} else {
-// 			self.fonts = self.fonts[ : ikey + 1]
-// 		}
-// 	}
-
-// 	self.fonts[ikey] = font
-// }
