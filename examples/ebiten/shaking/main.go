@@ -114,8 +114,8 @@ func main() {
 	renderer.SetSize(58)
 	renderer.SetAlign(etxt.Center)
 
-	// create game object so we can set one of its
-	// methods as our custom draw function
+	// create a game struct and override the renderer's
+	// glyph drawing function with one of its methods
 	game := Game{ text: renderer, parentX: 500, childX: 500 }
 	renderer.Glyph().SetDrawFunc(game.drawShakyGlyph)
 

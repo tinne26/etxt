@@ -97,6 +97,9 @@ func main() {
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/measure")
 	ebiten.SetWindowSize(640, 480)
-	err = ebiten.RunGame(&Game { renderer, 0, []rune("Interactive text") })
+	err = ebiten.RunGame(&Game{
+		text: renderer, 
+		content: []rune("Interactive text"),
+	})
 	if err != nil { log.Fatal(err) }
 }
