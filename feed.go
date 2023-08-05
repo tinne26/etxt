@@ -69,7 +69,7 @@ func (self *Feed) At(x, y int) *Feed {
 	case Top:	
 		self.Position.Y = (fractY + ascent).QuantizeUp(qtVert)
 	case Midline, LastMidline:
-		self.Position.Y = (fractY + ascent - renderer.xheight(font)).QuantizeUp(qtVert)
+		self.Position.Y = (fractY + ascent - renderer.getSlowOpXHeight()).QuantizeUp(qtVert)
 	case VertCenter:
 		height := sizer.LineHeight(font, &renderer.buffer, renderer.state.scaledSize)
 		self.Position.Y = (fractY + ascent - (height >> 1)).QuantizeUp(qtVert)
@@ -158,8 +158,6 @@ func (self *Feed) LineBreak() {
 func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, drawMode bool) {
 	// make sure all relevant properties are initialized
 	renderer := self.Renderer
-	font   := renderer.state.activeFont
-	sizer  := renderer.state.fontSizer
 	qtHorz, qtVert := renderer.fractGetQuantization()
 
 	// traverse in the proper direction
@@ -168,7 +166,7 @@ func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, 
 	case LeftToRight:
 		// apply kerning unless coming from line break
 		if self.LineBreakAcc == 0 {
-			self.Position.X += sizer.Kern(font, &renderer.buffer, renderer.state.scaledSize, self.PrevGlyphIndex, glyphIndex)	
+			self.Position.X += renderer.getOpKernBetween(self.PrevGlyphIndex, glyphIndex)	
 		}
 
 		// always apply quantization inconditionally before drawing.
@@ -180,18 +178,18 @@ func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, 
 
 		// traverse glyph
 		if drawMode {
-			renderer.internalGlyphDraw(target, glyphIndex, self.Position, font)
+			renderer.internalGlyphDraw(target, glyphIndex, self.Position)
 		}
 
 		// advance
-		self.Position.X += sizer.GlyphAdvance(font, &renderer.buffer, renderer.state.scaledSize, glyphIndex)
+		self.Position.X += renderer.getOpAdvance(glyphIndex)
 	case RightToLeft:
 		// advance
-		self.Position.X -= sizer.GlyphAdvance(font, &renderer.buffer, renderer.state.scaledSize, glyphIndex)
+		self.Position.X -= renderer.getOpAdvance(glyphIndex)
 
 		// apply kerning unless coming from line break
 		if self.LineBreakAcc == 0 {
-			self.Position.X -= sizer.Kern(font, &renderer.buffer, renderer.state.scaledSize, self.PrevGlyphIndex, glyphIndex)	
+			self.Position.X -= renderer.getOpKernBetween(self.PrevGlyphIndex, glyphIndex)	
 		}
 
 		// quantize
@@ -201,7 +199,7 @@ func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, 
 
 		// traverse glyph
 		if drawMode {
-			renderer.internalGlyphDraw(target, glyphIndex, self.Position, font)
+			renderer.internalGlyphDraw(target, glyphIndex, self.Position)
 		}
 	default:
 		panic(dir)

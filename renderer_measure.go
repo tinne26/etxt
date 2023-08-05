@@ -50,10 +50,8 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 	if text == "" { return fract.Rect{} }
 	
 	// preconditions
-	font  := self.state.activeFont
-	sizer := self.state.fontSizer
-	if font  == nil { panic("can't measure text with font == nil (tip: Renderer.SetFont())") }
-	if sizer == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
+	if self.state.activeFont == nil { panic("can't measure text with font == nil (tip: Renderer.SetFont())") }
+	if self.state.fontSizer  == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
 
 	// set up traversal variables
 	var position fract.Point
@@ -77,31 +75,31 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 
 			// move pen position to next line
 			position.X = 0
-			position.Y += sizer.LineAdvance(font, &self.buffer, self.state.scaledSize, lineBreakNth)
+			position.Y += self.getOpLineAdvance(lineBreakNth)
 			position.Y  = position.Y.QuantizeUp(vertQuant)
 			continue
 		}
 
 		// apply line height if first time hitting a non line break
 		if !hasLineHeight {
-			position.Y += sizer.LineHeight(font, &self.buffer, self.state.scaledSize)
+			position.Y += self.getOpLineHeight()
 			position.Y  = position.Y.QuantizeUp(vertQuant)
 			hasLineHeight = true
 		}
 
 		// regular glyph case
-		currGlyphIndex := self.getGlyphIndex(font, codePoint)
+		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
 		
 		// apply kerning unless coming from line break
 		if lineBreakNth != 0 {
 			lineBreakNth = 0
 		} else {
-			position.X += sizer.Kern(font, &self.buffer, self.state.scaledSize, prevGlyphIndex, currGlyphIndex)
+			position.X += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
 			position.X  = position.X.QuantizeUp(horzQuant) // quantize
 		}
 
 		// advance
-		position.X += sizer.GlyphAdvance(font, &self.buffer, self.state.scaledSize, currGlyphIndex)
+		position.X += self.getOpAdvance(currGlyphIndex)
 		
 		// update previous glyph
 		prevGlyphIndex = currGlyphIndex
@@ -124,10 +122,8 @@ func (self *Renderer) fractMeasureHeight(text string) fract.Unit {
 	if text == "" { return 0 }
 	
 	// preconditions
-	font  := self.state.activeFont
-	sizer := self.state.fontSizer
-	if font  == nil { panic("can't measure text height with font == nil (tip: Renderer.SetFont())") }
-	if sizer == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
+	if self.state.activeFont == nil { panic("can't measure text height with font == nil (tip: Renderer.SetFont())") }
+	if self.state.fontSizer  == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
 
 	// set up traversal variables
 	var y fract.Unit
@@ -137,11 +133,11 @@ func (self *Renderer) fractMeasureHeight(text string) fract.Unit {
 	for i, codePoint := range text {
 		if codePoint == '\n' {
 			lineBreakNth += 1
-			y += sizer.LineAdvance(font, &self.buffer, self.state.scaledSize, lineBreakNth)
+			y += self.getOpLineAdvance(lineBreakNth)
 			y  = y.QuantizeUp(vertQuant)
 		} else {
 			if lineBreakNth == i {
-				y += sizer.LineHeight(font, &self.buffer, self.state.scaledSize)
+				y += self.getOpLineHeight()
 				y  = y.QuantizeUp(vertQuant)
 			}
 			lineBreakNth = 0
@@ -154,10 +150,8 @@ func (self *Renderer) fractMeasureHeight(text string) fract.Unit {
 
 func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) fract.Rect {
 	// preconditions
-	font  := self.state.activeFont
-	sizer := self.state.fontSizer
-	if font  == nil { panic("can't measure text with nil font (tip: Renderer.SetFont())") }
-	if sizer == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
+	if self.state.activeFont == nil { panic("can't measure text with nil font (tip: Renderer.SetFont())") }
+	if self.state.fontSizer  == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
 	if widthLimit < 0 { panic("can't use a negative widthLimit") }
 	
 	// return directly on superfluous invocations
@@ -186,7 +180,7 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 			// move pen position to next line
 			lineBreakNth = maxInt(1, lineBreakNth + 1)
 			position.X = 0
-			position.Y += sizer.LineAdvance(font, &self.buffer, self.state.scaledSize, lineBreakNth)
+			position.Y += self.getOpLineAdvance(lineBreakNth)
 			position.Y  = position.Y.QuantizeUp(vertQuant)
 
 			// keep going
@@ -201,7 +195,7 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 
 		// apply line height if first time hitting a non line break
 		if !hasLineHeight {
-			position.Y += sizer.LineHeight(font, &self.buffer, self.state.scaledSize)
+			position.Y += self.getOpLineHeight()
 			position.Y  = position.Y.QuantizeUp(vertQuant)
 			hasLineHeight = true
 		}
@@ -210,18 +204,18 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 		memoX := position.X
 
 		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(font, codePoint)
+		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
 		
 		// apply kerning unless coming from line break
 		if lineBreakNth != 0 {
 			lineBreakNth = 0
 		} else {
-			position.X += sizer.Kern(font, &self.buffer, self.state.scaledSize, prevGlyphIndex, currGlyphIndex)
-			position.X = position.X.QuantizeUp(horzQuant) // quantize
+			position.X += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
+			position.X  = position.X.QuantizeUp(horzQuant) // quantize
 		}
 
 		// advance
-		position.X += sizer.GlyphAdvance(font, &self.buffer, self.state.scaledSize, currGlyphIndex)
+		position.X += self.getOpAdvance(currGlyphIndex)
 
 		// --- operation logic breakdown ---
 		// if the glyph fits in the line or is the first in the line, we advance.
@@ -250,12 +244,12 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 
 			// line wrapping case
 			if wrapLineX > actualMaxWidth { actualMaxWidth = wrapLineX }
-			position.Y += sizer.LineHeight(font, &self.buffer, self.state.scaledSize)
+			position.Y += self.getOpLineHeight()
 			position.Y  = position.Y.QuantizeUp(vertQuant)
 			position.X = 0
 			lastSafeIndex  = index + runeSize
 			lineStartIndex = lastSafeIndex
-		} 
+		}
 		
 		// update tracking variables
 		prevGlyphIndex = currGlyphIndex

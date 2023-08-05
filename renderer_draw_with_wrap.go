@@ -39,7 +39,7 @@ func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fr
 	case Top:
 		y = (y + ascent).QuantizeUp(vertQuant)
 	case Midline:
-		xheight := self.xheight(self.state.activeFont) // note: slower than the other metrics
+		xheight := self.getSlowOpXHeight()
 		y = (y + ascent - xheight).QuantizeUp(vertQuant)
 	case VertCenter:
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
@@ -148,7 +148,7 @@ func (self *Renderer) fractDrawWithWrapLTR(target TargetImage, text string, reve
 			}
 
 			// draw glyph
-			self.internalGlyphDraw(target, currGlyphIndex, position, self.state.activeFont)
+			self.internalGlyphDraw(target, currGlyphIndex, position)
 
 			// advance
 			position.X += self.getOpAdvance(currGlyphIndex)

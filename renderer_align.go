@@ -26,6 +26,60 @@ func (self Align) Vert() Align { return alignVertBits & self }
 // following: [Left], [HorzCenter], [Right].
 func (self Align) Horz() Align { return alignHorzBits & self }
 
+// Returns the result of overriding the current align with
+// the non-empty components of the given align. If both
+// components are defined for the given align, the result
+// will be the given align itself. If only one component
+// is defined, only that component will be overwritten.
+// If the given align is completely empty, the value of
+// the current align will be returned unmodified.
+func (self Align) Adjusted(align Align) Align {
+	horz := align.Horz()
+	vert := align.Vert()
+	if horz != 0 {
+		if vert != 0 { return align }
+		return horz | self.Vert()
+	} else if vert != 0 {
+		return self.Horz() | vert
+	} else {
+		return self
+	}
+}
+
+// Returns a textual description of the align in the form
+// "(VertAlign | HorzAlign)". For example: "(Top | Right)",
+// "(VertCenter | HorzCenter)", "(Baseline | Left)", etc.
+// If only one component is defined, only that component
+// will be written.
+func (self Align) String() string {
+	if self == 0 { return "(ZeroAlign)" }
+	if self.Vert() == 0 { return "(" + self.horzString() + ")" }
+	if self.Horz() == 0 { return "(" + self.vertString() + ")" }
+	return "( " + self.vertString() + " | " + self.horzString() + ")"
+}
+
+func (self Align) vertString() string {
+	switch self.Vert() {
+	case Top: return "Top"
+	case Midline: return "Midline"
+	case VertCenter: return "VertCenter"
+	case Baseline: return "Baseline"
+	case Bottom: return "Bottom"
+	case LastMidline:  return "LastMidline"
+	case LastBaseline:  return "LastBaseline"
+	default: return "VertUnknown"
+	}
+}
+
+func (self Align) horzString() string {
+	switch self.Horz() {
+	case Left: return "Left"
+	case HorzCenter: return "HorzCenter"
+	case Right: return "Right"
+	default: return "HorzUnknown"
+	}
+}
+
 // Align constants for renderer operations.
 //
 // Since aligns have both a vertical and a horizontal component,
@@ -73,35 +127,13 @@ const (
 //
 // Notice that aligns have a horizontal and a vertical component, so
 // you can use [Renderer.SetAlign](etxt.[Right]) and similar to change only
-// one of the components at a time.
+// one of the components at a time. See [Align.Adjusted]() for more details.
 //
-// By default, the renderer's align is (etxt.[Left] | etxt.[Baseline]).
+// By default, the renderer's align is (etxt.[Baseline] | etxt.[Left]).
 //
 // [this image]: https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_aligns.png
 func (self *Renderer) SetAlign(align Align) {
-	if align == 0 { panic("invalid zero align") }
-	
-	// configure horizontal align
-	horzAlign := align.Horz()
-	if horzAlign != 0 {
-		switch horzAlign {
-		case Left, HorzCenter, Right:
-			self.state.align = horzAlign | (self.state.align & alignVertBits)
-		default:
-			panic("invalid horizontal component in align")
-		}
-	}
-
-	// configure vertical align
-	vertAlign := align.Vert()
-	if vertAlign != 0 {
-		switch vertAlign {
-		case Top, Midline, Baseline, VertCenter, LastMidline, LastBaseline, Bottom:
-			self.state.align = vertAlign | (self.state.align & alignHorzBits)
-		default:
-			panic("invalid vertical component in align")
-		}
-	}
+	self.state.align = self.state.align.Adjusted(align)
 }
 
 // Returns the current align. See [Renderer.SetAlign]() documentation

@@ -31,17 +31,6 @@ func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
 	//   either case, but this reduces the maximum potential error.
 }
 
-// Notice: this is slightly slow, uncached. I'm leaving it like this because
-// it's rarely used anyway, and in the grand scheme of things, when this is
-// actually required, most of the runtime will go to actual font rendering
-// anyway.
-func (self *Renderer) xheight(font *sfnt.Font) fract.Unit {
-	const hintingNone = 0
-	metrics, err := font.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
-	if err != nil { panic("font.Metrics error: " + err.Error()) }
-	return fract.Unit(metrics.XHeight)
-}
-
 // loadGlyphMask loads the mask for the given glyph at the given fractional
 // pixel position. The renderer's cache handler, font, size, rasterizer and
 // mask format are all taken into account.
@@ -83,14 +72,12 @@ func (self *Renderer) getOpKernBetween(prevGlyphIndex, currGlyphIndex sfnt.Glyph
 	)
 }
 
-// TODO: same as above
 func (self *Renderer) getOpAdvance(currGlyphIndex sfnt.GlyphIndex) fract.Unit {
 	return self.state.fontSizer.GlyphAdvance(
 		self.state.activeFont, &self.buffer, self.state.scaledSize, currGlyphIndex,
 	)
 }
 
-// TODO: same as above
 func (self *Renderer) getOpLineAdvance(lineBreakNth int) fract.Unit {
 	return self.state.fontSizer.LineAdvance(
 		self.state.activeFont, &self.buffer, self.state.scaledSize, lineBreakNth,
@@ -101,4 +88,21 @@ func (self *Renderer) getOpLineHeight() fract.Unit {
 	return self.state.fontSizer.LineHeight(
 		self.state.activeFont, &self.buffer, self.state.scaledSize,
 	)
+}
+
+func (self *Renderer) getOpAscent() fract.Unit {
+	return self.state.fontSizer.Ascent(
+		self.state.activeFont, &self.buffer, self.state.scaledSize,
+	)
+}
+
+// Notice: this is rather slow, uncached. I'm leaving it like this because
+// it's rarely used anyway, and in the grand scheme of things, when this is
+// actually required, most of the runtime will go to actual font rendering
+// anyway.
+func (self *Renderer) getSlowOpXHeight() fract.Unit {
+	const hintingNone = 0
+	metrics, err := self.state.activeFont.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
+	if err != nil { panic("font.Metrics error: " + err.Error()) }
+	return fract.Unit(metrics.XHeight)
 }

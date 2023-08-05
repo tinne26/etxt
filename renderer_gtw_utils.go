@@ -200,7 +200,13 @@ func (self *Renderer) utilsRestoreState() bool {
 	self.restorableStates = self.restorableStates[0 : last]
 
 	// notify changes where relevant
-	refreshSizer := (self.state.scaledSize != initSize || self.state.fontSizer != initSizer)
+	refreshSizer := (self.state.fontSizer != initSizer)
+	if self.state.scaledSize != initSize {
+		refreshSizer = true
+		if self.cacheHandler != nil {
+			self.cacheHandler.NotifySizeChange(self.state.scaledSize)
+		}
+	}
 	if initFont != self.state.activeFont {
 		refreshSizer = true
 		if self.cacheHandler != nil {
