@@ -35,11 +35,6 @@ type Rasterizer interface {
 	// Renderer should call internally in order to connect its cache
 	// handler to the rasterizer changes.
 	SetOnChangeFunc(func(Rasterizer))
-
-	// If anyone needs the following methods, let me know and we
-	// can consider them...
-	//NotifyFontChange(*sfnt.Font)
-	//NotifySizeChange(fract.Unit)
 }
 
 // Maybe I could export this, but it doesn't feel that relevant.

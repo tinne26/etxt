@@ -45,7 +45,7 @@ func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fr
 		y = (y + ascent).QuantizeUp(vertQuant)
 	case Midline:
 		xheight := self.getSlowOpXHeight()
-		y = (y + ascent - xheight).QuantizeUp(vertQuant)
+		y = (y + xheight).QuantizeUp(vertQuant)
 	case VertCenter:
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
 		y = (y + ascent - (height >> 1)).QuantizeUp(vertQuant)
@@ -143,7 +143,8 @@ func (self *Renderer) fractDrawWithWrapLeft(target TargetImage, text string, lin
 
 		// advance line unless on last line without line break
 		if lineBreak || !eot {
-			position, lineBreakNth = self.advanceLine(position, startX, lineBreakNth)
+			lineBreakNth = maxInt(1, lineBreakNth + 1)
+			position = self.advanceLine(position, startX, lineBreakNth)
 			if position.Y > maxY { break }
 		}
 
@@ -173,7 +174,8 @@ func (self *Renderer) fractDrawWithWrapRight(target TargetImage, text string, li
 
 		// advance line unless on last line without line break
 		if lineBreak || !eot {
-			position, lineBreakNth = self.advanceLine(position, startX, lineBreakNth)
+			lineBreakNth = maxInt(1, lineBreakNth + 1)
+			position = self.advanceLine(position, startX, lineBreakNth)
 			if position.Y > maxY { break }
 		}
 
@@ -197,6 +199,9 @@ func (self *Renderer) measureWrapLine(iterator strIterator, widthLimit fract.Uni
 	var lastSafeCount int
 	var lineStart bool = true
 
+	// TODO: yeah, better just split all the cases into measureWrapLineLTR and so on
+	//       like on regular draws, and have fractDrawWrapLeftLTR, fractDrawWrapLeftRTL, etc.
+	horzQuant := fract.Unit(self.state.horzQuantization)
 	if self.state.textDirection == LeftToRight {
 		for {
 			codePoint := iterator.Next()
@@ -214,7 +219,7 @@ func (self *Renderer) measureWrapLine(iterator strIterator, widthLimit fract.Uni
 				lineStart = false
 			} else {
 				x += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-				x = x.QuantizeUp(fract.Unit(self.state.horzQuantization))
+				x = x.QuantizeUp(horzQuant)
 			}
 
 			// advance
@@ -253,7 +258,7 @@ func (self *Renderer) measureWrapLine(iterator strIterator, widthLimit fract.Uni
 				lineStart = false
 			} else {
 				x += self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
-				x = x.QuantizeUp(fract.Unit(self.state.horzQuantization))
+				x = x.QuantizeUp(horzQuant)
 			}
 
 			// stop if outside wrapLimit
@@ -278,6 +283,9 @@ func (self *Renderer) drawWrapLine(target TargetImage, position fract.Point, ite
 	
 	iterCount := nextCount
 	if lineBreak { iterCount -= 1 }
+	// TODO: again, split and use both for Draw and DrawWithWrap. this is relevant for drawing lines on
+	//       centered draw, and I can specialize for ltrStringIterator and rtlStringIterator
+	horzQuant := fract.Unit(self.state.horzQuantization)
 	if self.state.textDirection == LeftToRight {
 		for i := 0; i < nextCount; i++ {
 			codePoint := iterator.Next()
@@ -288,7 +296,7 @@ func (self *Renderer) drawWrapLine(target TargetImage, position fract.Point, ite
 			// apply kerning unless coming from line break
 			if i > 0 {
 				position.X += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-				position.X  = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
+				position.X  = position.X.QuantizeUp(horzQuant)
 			}
 	
 			newFractX := position.X.FractShift()
@@ -315,6 +323,7 @@ func (self *Renderer) drawWrapLine(target TargetImage, position fract.Point, ite
 			
 			// advance
 			position.X -= self.getOpAdvance(currGlyphIndex)
+			position.X  = position.X.QuantizeUp(horzQuant) // quantize
 	
 			newFractX := position.X.FractShift()
 			if newFractX != prevFractX {
@@ -328,7 +337,7 @@ func (self *Renderer) drawWrapLine(target TargetImage, position fract.Point, ite
 			// apply kerning unless coming from line break
 			if i > 0 {
 				position.X -= self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
-				position.X  = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization)) // quantize
+				
 			}
 	
 			// update tracking variables

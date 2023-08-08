@@ -8,17 +8,6 @@ import "golang.org/x/image/font/sfnt"
 // on Traverse* operations. Sometimes we iterate lines in reverse,
 // so there's a bit of trickiness here and there.
 
-// TODO: I think lighter types for strIterator and strReverseIterator are
-//       better, keeping only the index if necessary, or both for the reverse,
-//       if necessary. but that may cause trouble with the iterator, and
-//       I may want to pass a concrete type instead? I don't like the
-//       continuous string modification. a bool may work too. uncertain,
-//       but I'd kinda like to fully split everything into their own
-//       cases and refactor the helper functions instead. the current
-//       model feels very complex to me. details like what happens with
-//       quantization rounding when going in one direction or the other
-//       are open problems and I may be doing some things flat out wrong.
-
 // A string iterator that can be used to go through lines in regular
 // order or in reverse, which is needed for some combinations of text
 // direction and horizontal alignments during rendering.
@@ -143,6 +132,14 @@ func (self *ltrStringIterator) Next(text string) rune {
 		return -1
 	}
 }
+func (self *ltrStringIterator) PeekNext(text string) rune {
+	if self.index < len(text) {
+		codePoint, _ := utf8.DecodeRuneInString(text[self.index : ])
+		return codePoint
+	} else {
+		return -1
+	}
+}
 
 type rtlStringIterator struct { head, tail, index int }
 func (self *rtlStringIterator) Init(text string) {
@@ -176,6 +173,14 @@ func (self *rtlStringIterator) Next(text string) rune {
 		if codePoint == '\n' || self.index <= self.tail {
 			self.LineSlide(text)
 		}
+		return codePoint
+	} else {
+		return -1
+	}
+}
+func (self *rtlStringIterator) PeekNext(text string) rune {
+	if self.index > self.tail {
+		codePoint, _ := utf8.DecodeLastRuneInString(text[ : self.index])
 		return codePoint
 	} else {
 		return -1
