@@ -1,10 +1,10 @@
 module github.com/tinne26/etxt/examples/ebiten/aligns
 
-go 1.20
+go 1.18
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.5.0
-	github.com/tinne26/etxt v0.0.9-alpha.6.0.20230805124416-e15cc2de87f5
+	github.com/tinne26/etxt v0.0.9-alpha.6.0.20230808120511-9e2a7de19257
 )
 
 require (

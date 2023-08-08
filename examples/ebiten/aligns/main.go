@@ -21,6 +21,7 @@ import "github.com/tinne26/etxt/font"
 type Game struct {
 	text *etxt.Renderer
 	contentType int
+	direction etxt.Direction
 	align etxt.Align
 	x, y int
 }
@@ -64,6 +65,14 @@ func (self *Game) Update() error {
 		}
 	}
 
+	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
+		if self.direction == etxt.LeftToRight {
+			self.direction = etxt.RightToLeft
+		} else {
+			self.direction = etxt.LeftToRight
+		}
+	}
+
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		self.x, self.y = ebiten.CursorPosition()
 	}
@@ -88,6 +97,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	info := "[H] Horz. Align " + self.align.Horz().String() + "\n"
 	info += "[V] Vert. Align " + self.align.Vert().String() + "\n"
 	info += "[T] Text type\n"
+	info += "[D] Text direction (" + self.direction.String() + ")\n"
 	info += "(Click anywhere to change drawing coordinates)"
 	self.text.Draw(canvas, info, pad, h - pad)
 
@@ -98,6 +108,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	self.text.SetSize(18)
 	self.text.SetColor(color.RGBA{255, 255, 255, 255})
 	self.text.SetAlign(self.align)
+	self.text.Complex().SetDirection(self.direction)
 	var content string
 	switch self.contentType {
 	case 0: // align
@@ -142,6 +153,7 @@ func main() {
 	err = ebiten.RunGame(&Game{
 		text: renderer,
 		align: etxt.Center,
+		direction: etxt.LeftToRight,
 		x: int(320*scale),
 		y: int(240*scale),
 	})

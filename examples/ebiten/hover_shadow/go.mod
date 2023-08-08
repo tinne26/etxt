@@ -1,6 +1,6 @@
 module github.com/tinne26/etxt/examples/ebiten/hover_shadow
 
-go 1.20
+go 1.18
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.5.0
