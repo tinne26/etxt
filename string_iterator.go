@@ -8,6 +8,17 @@ import "golang.org/x/image/font/sfnt"
 // on Traverse* operations. Sometimes we iterate lines in reverse,
 // so there's a bit of trickiness here and there.
 
+// TODO: I think lighter types for strIterator and strReverseIterator are
+//       better, keeping only the index if necessary, or both for the reverse,
+//       if necessary. but that may cause trouble with the iterator, and
+//       I may want to pass a concrete type instead? I don't like the
+//       continuous string modification. a bool may work too. uncertain,
+//       but I'd kinda like to fully split everything into their own
+//       cases and refactor the helper functions instead. the current
+//       model feels very complex to me. details like what happens with
+//       quantization rounding when going in one direction or the other
+//       are open problems and I may be doing some things flat out wrong.
+
 // A string iterator that can be used to go through lines in regular
 // order or in reverse, which is needed for some combinations of text
 // direction and horizontal alignments during rendering.
@@ -88,14 +99,6 @@ type strIteratorPosition struct {
 	regression int
 }
 
-func (self *strIterator) MemorizePosition() strIteratorPosition {
-	return strIteratorPosition{ self.index, self.regression }
-}
-
-func (self *strIterator) RestorePosition(pos strIteratorPosition) {
-	self.index, self.regression = pos.index, pos.regression
-}
-
 type glyphsIterator struct {
 	glyphs []sfnt.GlyphIndex
 	index int // -N if reverse
@@ -127,5 +130,54 @@ func (self *glyphsIterator) Next() (sfnt.GlyphIndex, bool) {
 		}
 
 		return glyphIndex, false
+	}
+}
+
+type ltrStringIterator struct { index int }
+func (self *ltrStringIterator) Next(text string) rune {
+	if self.index < len(text) {
+		codePoint, runeSize := utf8.DecodeRuneInString(text[self.index : ])
+		self.index += runeSize
+		return codePoint
+	} else {
+		return -1
+	}
+}
+
+type rtlStringIterator struct { head, tail, index int }
+func (self *rtlStringIterator) Init(text string) {
+	self.tail = 0
+	self.head = 0
+	self.LineSlide(text)
+}
+
+func (self *rtlStringIterator) LineSlide(text string) {
+	self.tail = self.head
+	if self.head >= len(text) {
+		self.index = self.tail
+	} else {
+		if text[self.head] == '\n' {
+			self.head += 1
+		} else {
+			for self.head < len(text) { // find next line break or end of string
+				codePoint, runeSize := utf8.DecodeRuneInString(text[self.head : ])
+				if codePoint == '\n' { break }
+				self.head += runeSize
+			}
+		}
+		self.index = self.head
+	}
+}
+
+func (self *rtlStringIterator) Next(text string) rune {
+	if self.index > self.tail {
+		codePoint, runeSize := utf8.DecodeLastRuneInString(text[ : self.index])
+		self.index -= runeSize
+		if codePoint == '\n' || self.index <= self.tail {
+			self.LineSlide(text)
+		}
+		return codePoint
+	} else {
+		return -1
 	}
 }

@@ -8,10 +8,8 @@ import "github.com/tinne26/etxt/fract"
 //
 // Only the equispaced quantization values are given. Other values like
 // [fract.Unit](22) (which approximates one third of a pixel, ceil(64/3))
-// could work too, but they all result in potentially uneven distributions of
-// the glyph positions. Such positions would make the results of text measuring
-// functions dependent on the text direction, align and starting position, which
-// would make centering operations and the API impractically complicated.
+// could also work in theory, but in practice they lead to all kinds of
+// complications that are simply not worth it.
 const (
 	QtNone = fract.Unit( 1) // full glyph position resolution (1/64ths of a pixel)
 	Qt32th = fract.Unit( 2) // quantize glyph positions to 1/32ths of a pixel
@@ -82,42 +80,32 @@ func (self *RendererFract) GetScale() fract.Unit {
 }
 
 // Sets the horizontal quantization level to be used on subsequent
-// operations. Recommended values are the existing Qt constants (e.g.
-// [QtNone], [QtFull], [QtHalf]).
+// operations. Valid values are limited to the existing Qt constants
+// (e.g. [QtNone], [QtFull], [QtHalf]).
 //
-// By default, the horizontal quantization is [Qt4th]. Values below
-// 1 or above 64 fractional units will panic.
-//
-// Non-equispaced values are technically allowed but strongly discouraged,
-// as drawing and measuring algorithms may break in subtle ways in
-// different edge cases.
+// By default, the horizontal quantization is [Qt4th].
 func (self *RendererFract) SetHorzQuantization(horz fract.Unit) {
 	(*Renderer)(self).fractSetHorzQuantization(horz)
 }
 
 // Sets the vertical quantization level to be used on subsequent
-// operations. Recommended values are the existing Qt constants (e.g.
-// [QtFull], [Qt4th], [Qt8th]).
+// operations. Valid values are limited to the existing Qt constants
+// (e.g. [Qt4th], [Qt8th], [Qt16th]).
 //
-// By default, the vertical quantization is [QtFull]. Values below
-// 1 or above 64 fractional units will panic.
-//
-// Non-equispaced values are technically allowed but strongly discouraged,
-// as drawing and measuring algorithms may break in subtle ways in
-// different edge cases.
+// By default, the vertical quantization is [QtFull].
 func (self *RendererFract) SetVertQuantization(horz fract.Unit) {
 	(*Renderer)(self).fractSetVertQuantization(horz)
 }
 
-// Returns the current quantization levels.
+// Returns the current horizontal and vertical quantization levels.
 // See [RendererFract.SetQuantization]() for more context.
 func (self *RendererFract) GetQuantization() (horz, vert fract.Unit) {
 	return (*Renderer)(self).fractGetQuantization()
 }
 
-func (self *RendererFract) MeasureHeight(text string) fract.Unit {
-	return (*Renderer)(self).fractMeasureHeight(text)
-}
+// func (self *RendererFract) MeasureHeight(text string) fract.Unit {
+// 	return (*Renderer)(self).fractMeasureHeight(text)
+// }
 
 func (self *RendererFract) Draw(target TargetImage, text string, x, y fract.Unit) {
 	(*Renderer)(self).fractDraw(target, text, x, y)
@@ -181,17 +169,22 @@ func (self *Renderer) refreshScaledSize() {
 }
 
 func (self *Renderer) fractSetHorzQuantization(horz fract.Unit) {
-	if horz > 64 || horz < 1 {
-		panic("horizontal quantization must be in the [1, 64] range")
-	}
+	validateQuantizationValue(horz)
 	self.state.horzQuantization = uint8(horz)
 }
 
 func (self *Renderer) fractSetVertQuantization(vert fract.Unit) {
-	if vert > 64 || vert < 1 {
-		panic("vertical quantization must be in the [1, 64] range")
-	}
+	validateQuantizationValue(vert)
 	self.state.vertQuantization = uint8(vert)
+}
+
+func validateQuantizationValue(value fract.Unit) {
+	switch value {
+	case QtNone, Qt32th, Qt16th, Qt8th, Qt4th, QtHalf, QtFull:
+		// ok
+	default:
+		panic("invalid quantization value (tip: Qt* constants)")
+	}
 }
 
 func (self *Renderer) fractGetQuantization() (horz, vert fract.Unit) {

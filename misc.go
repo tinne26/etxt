@@ -18,11 +18,36 @@ type Direction int8
 const (
 	LeftToRight Direction = iota
 	RightToLeft
+	textDirectionUnexportedMixed
+	textDirectionUnexportedNeutral
 )
+
+func (self Direction) String() string {
+	switch self {
+	case LeftToRight: return "LeftToRight"
+	case RightToLeft: return "RightToLeft"
+	case textDirectionUnexportedMixed: return "Mixed"
+	case textDirectionUnexportedNeutral: return "Neutral"
+	default:
+		return "UnknownTextDirection"
+	}
+}
 
 // A handy type alias for sfnt.Font so you don't need to
 // import it when already working with etxt.
 type Font = sfnt.Font
+
+// See [RendererComplex.RegisterFont]() and related functions.
+//
+// When using multiple fonts, you are encouraged to define
+// and use your own named constants in the relevant context,
+// like:
+//   const (
+//	      RegularFont FontIndex = iota
+//       BoldFont
+//       ItalicFont
+//   )
+type FontIndex uint8
 
 // Glyph indices are used to specify which font glyph are we working
 // with. Glyph indices are a low level construct that most users of
@@ -32,15 +57,6 @@ type Font = sfnt.Font
 //
 // Support for glyph indices (and not only runes), therefore, is important
 // in order to make renderers usable with [text shapers] and complex scripts.
-// TODO: But I'm not really offering much support for that yet...
-// TODO: probably kill glyph index alias? Why the hell do I need it?
-//       it comes down to advanced use-cases that I probably don't want
-//       to actively cater to. I mean, ok, I could use this for cache
-//       implementations and stuff, but then I'm already importing sfnt.
-//       What about using uint16 directly? So sfnt and etxt have compatible
-//       representations, even if they don't... no, that sounds like bad
-//       practice, straightforward. I'll only use those glyphs with sfnt
-//       fonts for the moment anyway, so...
 //
 // [text shapers]: https://github.com/tinne26/etxt/blob/main/docs/shaping.md
 //type GlyphIndex = sfnt.GlyphIndex

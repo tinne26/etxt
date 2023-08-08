@@ -55,7 +55,7 @@ func (self Align) String() string {
 	if self == 0 { return "(ZeroAlign)" }
 	if self.Vert() == 0 { return "(" + self.horzString() + ")" }
 	if self.Horz() == 0 { return "(" + self.vertString() + ")" }
-	return "( " + self.vertString() + " | " + self.horzString() + ")"
+	return "(" + self.vertString() + " | " + self.horzString() + ")"
 }
 
 func (self Align) vertString() string {

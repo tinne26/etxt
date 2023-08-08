@@ -1,8 +1,14 @@
 package etxt
 
+import "unicode/utf8"
+
 import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
+
+// TODO: clearly detail if values are quantized or not from the start. because in some functions
+//       I'm passing unquantized values. and then assumming they are quantized. etc. it's a mess,
+//       it needs to be specified clearly.
 
 // Same as [Renderer.Draw](), but using a width limit for line wrapping.
 // The line wrapping algorithm is a trivial greedy algorithm using
@@ -11,14 +17,12 @@ import "github.com/tinne26/etxt/fract"
 // The widthLimit must must be given in real units, not logical ones.
 // This means that unlike text sizes, the widthLimit won't be internally
 // multiplied by the renderer's scale factor.
-//
-// TODO: mention that centered and last aligns will force a MeasureWithWrap()
-// call?
 func (self *Renderer) DrawWithWrap(target TargetImage, text string, x, y, widthLimit int) {
 	if widthLimit > fract.MaxInt { panic("widthLimit too big, must be <= fract.MaxInt") }
 	self.fractDrawWithWrap(target, text, fract.FromInt(x), fract.FromInt(y), fract.FromInt(widthLimit))
 }
 
+// x and y are assumed to be unquantized
 func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fract.Unit, widthLimit fract.Unit) {
 	// return directly on superfluous invocations
 	if text == "" { return }
@@ -33,9 +37,10 @@ func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fr
 	if self.state.rasterizer == nil { panic("can't draw with a nil rasterizer (tip: NewRenderer())") }
 	
 	// adjust Y position
-	vertQuant := fract.Unit(self.state.vertQuantization)
+	horzQuant, vertQuant := self.fractGetQuantization()
 	ascent := self.state.fontSizer.Ascent(self.state.activeFont, &self.buffer, self.state.scaledSize)
-	switch self.state.align.Vert() {
+	vertAlign := self.state.align.Vert()
+	switch vertAlign {
 	case Top:
 		y = (y + ascent).QuantizeUp(vertQuant)
 	case Midline:
@@ -46,52 +51,66 @@ func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fr
 		y = (y + ascent - (height >> 1)).QuantizeUp(vertQuant)
 	case Baseline:
 		y = y.QuantizeUp(vertQuant)
-	case LastBaseline:
+	case LastBaseline, LastMidline:
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
-		lineHeight := self.getOpLineHeight()
-		if height <= lineHeight {
-			y = (y - height).QuantizeUp(vertQuant)
-		} else {
-			height -= lineHeight
-			y = (y - height).QuantizeUp(vertQuant)
+		lineHeight := self.getOpLineHeight().QuantizeUp(vertQuant)
+		if height >= lineHeight { height -= lineHeight }
+		y = (y - height).QuantizeUp(vertQuant)
+		if vertAlign == LastMidline {
+			y += self.getSlowOpXHeight()
 		}
 	case Bottom:
 		height := self.fractMeasureHeight(text)
 		y = (y + ascent - height).QuantizeUp(vertQuant)
 	default:
-		panic(self.state.align.Vert())
+		panic(vertAlign)
 	}
 
+	// skip non-visible portions of the text in the target
+	minBaselineY := fract.FromInt(bounds.Min.Y) - ascent
 	maxBaselineY := fract.FromInt(bounds.Max.Y) + ascent
 	var lineBreakNth int = -1
-	// TODO: regular draw has an optimization to skip non-visible portions
-	//       of the text, but with max line width it's not so simple, and
-	//       the difference it makes should also be smaller. that said, I
-	//       should still try to do it when I can, it should still be useful.
-	//       Technically, similar optimizations could be added for the
-	//       horizontal dimension too, but I think in practice Y is more
-	//       important due to scrollable text in UIs, which are more likely
-	//       to be poorly optimized. also, with line wrap, the algorithm becomes
-	//       really messy if we start adding extra stuff like this on the X
-	//       axis...
+	if y < minBaselineY {
+		byteCount := 0
+		iterator := newStrIterator(text, false)
+		for {
+			_, runeCount, lineBreak, eot := self.measureWrapLine(iterator, widthLimit)
+			for runeCount > 0 {
+				codePoint := iterator.Next()
+				byteCount += utf8.RuneLen(codePoint)
+			}
+			if lineBreak {
+				_ = iterator.Next()
+				byteCount += 1
+				lineBreakNth = maxInt(1, lineBreakNth + 1)
+			} else {
+				lineBreakNth = 0
+			}
+			if eot { return }
+			y += self.getOpLineAdvance(lineBreakNth)
+			if y >= minBaselineY { break }
+		}
+		text = text[byteCount : ]
+	}
+	if text == "" { return }
+	
 
-	// subdelegate to drawWithWrapLTR, drawWithWrapRTL or drawWithWrapCenter
+	// subdelegate to the relevant function
+	x = x.QuantizeUp(horzQuant)
 	switch self.state.align.Horz() {
 	case Left:
-		reverse := (self.state.textDirection != LeftToRight)
-		self.fractDrawWithWrapLTR(target, text, reverse, lineBreakNth, x, y, widthLimit, maxBaselineY)
+		self.fractDrawWithWrapLeft(target, text, lineBreakNth, x, y, widthLimit, maxBaselineY)
 	case Right:
-		reverse := (self.state.textDirection != RightToLeft)
-		self.fractDrawWithWrapRTL(target, text, reverse, lineBreakNth, x, y, widthLimit, maxBaselineY)
+		self.fractDrawWithWrapRight(target, text, lineBreakNth, x, y, widthLimit, maxBaselineY)
 	case HorzCenter:
-		reverse := (self.state.textDirection != LeftToRight)
-		self.fractDrawWithWrapCenter(target, text, reverse, lineBreakNth, x, y, widthLimit, maxBaselineY)
+		self.fractDrawWithWrapCenter(target, text, lineBreakNth, x, y, widthLimit, maxBaselineY)
 	default:
 		panic(self.state.align.Horz())
 	}
 }
 
-func (self *Renderer) fractDrawWithWrapLTR(target TargetImage, text string, reverse bool, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
+// Precondition: x and y are quantized.
+func (self *Renderer) fractDrawWithWrapLeft(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
 	// Technical notes:
 	// - I'm never skipping spaces (unlike when measuring) in case a custom
 	//   glyph draw func is being used and it expects consistency. Of course,
@@ -104,88 +123,65 @@ func (self *Renderer) fractDrawWithWrapLTR(target TargetImage, text string, reve
 	//   interested in this behavior at some point in the future.
 	
 	// create string iterator
-	iterator := newStrIterator(text, reverse)
+	iterator := newStrIterator(text, false)
 
 	// set up traversal variables
 	var position fract.Point = fract.UnitsToPoint(x, y)
-	var prevGlyphIndex sfnt.GlyphIndex
-	horzQuant, vertQuant := self.fractGetQuantization()
-
-	latestFractY := position.Y.FractShift()
-	latestFractX := position.X.FractShift().QuantizeUp(horzQuant)
-	startX := position.X.QuantizeUp(horzQuant)
-	wrapLimit := startX + widthLimit
+	startX := position.X
 	if self.cacheHandler != nil {
 		self.cacheHandler.NotifyFractChange(position)
 	}
 
-	// neither text direction nor align matter in this context.
-	// only font, size and quantization. go traverse the text.
-	for { // for each word
-		nextCount, lineBreak, eot := self.determineWrapLine(iterator, position, wrapLimit)
-		
-		// draw glyphs for the next line, without checks
-		iterCount := nextCount
-		if lineBreak { iterCount -= 1 }
-		for i := 0; i < nextCount; i++ {
-			codePoint := iterator.Next()
-			
-			// get glyph index
-			currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
-					
-			// apply kerning unless coming from line break
-			if lineBreakNth != 0 {
-				lineBreakNth = 0
-			} else {
-				position.X += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-				position.X  = position.X.QuantizeUp(horzQuant) // quantize
-			}
-
-			newestFractX := position.X.FractShift()
-			if newestFractX != latestFractX {
-				self.cacheHandler.NotifyFractChange(position)
-				latestFractX = newestFractX
-			}
-
-			// draw glyph
-			self.internalGlyphDraw(target, currGlyphIndex, position)
-
-			// advance
-			position.X += self.getOpAdvance(currGlyphIndex)
-
-			// update tracking variables
-			prevGlyphIndex = currGlyphIndex
+	for { // for each wrap line
+		width, runeCount, lineBreak, eot := self.measureWrapLine(iterator, widthLimit)
+		if self.state.textDirection == RightToLeft {
+			// already properly quantized unless using non-equidistant quantizations,
+			// but in that case other minor things will be messed up anyway
+			position.X = (startX + width).QuantizeUp(fract.Unit(self.state.horzQuantization))
 		}
+		position, iterator = self.drawWrapLine(target, position, iterator, runeCount, lineBreak)
 
-		// skip explicit line break if necessary
-		if lineBreak { _ = iterator.Next() }
-
-		// move pen position to next line if necessary
+		// advance line unless on last line without line break
 		if lineBreak || !eot {
-			lineBreakNth = maxInt(1, lineBreakNth + 1)
-			position.X = startX
-			position.Y += self.getOpLineAdvance(lineBreakNth)
-			position.Y  = position.Y.QuantizeUp(vertQuant)
-			if position.Y > maxY { return } // early return
-			newestFractY := position.Y.FractShift()
-			if newestFractY != latestFractY || startX != latestFractX {
-				latestFractY = newestFractY
-				latestFractX = startX
-				if self.cacheHandler != nil {
-					self.cacheHandler.NotifyFractChange(position)
-				}
-			}
+			position, lineBreakNth = self.advanceLine(position, startX, lineBreakNth)
+			if position.Y > maxY { break }
 		}
 
 		if eot { break }
 	}
 }
 
-func (self *Renderer) fractDrawWithWrapRTL(target TargetImage, text string, reverse bool, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
-	panic("unimplemented")
+func (self *Renderer) fractDrawWithWrapRight(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {	
+	// create string iterator
+	iterator := newStrIterator(text, false)
+
+	// set up traversal variables
+	var position fract.Point = fract.UnitsToPoint(x, y)
+	startX := position.X
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(position)
+	}
+
+	for { // for each wrap line
+		width, runeCount, lineBreak, eot := self.measureWrapLine(iterator, widthLimit)
+		if self.state.textDirection == LeftToRight {
+			// already properly quantized unless using non-equidistant quantizations,
+			// but in that case other minor things will be messed up anyway
+			position.X = (startX + width).QuantizeUp(fract.Unit(self.state.horzQuantization))
+		}
+		position, iterator = self.drawWrapLine(target, position, iterator, runeCount, lineBreak)
+
+		// advance line unless on last line without line break
+		if lineBreak || !eot {
+			position, lineBreakNth = self.advanceLine(position, startX, lineBreakNth)
+			if position.Y > maxY { break }
+		}
+
+		if eot { break }
+	}
 }
 
-func (self *Renderer) fractDrawWithWrapCenter(target TargetImage, text string, reverse bool, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
+func (self *Renderer) fractDrawWithWrapCenter(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
 	panic("unimplemented")
 }
 
@@ -194,44 +190,155 @@ func (self *Renderer) fractDrawWithWrapCenter(target TargetImage, text string, r
 // Returns nextCount, lineBreak, eot. Versions for centering
 // may require actual length and so on. Position must be
 // passed already quantized if necessary.
-func (self *Renderer) determineWrapLine(iterator strIterator, position fract.Point, wrapLimit fract.Unit) (int, bool, bool) {
+func (self *Renderer) measureWrapLine(iterator strIterator, widthLimit fract.Unit) (fract.Unit, int, bool, bool) {
+	var width, x fract.Unit
 	var prevGlyphIndex sfnt.GlyphIndex
 	var nextCount int
 	var lastSafeCount int
 	var lineStart bool = true
 
-	for {
-		codePoint := iterator.Next()
-		if codePoint == -1 { return nextCount, false, true }
-		nextCount += 1
+	if self.state.textDirection == LeftToRight {
+		for {
+			codePoint := iterator.Next()
+			if codePoint == -1 { return x, nextCount, false, true }
+			nextCount += 1
 
-		if codePoint == '\n' { return nextCount, true, false }
-		if codePoint == ' ' { lastSafeCount = nextCount }
+			if codePoint == '\n' { return x, nextCount, true, false }
+			if codePoint == ' ' { lastSafeCount = nextCount }
 
-		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+			// get glyph index
+			currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
 
-		// apply kerning unless at line start
-		if lineStart {
-			lineStart = false
-		} else {
-			position.X += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-			position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
-		}
-
-		// advance
-		position.X += self.getOpAdvance(currGlyphIndex)
-
-		// stop if outside wrapLimit
-		if position.X > wrapLimit {
-			if lastSafeCount == 0 {
-				return maxInt(nextCount - 1, 1), false, false
+			// apply kerning unless at line start
+			if lineStart {
+				lineStart = false
 			} else {
-				return lastSafeCount, false, false
+				x += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
+				x = x.QuantizeUp(fract.Unit(self.state.horzQuantization))
 			}
-		}
 
-		// update tracking variables
-		prevGlyphIndex = currGlyphIndex
-	}	
+			// advance
+			x += self.getOpAdvance(currGlyphIndex)
+
+			// stop if outside wrapLimit
+			if x > widthLimit {
+				if lastSafeCount == 0 {
+					return width, maxInt(nextCount - 1, 1), false, false
+				} else {
+					return width, lastSafeCount, false, false
+				}
+			}
+			
+			// update tracking variables
+			width = x
+			prevGlyphIndex = currGlyphIndex
+		}
+	} else { // assume self.state.textDirection == RightToLeft
+		for {
+			codePoint := iterator.Next()
+			if codePoint == -1 { return x, nextCount, false, true }
+			nextCount += 1
+
+			if codePoint == '\n' { return x, nextCount, true, false }
+			if codePoint == ' ' { lastSafeCount = nextCount }
+
+			// get glyph index
+			currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+
+			// advance
+			x += self.getOpAdvance(currGlyphIndex)
+
+			// apply kerning unless at line start
+			if lineStart {
+				lineStart = false
+			} else {
+				x += self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
+				x = x.QuantizeUp(fract.Unit(self.state.horzQuantization))
+			}
+
+			// stop if outside wrapLimit
+			if x > widthLimit {
+				if lastSafeCount == 0 {
+					return width, maxInt(nextCount - 1, 1), false, false
+				} else {
+					return width, lastSafeCount, false, false
+				}
+			}
+			
+			// update tracking variables
+			width = x
+			prevGlyphIndex = currGlyphIndex
+		}
+	}
 }
+
+func (self *Renderer) drawWrapLine(target TargetImage, position fract.Point, iterator strIterator, nextCount int, lineBreak bool) (fract.Point, strIterator) {
+	var prevGlyphIndex sfnt.GlyphIndex
+	prevFractX := position.X.FractShift()
+	
+	iterCount := nextCount
+	if lineBreak { iterCount -= 1 }
+	if self.state.textDirection == LeftToRight {
+		for i := 0; i < nextCount; i++ {
+			codePoint := iterator.Next()
+			
+			// get glyph index
+			currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+			
+			// apply kerning unless coming from line break
+			if i > 0 {
+				position.X += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
+				position.X  = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
+			}
+	
+			newFractX := position.X.FractShift()
+			if newFractX != prevFractX {
+				self.cacheHandler.NotifyFractChange(position)
+				prevFractX = newFractX
+			}
+	
+			// draw glyph
+			self.internalGlyphDraw(target, currGlyphIndex, position)
+	
+			// advance
+			position.X += self.getOpAdvance(currGlyphIndex)
+	
+			// update tracking variables
+			prevGlyphIndex = currGlyphIndex
+		}
+	} else { // assume self.state.textDirection == RightToLeft
+		for i := 0; i < nextCount; i++ {
+			codePoint := iterator.Next()
+			
+			// get glyph index
+			currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+			
+			// advance
+			position.X -= self.getOpAdvance(currGlyphIndex)
+	
+			newFractX := position.X.FractShift()
+			if newFractX != prevFractX {
+				self.cacheHandler.NotifyFractChange(position)
+				prevFractX = newFractX
+			}
+
+			// draw glyph
+			self.internalGlyphDraw(target, currGlyphIndex, position)
+	
+			// apply kerning unless coming from line break
+			if i > 0 {
+				position.X -= self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
+				position.X  = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization)) // quantize
+			}
+	
+			// update tracking variables
+			prevGlyphIndex = currGlyphIndex
+		}
+	}
+	
+	// skip explicit line break if necessary
+	if lineBreak { _ = iterator.Next() }
+
+	return position, iterator
+}
+	

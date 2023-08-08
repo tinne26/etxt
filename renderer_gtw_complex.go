@@ -4,18 +4,6 @@ import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
 
-// See [RendererComplex.RegisterFont]() and related functions.
-//
-// When using multiple fonts, you are encouraged to define
-// and use your own named constants in the relevant context,
-// like:
-//   const (
-//	      RegularFont FontIndex = iota
-//       BoldFont
-//       ItalicFont
-//   )
-type FontIndex uint8
-
 // This type exists only for documentation and structuring purposes,
 // acting as a [gateway] to access advanced [Renderer] properties and
 // operating directly with glyphs and the more flexible [Text] type.

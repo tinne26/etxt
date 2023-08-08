@@ -63,8 +63,6 @@ func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, orig
 // --- internal functions for draw and renderer ---
 // Precondition: sizer and font have been validated to be initialized.
 
-// TODO: apply on most parts of the measuring and rendering pipeline, instead of
-//       using variable-stored sizer, font and sizes.
 func (self *Renderer) getOpKernBetween(prevGlyphIndex, currGlyphIndex sfnt.GlyphIndex) fract.Unit {
 	return self.state.fontSizer.Kern(
 		self.state.activeFont, &self.buffer, self.state.scaledSize,
@@ -98,8 +96,9 @@ func (self *Renderer) getOpAscent() fract.Unit {
 
 // Notice: this is rather slow, uncached. I'm leaving it like this because
 // it's rarely used anyway, and in the grand scheme of things, when this is
-// actually required, most of the runtime will go to actual font rendering
-// anyway.
+// actually required, most of the runtime will still go to actual font
+// rendering... but *there is* room for improvement (especially if we were
+// not using golang's sfnt package, which is kinda shitty).
 func (self *Renderer) getSlowOpXHeight() fract.Unit {
 	const hintingNone = 0
 	metrics, err := self.state.activeFont.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
