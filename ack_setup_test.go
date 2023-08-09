@@ -7,6 +7,7 @@ import "os"
 import "fmt"
 import "embed"
 import "sync"
+import "sort"
 import "testing"
 
 import "github.com/tinne26/etxt/font"
@@ -44,22 +45,27 @@ func ensureTestAssetsLoaded() {
 		os.Exit(1)
 	}
 
+	type FontInfo struct{ font *sfnt.Font; name string }
+	fonts := make([]FontInfo, 0, 2)
 	lib.EachFont(func(name string, sfntFont *sfnt.Font) error {
-		if testFontA == nil {
-			testFontA = sfntFont
-			return nil
-		} else {
-			testFontB = sfntFont
-			return font.ErrBreakEach
-		}
+		fonts = append(fonts, FontInfo{ sfntFont, name })
+		return nil
+	})
+	sort.Slice(fonts, func(i, j int) bool {
+		return fonts[i].name < fonts[j].name
 	})
 
-	// test missing data warnings
-	if testFontA == nil {
+	// set fonts and/or warnings for missing fonts
+	switch len(fonts) {
+	case 0:
 		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 0)\n" +
 		               "WARNING: Most tests will be skipped\n"
-	} else if testFontB == nil {
+   case 1:
+		testFontA = fonts[0].font
 		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 1)\n" +
 		               "WARNING: Some tests will be skipped\n"
+	default:
+		testFontA = fonts[0].font
+		testFontB = fonts[1].font
 	}
 }
