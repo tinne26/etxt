@@ -140,6 +140,9 @@ func (self *ltrStringIterator) PeekNext(text string) rune {
 		return -1
 	}
 }
+func (self *ltrStringIterator) Unroll(codePoint rune) {
+	self.index -= utf8.RuneLen(codePoint)
+}
 
 type rtlStringIterator struct { head, tail, index int }
 func (self *rtlStringIterator) Init(text string) {

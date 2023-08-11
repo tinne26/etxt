@@ -8,11 +8,6 @@ import "golang.org/x/image/math/fixed"
 import "github.com/tinne26/etxt/fract"
 import "github.com/tinne26/etxt/mask"
 
-func maxInt(a, b int) int {
-	if a >= b { return a }
-	return b
-}
-
 func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) sfnt.GlyphIndex {
 	index, err := font.GlyphIndex(&self.buffer, codePoint)
 	if err != nil { panic("font.GlyphIndex error: " + err.Error()) }
@@ -90,6 +85,12 @@ func (self *Renderer) getOpLineHeight() fract.Unit {
 
 func (self *Renderer) getOpAscent() fract.Unit {
 	return self.state.fontSizer.Ascent(
+		self.state.activeFont, &self.buffer, self.state.scaledSize,
+	)
+}
+
+func (self *Renderer) getOpDescent() fract.Unit {
+	return self.state.fontSizer.Descent(
 		self.state.activeFont, &self.buffer, self.state.scaledSize,
 	)
 }

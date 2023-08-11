@@ -4,6 +4,17 @@ import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
 
+func maxInt(a, b int) int {
+	if a >= b { return a }
+	return b
+}
+
+// TODO: LTR and RTL are not really saying enough. If you do ltr processing
+//       on ltr iterator, you have ltr. if you do rtl processing on a ltr
+//       iterator, you are doing rtl processing. etc. you can always adapt
+//       stuff. we need to know what we are doing. like, RtlOnRtlIter
+//       maybe just RtlReverse and LtrReverse for reversed algorithms?
+
 // Precondition: lineBreakX is properly quantized already. lineBreakNth has been
 // preincremented, for example with drawInternalValues.increaseLineBreakNth()
 func (self *Renderer) advanceLine(position fract.Point, lineBreakX fract.Unit, lineBreakNth int) fract.Point {
@@ -32,10 +43,12 @@ type drawInternalValues struct {
 	prevGlyphIndex sfnt.GlyphIndex
 	lineBreakNth int
 }
+
 func (self *drawInternalValues) increaseLineBreakNth() {
 	self.lineBreakNth = maxInt(1, self.lineBreakNth + 1)
 }
 
+// expects an quantized position, returns an unquantized position
 func (self *Renderer) drawGlyphLTR(target TargetImage, position fract.Point, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
 	// get glyph index
 	currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
@@ -45,8 +58,8 @@ func (self *Renderer) drawGlyphLTR(target TargetImage, position fract.Point, cod
 		iv.lineBreakNth = 0
 	} else {
 		position.X += self.getOpKernBetween(iv.prevGlyphIndex, currGlyphIndex)
-		position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
 	}
+	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
 
 	if position.X.FractShift() != iv.prevFractX {
 		iv.prevFractX = position.X.FractShift()
@@ -75,8 +88,8 @@ func (self *Renderer) drawGlyphRTL(target TargetImage, position fract.Point, cod
 		iv.lineBreakNth = 0
 	} else {
 		position.X -= self.getOpKernBetween(currGlyphIndex, iv.prevGlyphIndex)
-		position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
 	}
+	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
 
 	if position.X.FractShift() != iv.prevFractX {
 		iv.prevFractX = position.X.FractShift()
@@ -104,68 +117,4 @@ func (self *Renderer) drawLineRTL(target TargetImage, position fract.Point, iv d
 		position, iv = self.drawGlyphRTL(target, position, codePoint, iv)
 	}
 	return position, iv, iterator
-}
-
-// returns the width unquantized
-func (self *Renderer) measureLineLTR(iterator ltrStringIterator, text string) (fract.Unit, int) {
-	var prevGlyphIndex sfnt.GlyphIndex
-	var width fract.Unit
-	var runeCount int
-	lineStart := true
-
-	horzQuant := fract.Unit(self.state.horzQuantization)
-	for {
-		codePoint := iterator.Next(text)
-		if codePoint == -1 || codePoint == '\n' { return width, runeCount }
-		runeCount += 1
-		
-		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
-
-		// apply kerning unless at line start
-		if lineStart {
-			lineStart = false
-		} else {
-			width += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-			width = width.QuantizeUp(horzQuant)
-		}
-
-		// advance
-		width += self.getOpAdvance(currGlyphIndex)
-		
-		// update tracking variables
-		prevGlyphIndex = currGlyphIndex
-	}
-}
-
-// returns the width unquantized
-func (self *Renderer) measureLineRTL(iterator ltrStringIterator, text string) (fract.Unit, int) {
-	var prevGlyphIndex sfnt.GlyphIndex
-	var width fract.Unit
-	var runeCount int
-	lineStart := true
-
-	horzQuant := fract.Unit(self.state.horzQuantization)
-	for {
-		codePoint := iterator.Next(text)
-		if codePoint == -1 || codePoint == '\n' { return -width, runeCount }
-		runeCount += 1
-		
-		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
-
-		// advance
-		width -= self.getOpAdvance(currGlyphIndex)
-
-		// apply kerning unless at line start
-		if lineStart {
-			lineStart = false
-		} else {
-			width -= self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
-			width = width.QuantizeUp(horzQuant)
-		}
-		
-		// update tracking variables
-		prevGlyphIndex = currGlyphIndex
-	}
 }

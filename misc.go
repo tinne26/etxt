@@ -5,6 +5,8 @@ import "strconv"
 
 import "golang.org/x/image/font/sfnt"
 
+import "github.com/tinne26/etxt/fract"
+
 // Helper types, wrappers, aliases and functions.
 
 // Renderers can have their text direction configured as
@@ -22,6 +24,8 @@ const (
 	textDirectionUnexportedNeutral
 )
 
+// Returns the string representation of the [Direction]
+// constant (e.g., "LeftToRight", "RightToLeft").
 func (self Direction) String() string {
 	switch self {
 	case LeftToRight: return "LeftToRight"
@@ -32,6 +36,22 @@ func (self Direction) String() string {
 		return "UnknownTextDirection"
 	}
 }
+
+// Quantization levels for [RendererFract.SetQuantization]().
+//
+// Only the equispaced quantization values are given. Other values like
+// [fract.Unit](22) (which approximates one third of a pixel, ceil(64/3))
+// could also work in theory, but in practice they lead to all kinds of
+// complications that are simply not worth it.
+const (
+	QtNone = fract.Unit( 1) // full glyph position resolution (1/64ths of a pixel)
+	Qt32th = fract.Unit( 2) // quantize glyph positions to 1/32ths of a pixel
+	Qt16th = fract.Unit( 4) // quantize glyph positions to 1/16ths of a pixel
+	Qt8th  = fract.Unit( 8) // quantize glyph positions to 1/ 8ths of a pixel
+	Qt4th  = fract.Unit(16) // quantize glyph positions to 1/ 4ths of a pixel
+	QtHalf = fract.Unit(32) // quantize glyph positions to half of a pixel
+	QtFull = fract.Unit(64) // full glyph position quantization (default)
+)
 
 // A handy type alias for sfnt.Font so you don't need to
 // import it when already working with etxt.

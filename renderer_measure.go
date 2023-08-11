@@ -1,16 +1,13 @@
 package etxt
 
-import "unicode/utf8"
-
-import "golang.org/x/image/font/sfnt"
 import "github.com/tinne26/etxt/fract"
 
 // Returns the dimensions of the area taken by the given text. Intuitively,
 // this matches the shaded area that you see when highlighting or selecting
 // text in browsers and text editors.
 //
-// The results are affected by the renderer's font, size, quantization and
-// sizer.
+// The results are affected by the renderer's font, size, quantization,
+// sizer and text direction.
 // 
 // Notice that overshoot or spilling (content falling outside the returned rect)
 // are possible, but in general you shouldn't be worrying about it. Barring
@@ -29,8 +26,8 @@ func (self *Renderer) Measure(text string) fract.Rect {
 // This means that unlike text sizes, the widthLimit won't be internally
 // multiplied by the renderer's scale factor.
 //
-// The returned rect dimensions are always quantized, but the width doesn't
-// take into account final spaces in the line.
+// The returned rect dimensions are always quantized, but the width
+// doesn't take into account final spaces in the wrapped lines.
 func (self *Renderer) MeasureWithWrap(text string, widthLimit int) fract.Rect {
 	if widthLimit > fract.MaxInt { panic("widthLimit too big, must be <= fract.MaxInt") }
 	return self.fractMeasureWithWrap(text, fract.FromInt(widthLimit))
@@ -44,108 +41,19 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 	//   not because that's more correct in isolation, but
 	//   because it's more consistent if multiple paragraphs
 	//   are placed side by side with different line breaks.
-	// - The rect is always measured quantized.
-
-	// return directly on superfluous invocations
-	if text == "" { return fract.Rect{} }
+	// - The returned rect is always quantized.
 	
 	// preconditions
 	if self.state.activeFont == nil { panic("can't measure text with font == nil (tip: Renderer.SetFont())") }
 	if self.state.fontSizer  == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
 
-	// set up traversal variables
-	var position fract.Point
-	var maxLineWidth fract.Unit
-	var prevGlyphIndex sfnt.GlyphIndex
-	var lineBreakNth int = -1
-	var hasLineHeight bool
-	
-	// neither text direction nor align matter in this context.
-	// only font, size and quantization. go traverse the text.
-	horzQuant, vertQuant := self.fractGetQuantization()
-	for _, codePoint := range text {
-		// line break case
-		if codePoint == '\n' {
-			lineBreakNth = maxInt(1, lineBreakNth + 1)
-
-			// update max width
-			if position.X > maxLineWidth {
-				maxLineWidth = position.X
-			}
-
-			// move pen position to next line
-			position.X = 0
-			position.Y += self.getOpLineAdvance(lineBreakNth)
-			position.Y  = position.Y.QuantizeUp(vertQuant)
-			continue
-		}
-
-		// apply line height if first time hitting a non line break
-		if !hasLineHeight {
-			position.Y += self.getOpLineHeight()
-			position.Y  = position.Y.QuantizeUp(vertQuant)
-			hasLineHeight = true
-		}
-
-		// regular glyph case
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
-		
-		// apply kerning unless coming from line break
-		if lineBreakNth != 0 {
-			lineBreakNth = 0
-		} else {
-			position.X += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-			position.X  = position.X.QuantizeUp(horzQuant) // quantize
-		}
-
-		// advance
-		position.X += self.getOpAdvance(currGlyphIndex)
-		
-		// update previous glyph
-		prevGlyphIndex = currGlyphIndex
+	// main processing
+	if text == "" { return fract.Rect{} }
+	if self.state.textDirection == LeftToRight {
+		return self.fractMeasureLTR(text)
+	} else {
+		return self.fractMeasureRTL(text)
 	}
-	
-	// compare x for the last line
-	if position.X > maxLineWidth {
-		maxLineWidth = position.X
-	}
-	
-	// set and quantize final result
-	position.X = maxLineWidth.QuantizeUp(horzQuant)
-
-	// return result
-	return fract.Rect{ Min: fract.Point{}, Max: position }
-}
-
-func (self *Renderer) fractMeasureHeight(text string) fract.Unit {
-	// return directly on superfluous invocations
-	if text == "" { return 0 }
-	
-	// preconditions
-	if self.state.activeFont == nil { panic("can't measure text height with font == nil (tip: Renderer.SetFont())") }
-	if self.state.fontSizer  == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
-
-	// set up traversal variables
-	var y fract.Unit
-	var lineBreakNth int
-	vertQuant := fract.Unit(self.state.vertQuantization)
-
-	for i, codePoint := range text {
-		if codePoint == '\n' {
-			lineBreakNth += 1
-			y += self.getOpLineAdvance(lineBreakNth)
-			y  = y.QuantizeUp(vertQuant)
-		} else {
-			if lineBreakNth == i {
-				y += self.getOpLineHeight()
-				y  = y.QuantizeUp(vertQuant)
-			}
-			lineBreakNth = 0
-		}
-	}
-
-	// return result
-	return y
 }
 
 func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) fract.Rect {
@@ -154,116 +62,121 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 	if self.state.fontSizer  == nil { panic("can't measure text with a nil sizer (tip: NewRenderer())") }
 	if widthLimit < 0 { panic("can't use a negative widthLimit") }
 	
-	// return directly on superfluous invocations
+	// main processing
 	if text == "" { return fract.Rect{} }
-	
-	// set up traversal variables
-	var position fract.Point // pen position or origin
-	var actualMaxWidth fract.Unit
-	var prevGlyphIndex sfnt.GlyphIndex
-	var lineBreakNth int = -1 // != 0 indicates coming from line break, but -1 is special
-	var lastSafeIndex int // for word breaking, a.k.a, after space index
-	var lineStartIndex int
-	var lastSafeX fract.Unit // within current line
-	var hasLineHeight bool
-	var index int = 0
-	
-	// traverse the text
-	horzQuant, vertQuant := self.fractGetQuantization()
-	for index < len(text) {
-		codePoint, runeSize := utf8.DecodeRuneInString(text[index : ])
+	if self.state.textDirection == LeftToRight {
+		return self.fractMeasureWrapLTR(text, widthLimit)
+	} else {
+		return self.fractMeasureWrapRTL(text, widthLimit)
+	}
+}
 
-		// --- line break case ---
-		if codePoint == '\n' {
-			if position.X > actualMaxWidth { actualMaxWidth = position.X }
+// NOTICE: the four functions below are all the same code, with only different
+//         helperMeasure* functions. One could argue I should be passing a
+//         function directly. Think about it as generics by hand if you want.
+//         The helper functions can be found at renderer_measure_helpers.go.
 
-			// move pen position to next line
-			lineBreakNth = maxInt(1, lineBreakNth + 1)
-			position.X = 0
-			position.Y += self.getOpLineAdvance(lineBreakNth)
-			position.Y  = position.Y.QuantizeUp(vertQuant)
+// Preconditions: non-nil font and sizer, non-empty text.
+func (self *Renderer) fractMeasureLTR(text string) fract.Rect {
+	var iterator ltrStringIterator
+	var lastRune rune
+	var lineBreakNth int = -1
+	var width, height, lineWidth fract.Unit
+	var lineBreaksOnly bool = true
+	vertQuant := fract.Unit(self.state.vertQuantization)
 
-			// keep going
-			index += runeSize
-			lastSafeX = 0
-			lastSafeIndex = index
-			lineStartIndex = index
-			continue
-		}
-
-		// --- regular character case ---
-
-		// apply line height if first time hitting a non line break
-		if !hasLineHeight {
-			position.Y += self.getOpLineHeight()
-			position.Y  = position.Y.QuantizeUp(vertQuant)
-			hasLineHeight = true
-		}
-
-		// memorize current x as it may be needed later in some cases
-		memoX := position.X
-
-		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
-		
-		// apply kerning unless coming from line break
-		if lineBreakNth != 0 {
+	for { // measure text line by line
+		iterator, lineWidth, _, lastRune = self.helperMeasureLineLTR(iterator, text)
+		if lineWidth > 0 {
+			if lineWidth > width { width = lineWidth }
+			lineBreaksOnly = false
 			lineBreakNth = 0
-		} else {
-			position.X += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-			position.X  = position.X.QuantizeUp(horzQuant) // quantize
 		}
+		if lastRune == -1 { break }
+		lineBreakNth = maxInt(1, lineBreakNth + 1)
+		height = (height + self.getOpLineAdvance(lineBreakNth)).QuantizeUp(vertQuant)
+	}
+	
+	if !lineBreaksOnly { height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant) }
+	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	return fract.Rect{ Max: fract.UnitsToPoint(width, height) }
+}
 
-		// advance
-		position.X += self.getOpAdvance(currGlyphIndex)
+// Preconditions: non-nil font and sizer, non-empty text.
+func (self *Renderer) fractMeasureRTL(text string) fract.Rect {
+	var iterator ltrStringIterator
+	var lastRune rune
+	var lineBreakNth int = -1
+	var width, height, lineWidth fract.Unit
+	var lineBreaksOnly bool = true
+	vertQuant := fract.Unit(self.state.vertQuantization)
 
-		// --- operation logic breakdown ---
-		// if the glyph fits in the line or is the first in the line, we advance.
-		// otherwise, if it's a space, we can discard it and jump to the next line.
-		// if it's part of the first word, we use the memorized X and force a jump
-		// to the next line too.
-
-		if position.X <= widthLimit { // glyph fits in the line
-			if codePoint == ' ' {
-				lastSafeIndex = index + 1
-				lastSafeX = memoX
-			}
-		} else { // glyph doesn't fit in the line
-			var wrapLineX fract.Unit
-			if index == lineStartIndex { // doesn't fit but it's first char, so force it anyway
-				wrapLineX = position.X
-			} else if codePoint == ' ' { // we can discard space before wrapping
-				wrapLineX = memoX
-			} else if lastSafeIndex == lineStartIndex { // still on first word, force take up to previous char
-				wrapLineX = memoX
-			} else { // no fit, roll back
-				position.X = lastSafeX
-				index = lastSafeIndex
-				continue
-			}
-
-			// line wrapping case
-			if wrapLineX > actualMaxWidth { actualMaxWidth = wrapLineX }
-			position.Y += self.getOpLineHeight()
-			position.Y  = position.Y.QuantizeUp(vertQuant)
-			position.X = 0
-			lastSafeIndex  = index + runeSize
-			lineStartIndex = lastSafeIndex
+	for { // measure text line by line
+		iterator, lineWidth, _, lastRune = self.helperMeasureLineReverseLTR(iterator, text)
+		if lineWidth > 0 {
+			if lineWidth > width { width = lineWidth }
+			lineBreaksOnly = false
+			lineBreakNth = 0
 		}
-		
-		// update tracking variables
-		prevGlyphIndex = currGlyphIndex
-		index += runeSize
+		if lastRune == -1 { break }
+		lineBreakNth = maxInt(1, lineBreakNth + 1)
+		height = (height + self.getOpLineAdvance(lineBreakNth)).QuantizeUp(vertQuant)
 	}
+	
+	if !lineBreaksOnly { height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant) }
+	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	return fract.Rect{ Max: fract.UnitsToPoint(width, height) }
+}
 
-	// compare x for the last line
-	if position.X > actualMaxWidth {
-		actualMaxWidth = position.X
+// Preconditions: non-nil font and sizer, non-empty text.
+func (self *Renderer) fractMeasureWrapLTR(text string, widthLimit fract.Unit) fract.Rect {
+	var iterator ltrStringIterator
+	var lastRune rune
+	var lineBreakNth int = -1
+	var width, height, lineWidth fract.Unit
+	var lineBreaksOnly bool = true
+	vertQuant := fract.Unit(self.state.vertQuantization)
+
+	for { // measure text line by line
+		iterator, lineWidth, _, lastRune = self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
+		if lineWidth > 0 {
+			if lineWidth > width { width = lineWidth }
+			lineBreaksOnly = false
+			lineBreakNth = 0
+		}
+		if lastRune == -1 { break }
+		lineBreakNth = maxInt(1, lineBreakNth + 1)
+		height = (height + self.getOpLineAdvance(lineBreakNth)).QuantizeUp(vertQuant)
 	}
+	
+	if !lineBreaksOnly { height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant) }
+	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	return fract.Rect{ Max: fract.UnitsToPoint(width, height) }
+}
 
-	// quantize result (y is already necessarily quantized)
-	position.X = actualMaxWidth.QuantizeUp(horzQuant)
+// failing with qt = 64, align = (Baseline | Left), dir = RightToLeft
+// Preconditions: non-nil font and sizer, non-empty text.
+func (self *Renderer) fractMeasureWrapRTL(text string, widthLimit fract.Unit) fract.Rect {
+	var iterator ltrStringIterator
+	var lastRune rune
+	var lineBreakNth int = -1
+	var width, height, lineWidth fract.Unit
+	var lineBreaksOnly bool = true
+	vertQuant := fract.Unit(self.state.vertQuantization)
 
-	// return result
-	return fract.Rect{ Min: fract.Point{}, Max: position }
+	for { // measure text line by line
+		iterator, lineWidth, _, lastRune = self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
+		if lineWidth > 0 {
+			if lineWidth > width { width = lineWidth }
+			lineBreaksOnly = false
+			lineBreakNth = 0
+		}
+		if lastRune == -1 { break }
+		lineBreakNth = maxInt(1, lineBreakNth + 1)
+		height = (height + self.getOpLineAdvance(lineBreakNth)).QuantizeUp(vertQuant)
+	}
+	
+	if !lineBreaksOnly { height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant) }
+	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	return fract.Rect{ Max: fract.UnitsToPoint(width, height) }
 }

@@ -1,6 +1,6 @@
 package etxt
 
-import "unicode/utf8"
+//import "unicode/utf8"
 
 import "golang.org/x/image/font/sfnt"
 
@@ -26,7 +26,6 @@ func (self *Renderer) DrawWithWrap(target TargetImage, text string, x, y, widthL
 func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fract.Unit, widthLimit fract.Unit) {
 	// return directly on superfluous invocations
 	if text == "" { return }
-
 	bounds := target.Bounds()
 	if bounds.Empty() { return }
 	
@@ -38,62 +37,41 @@ func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fr
 	
 	// adjust Y position
 	horzQuant, vertQuant := self.fractGetQuantization()
-	ascent := self.state.fontSizer.Ascent(self.state.activeFont, &self.buffer, self.state.scaledSize)
+	lineHeight := self.getOpLineHeight()
 	vertAlign := self.state.align.Vert()
 	switch vertAlign {
 	case Top:
-		y = (y + ascent).QuantizeUp(vertQuant)
+		y = (y + self.getOpAscent()).QuantizeUp(vertQuant)
 	case Midline:
 		xheight := self.getSlowOpXHeight()
 		y = (y + xheight).QuantizeUp(vertQuant)
 	case VertCenter:
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
-		y = (y + ascent - (height >> 1)).QuantizeUp(vertQuant)
+		y = (y + self.getOpAscent() - (height >> 1)).QuantizeUp(vertQuant)
 	case Baseline:
 		y = y.QuantizeUp(vertQuant)
 	case LastBaseline, LastMidline:
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
-		lineHeight := self.getOpLineHeight().QuantizeUp(vertQuant)
-		if height >= lineHeight { height -= lineHeight }
-		y = (y - height).QuantizeUp(vertQuant)
+		qtLineHeight := lineHeight.QuantizeUp(vertQuant)
+		if height >= qtLineHeight { height -= qtLineHeight }
+		y -= height
 		if vertAlign == LastMidline {
 			y += self.getSlowOpXHeight()
 		}
+		y = y.QuantizeUp(vertQuant)
 	case Bottom:
-		height := self.fractMeasureHeight(text)
-		y = (y + ascent - height).QuantizeUp(vertQuant)
+		height := self.helperMeasureHeight(text)
+		y = (y + self.getOpAscent() - height).QuantizeUp(vertQuant)
 	default:
 		panic(vertAlign)
 	}
 
 	// skip non-visible portions of the text in the target
-	minBaselineY := fract.FromInt(bounds.Min.Y) - ascent
-	maxBaselineY := fract.FromInt(bounds.Max.Y) + ascent
-	var lineBreakNth int = -1
-	if y < minBaselineY {
-		byteCount := 0
-		iterator := newStrIterator(text, false)
-		for {
-			_, runeCount, lineBreak, eot := self.measureWrapLine(iterator, widthLimit)
-			for runeCount > 0 {
-				codePoint := iterator.Next()
-				byteCount += utf8.RuneLen(codePoint)
-			}
-			if lineBreak {
-				_ = iterator.Next()
-				byteCount += 1
-				lineBreakNth = maxInt(1, lineBreakNth + 1)
-			} else {
-				lineBreakNth = 0
-			}
-			if eot { return }
-			y += self.getOpLineAdvance(lineBreakNth)
-			if y >= minBaselineY { break }
-		}
-		text = text[byteCount : ]
-	}
+	minBaselineY := fract.FromInt(bounds.Min.Y) - lineHeight
+	maxBaselineY := fract.FromInt(bounds.Max.Y) + lineHeight
+	var lineBreakNth int
+	text, lineBreakNth = self.trimNonVisibleWithWrap(text, widthLimit, y, minBaselineY)
 	if text == "" { return }
-	
 
 	// subdelegate to the relevant function
 	x = x.QuantizeUp(horzQuant)
@@ -108,6 +86,43 @@ func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fr
 		panic(self.state.align.Horz())
 	}
 }
+
+// y must be quantized, min baseline not
+func (self *Renderer) trimNonVisibleWithWrap(text string, widthLimit, y, minBaselineY fract.Unit) (string, int) {
+	return text, -1
+	// if y >= minBaselineY { return text, -1 }
+	// if self.state.textDirection == LeftToRight {
+	// 	return self.trimNonVisibleWithWrapLTR(text, widthLimit, y, minBaselineY)
+	// } else { // assume textDirection == RightToLeft
+	// 	return self.trimNonVisibleWithWrapRTL(text, widthLimit, y, minBaselineY)
+	// }
+}
+
+// func (self *Renderer) trimNonVisibleWithWrapLTR(text string, widthLimit, y, minBaselineY fract.Unit) (string, int) {
+// 	var lineBreakNth int = -1
+	
+// 	byteCount := 0
+// 	var iterator ltrStringIterator
+// 	for {
+// 		_, runeCount, lineBreak, eot := self.measureWrapLineLTR(iterator, widthLimit)
+// 		self.trimSkip()
+// 		for runeCount > 0 {
+// 			codePoint := iterator.Next(text)
+// 			byteCount += utf8.RuneLen(codePoint)
+// 		}
+// 		if lineBreak {
+// 			_ = iterator.Next(text)
+// 			byteCount += 1
+// 			lineBreakNth = maxInt(1, lineBreakNth + 1)
+// 		} else {
+// 			lineBreakNth = 0
+// 		}
+// 		if eot { return }
+// 		y += self.getOpLineAdvance(lineBreakNth)
+// 		if y >= minBaselineY { break }
+// 	}
+// 	return text[byteCount : ], lineBreakNth
+// }
 
 // Precondition: x and y are quantized.
 func (self *Renderer) fractDrawWithWrapLeft(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
@@ -193,87 +208,61 @@ func (self *Renderer) fractDrawWithWrapCenter(target TargetImage, text string, l
 // may require actual length and so on. Position must be
 // passed already quantized if necessary.
 func (self *Renderer) measureWrapLine(iterator strIterator, widthLimit fract.Unit) (fract.Unit, int, bool, bool) {
+	// TODO: maybe I should be using different iterators, not a chunky strIterator, and maybe I should
+	//       be using negative values to find the RTL size. hmmm...
+	if self.state.textDirection == LeftToRight {
+		return self.measureWrapLineLTR(iterator, widthLimit)
+	} else { // assume self.state.textDirection == RightToLeft
+		return self.measureWrapLineRTL(iterator, widthLimit)
+	}
+}
+
+func (self *Renderer) measureWrapLineLTR(iterator strIterator, widthLimit fract.Unit) (fract.Unit, int, bool, bool) {
+	panic("unimplemented")
+}
+
+func (self *Renderer) measureWrapLineRTL(iterator strIterator, widthLimit fract.Unit) (fract.Unit, int, bool, bool)  {
 	var width, x fract.Unit
 	var prevGlyphIndex sfnt.GlyphIndex
 	var nextCount int
 	var lastSafeCount int
 	var lineStart bool = true
 
-	// TODO: yeah, better just split all the cases into measureWrapLineLTR and so on
-	//       like on regular draws, and have fractDrawWrapLeftLTR, fractDrawWrapLeftRTL, etc.
 	horzQuant := fract.Unit(self.state.horzQuantization)
-	if self.state.textDirection == LeftToRight {
-		for {
-			codePoint := iterator.Next()
-			if codePoint == -1 { return x, nextCount, false, true }
-			nextCount += 1
+	for {
+		codePoint := iterator.Next()
+		if codePoint == -1 { return x, nextCount, false, true }
+		nextCount += 1
 
-			if codePoint == '\n' { return x, nextCount, true, false }
-			if codePoint == ' ' { lastSafeCount = nextCount }
+		if codePoint == '\n' { return x, nextCount, true, false }
+		if codePoint == ' ' { lastSafeCount = nextCount }
 
-			// get glyph index
-			currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+		// get glyph index
+		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
 
-			// apply kerning unless at line start
-			if lineStart {
-				lineStart = false
-			} else {
-				x += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-				x = x.QuantizeUp(horzQuant)
-			}
+		// advance
+		x += self.getOpAdvance(currGlyphIndex)
 
-			// advance
-			x += self.getOpAdvance(currGlyphIndex)
-
-			// stop if outside wrapLimit
-			if x > widthLimit {
-				if lastSafeCount == 0 {
-					return width, maxInt(nextCount - 1, 1), false, false
-				} else {
-					return width, lastSafeCount, false, false
-				}
-			}
-			
-			// update tracking variables
-			width = x
-			prevGlyphIndex = currGlyphIndex
+		// apply kerning unless at line start
+		if lineStart {
+			lineStart = false
+		} else {
+			x += self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
+			x = x.QuantizeUp(horzQuant)
 		}
-	} else { // assume self.state.textDirection == RightToLeft
-		for {
-			codePoint := iterator.Next()
-			if codePoint == -1 { return x, nextCount, false, true }
-			nextCount += 1
 
-			if codePoint == '\n' { return x, nextCount, true, false }
-			if codePoint == ' ' { lastSafeCount = nextCount }
-
-			// get glyph index
-			currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
-
-			// advance
-			x += self.getOpAdvance(currGlyphIndex)
-
-			// apply kerning unless at line start
-			if lineStart {
-				lineStart = false
+		// stop if outside wrapLimit
+		if x > widthLimit {
+			if lastSafeCount == 0 {
+				return width, maxInt(nextCount - 1, 1), false, false
 			} else {
-				x += self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
-				x = x.QuantizeUp(horzQuant)
+				return width, lastSafeCount, false, false
 			}
-
-			// stop if outside wrapLimit
-			if x > widthLimit {
-				if lastSafeCount == 0 {
-					return width, maxInt(nextCount - 1, 1), false, false
-				} else {
-					return width, lastSafeCount, false, false
-				}
-			}
-			
-			// update tracking variables
-			width = x
-			prevGlyphIndex = currGlyphIndex
 		}
+		
+		// update tracking variables
+		width = x
+		prevGlyphIndex = currGlyphIndex
 	}
 }
 
