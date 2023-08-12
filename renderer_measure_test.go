@@ -1,7 +1,5 @@
 package etxt
 
-import "fmt"
-
 import "testing"
 
 import "github.com/tinne26/etxt/fract"
@@ -26,18 +24,51 @@ func TestMeasureWithWrap(t *testing.T) {
 	renderer.Utils().SetCache8MiB()
 
 	testMeasureBasics(t, renderer, func(r *Renderer, str string) fract.Rect {
-		fmt.Printf("processing: '%s'\n", str)
 		return r.MeasureWithWrap(str, 9999)
 	})
+
+	// test wrapping behaviors
+	for _, qt := range []fract.Unit{ QtFull, QtHalf, Qt4th, QtNone } {
+		for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {
+			for _, dir := range []Direction{ LeftToRight, RightToLeft } {
+				// configure renderer with current params
+				// fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
+				renderer.Fract().SetHorzQuantization(qt)
+				renderer.SetAlign(align)
+				renderer.Complex().SetDirection(dir)
+
+				r1 := renderer.Measure("xyz")
+				r2 := renderer.MeasureWithWrap("xyz k", r1.Width().ToIntCeil())
+				if r2.Width() > r1.Width() { t.Fatal("expected wrap") }
+				if r2.Height() <= r1.Height() { t.Fatal("expected wrap") }
+
+				lh  := renderer.Measure("\n").Height()
+				lhw := renderer.MeasureWithWrap("\n", 0).Height()
+				if lhw != lh { t.Fatal("line height mismatch") }
+				wd := renderer.Measure(".").Width()
+				r3 := renderer.MeasureWithWrap(".", 0)
+				if r3.Height() != lh { t.Fatalf("expected height (%d) to match line height (%d)", r3.Height(), lh) }
+				if r3.Width() != wd { t.Fatalf("expected width = %d, got %d", wd, r3.Width()) }
+
+				hr := renderer.Measure("a\n").Height()
+				hc := renderer.MeasureWithWrap("a\n", 0).Height()
+				if hr != hc { t.Fatalf("expected wrap height (%d) to match normal height (%d)", hc, hr) }
+
+				r1 = renderer.Measure("xyz")
+				r2 = renderer.MeasureWithWrap("xyzk", r1.Width().ToIntCeil())
+				if r2.Height() != hr { t.Fatal("expected wrap") }
+				if r2.Width() != r1.Width() { t.Fatalf("%d, %d", r2.Width(), r1.Width()) }
+			}
+		}
+	}
 }
 
 func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, string) fract.Rect) {
 	for _, qt := range []fract.Unit{ QtFull, QtHalf, Qt4th, QtNone } {
 		for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {
 			for _, dir := range []Direction{ LeftToRight, RightToLeft } {
-				fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
-
 				// configure renderer with current params
+				// fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
 				renderer.Fract().SetHorzQuantization(qt)
 				renderer.SetAlign(align)
 				renderer.Complex().SetDirection(dir)

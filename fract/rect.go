@@ -49,8 +49,22 @@ func (self Rect) IntHeight() int {
 	return self.Height().ToIntCeil()
 }
 
+// Equivalent to (Rect.Width(), Rect.Height()).
+func (self Rect) Size() (width, height Unit) {
+	return self.Width(), self.Height()
+}
+
+// Equivalent to (Rect.IntWidth(), Rect.IntHeight()).
+func (self Rect) IntSize() (width, height int) {
+	return self.IntWidth(), self.IntHeight()
+}
+
 func (self Rect) IntOrigin() (int, int) {
 	return self.Min.X.ToIntFloor(), self.Min.Y.ToIntFloor()
+}
+
+func (self Rect) HasZeroOrigin() bool {
+	return self.Min.X == 0 && self.Min.Y == 0
 }
 
 func (self Rect) Empty() bool {

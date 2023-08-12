@@ -97,7 +97,7 @@ func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, te
 	}
 }
 
-// returns the width quantized, without accounting for final wrapped spaces.
+// returns the width unquantized, without accounting for final wrapped spaces.
 func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit) (ltrStringIterator, fract.Unit, int, rune) {
 	var width, x fract.Unit
 	var prevGlyphIndex sfnt.GlyphIndex
@@ -127,12 +127,20 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 		// stop if outside wrapLimit
 		runeCount += 1
 		if codePoint == ' ' { lastSafeCount = runeCount }
-		if x > widthLimit {
+		if x > widthLimit && x.QuantizeUp(horzQuant) > widthLimit {
 			if lastSafeCount == 0 { // special case, show as much of first word as possible
-				return iterator, width, maxInt(runeCount - 1, 1), codePoint
+				if runeCount == 1 {
+					next := iterator.PeekNext(text)
+					if next == -1 || next == '\n' { codePoint = next }
+					if next == '\n' { iterator.Next(text) }
+					return iterator, x, 1, codePoint
+				} else {
+					if codePoint != ' ' { iterator.Unroll(codePoint) }
+					return iterator, width, runeCount - 1, codePoint
+				}
 			} else {
 				if codePoint != ' ' { iterator.Unroll(codePoint) }
-				return iterator, width, lastSafeCount, codePoint
+				return iterator, width.QuantizeUp(horzQuant), lastSafeCount, codePoint
 			}
 		}
 		
@@ -174,9 +182,17 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 		// stop if outside wrapLimit
 		runeCount += 1
 		if codePoint == ' ' { lastSafeCount = runeCount }
-		if x < -widthLimit {
+		if x < -widthLimit && x.QuantizeUp(horzQuant) < -widthLimit {
 			if lastSafeCount == 0 { // special case, show as much of first word as possible
-				return iterator, -width, maxInt(runeCount - 1, 1), codePoint
+				if runeCount == 1 {
+					next := iterator.PeekNext(text)
+					if next == -1 || next == '\n' { codePoint = next }
+					if next == '\n' { iterator.Next(text) }
+					return iterator, -x, 1, codePoint
+				} else {
+					if codePoint != ' ' { iterator.Unroll(codePoint) }
+					return iterator, -width, runeCount - 1, codePoint
+				}
 			} else {
 				if codePoint != ' ' { iterator.Unroll(codePoint) }
 				return iterator, -width, lastSafeCount, codePoint

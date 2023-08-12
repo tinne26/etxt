@@ -27,8 +27,15 @@ func (self *Renderer) Measure(text string) fract.Rect {
 // multiplied by the renderer's scale factor.
 //
 // The returned rect dimensions are always quantized, but the width
-// doesn't take into account final spaces in the wrapped lines.
+// doesn't take into account final spaces in the wrapped lines. Notice
+// that the returned rect's minimum width may exceed widthLimit if
+// the widthLimit is very low and there's some character in the text
+// that exceeds it (a single character can't be split into multiple lines).
 func (self *Renderer) MeasureWithWrap(text string, widthLimit int) fract.Rect {
+	// TODO: the behavior for spaces at the end of the line without any word
+	//       afterwards (EOT or line break) is not properly defined. we may
+	//       want to improve the code and force it to consider those spaces
+	//       as non-wrapping. Could use PeekNext().
 	if widthLimit > fract.MaxInt { panic("widthLimit too big, must be <= fract.MaxInt") }
 	return self.fractMeasureWithWrap(text, fract.FromInt(widthLimit))
 }
