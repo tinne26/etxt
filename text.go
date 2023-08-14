@@ -12,12 +12,23 @@ import "github.com/tinne26/etxt/fract"
 //       (leaving them active and not clearing them before the end
 //       of the Text) is ok, and it won't have any nasty side effects.
 
+// TODO: about text selection and cursor. there are multiple ideas:
+//       - handle cursor position automatically and offer callbacks
+//         for custom drawing and styling.
+//       - offer a low level function for finding the cursor position
+//         in a given text (with specific align, location and so on).
+//         problem is formatting that later (you kinda have to rebuild
+//         the text data, unless we provide a new model for separate
+//         index triggered special ops (which could be interesting,
+//         actually... may have to consider this more formally)).
+
 // special codes:
 // - \x1F : control code, followed by more special values
 // - \x00 : after control code, starts glyph run. followed by uint16 glyph run length.
 // - \x01 : horz pad, no draw, followed by fract.Unit advance
 // - \x02 : custom graphic, +fract.Unit, uint16 for custom data and draw func id
-// - \x03 : directive to set text background, +fract.Unit (pad), uint16 data and draw func id
+// - \x03 : directive to set text background (e.g. text highlights), +fract.Unit (pad),
+//          uint16 data and draw func id
 // - \x04 : directive to set text foreground, +fract.Unit (pad), uint16 data and draw func id
 // - \x05 : directive to set the text color as RGBA.
 // - \x06 : directive to change the active font index.

@@ -1,5 +1,5 @@
 package etxt
-
+import "fmt"
 import "testing"
 
 import "github.com/tinne26/etxt/fract"
@@ -32,7 +32,7 @@ func TestMeasureWithWrap(t *testing.T) {
 		for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {
 			for _, dir := range []Direction{ LeftToRight, RightToLeft } {
 				// configure renderer with current params
-				// fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
+				fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
 				renderer.Fract().SetHorzQuantization(qt)
 				renderer.SetAlign(align)
 				renderer.Complex().SetDirection(dir)
@@ -58,6 +58,13 @@ func TestMeasureWithWrap(t *testing.T) {
 				r2 = renderer.MeasureWithWrap("xyzk", r1.Width().ToIntCeil())
 				if r2.Height() != hr { t.Fatal("expected wrap") }
 				if r2.Width() != r1.Width() { t.Fatalf("%d, %d", r2.Width(), r1.Width()) }
+
+				r1 = renderer.Measure("hello world")
+				r2 = renderer.MeasureWithWrap("hello world hello world hello world\ngoodbye", r1.Width().ToIntCeil())
+				if r1.Width() != r2.Width() { t.Fatalf("expected %d, got %d", r1.Width(), r2.Width()) }
+				if r2.Height() != renderer.Measure("hello world\nhello world\nhello world\ngoodbye").Height() {
+					t.Fatalf("unexpected height")
+				}
 			}
 		}
 	}

@@ -4,17 +4,6 @@ import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
 
-func maxInt(a, b int) int {
-	if a >= b { return a }
-	return b
-}
-
-// TODO: LTR and RTL are not really saying enough. If you do ltr processing
-//       on ltr iterator, you have ltr. if you do rtl processing on a ltr
-//       iterator, you are doing rtl processing. etc. you can always adapt
-//       stuff. we need to know what we are doing. like, RtlOnRtlIter
-//       maybe just RtlReverse and LtrReverse for reversed algorithms?
-
 // Precondition: lineBreakX is properly quantized already. lineBreakNth has been
 // preincremented, for example with drawInternalValues.increaseLineBreakNth()
 func (self *Renderer) advanceLine(position fract.Point, lineBreakX fract.Unit, lineBreakNth int) fract.Point {
@@ -103,7 +92,7 @@ func (self *Renderer) drawGlyphRTL(target TargetImage, position fract.Point, cod
 	return position, iv
 }
 
-func (self *Renderer) drawLineLTR(target TargetImage, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
+func (self *Renderer) helperDrawLineLTR(target TargetImage, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
 	for i := 0; i < runeCount; i++ {
 		codePoint := iterator.Next(text)
 		position, iv = self.drawGlyphLTR(target, position, codePoint, iv)
@@ -111,7 +100,23 @@ func (self *Renderer) drawLineLTR(target TargetImage, position fract.Point, iv d
 	return position, iv, iterator
 }
 
-func (self *Renderer) drawLineRTL(target TargetImage, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
+func (self *Renderer) helperDrawLineReverseLTR(target TargetImage, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
+	for i := 0; i < runeCount; i++ {
+		codePoint := iterator.Next(text)
+		position, iv = self.drawGlyphRTL(target, position, codePoint, iv)
+	}
+	return position, iv, iterator
+}
+
+func (self *Renderer) helperDrawLineReverseRTL(target TargetImage, position fract.Point, iv drawInternalValues, iterator rtlStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, rtlStringIterator) {
+	for i := 0; i < runeCount; i++ {
+		codePoint := iterator.Next(text)
+		position, iv = self.drawGlyphLTR(target, position, codePoint, iv)
+	}
+	return position, iv, iterator
+}
+
+func (self *Renderer) helperDrawLineRTL(target TargetImage, position fract.Point, iv drawInternalValues, iterator rtlStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, rtlStringIterator) {
 	for i := 0; i < runeCount; i++ {
 		codePoint := iterator.Next(text)
 		position, iv = self.drawGlyphRTL(target, position, codePoint, iv)

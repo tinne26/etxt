@@ -99,10 +99,10 @@ func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, te
 
 // returns the width unquantized, without accounting for final wrapped spaces.
 func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit) (ltrStringIterator, fract.Unit, int, rune) {
-	var width, x fract.Unit
+	var x, lastSafeWidth fract.Unit
+	var runeCount, lastSafeCount int
+	var safeIterator ltrStringIterator
 	var prevGlyphIndex sfnt.GlyphIndex
-	var runeCount int
-	var lastSafeCount int
 
 	horzQuant := fract.Unit(self.state.horzQuantization)
 	for {
@@ -114,6 +114,7 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
 
 		// apply kerning unless at line start
+		memoX := x
 		if runeCount > 0 {
 			x += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
 			x = x.QuantizeUp(horzQuant)
@@ -126,8 +127,15 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 
 		// stop if outside wrapLimit
 		runeCount += 1
-		if codePoint == ' ' { lastSafeCount = runeCount }
-		if x > widthLimit && x.QuantizeUp(horzQuant) > widthLimit {
+		if codePoint == ' ' {
+			lastSafeCount = runeCount
+			lastSafeWidth = memoX
+			safeIterator = iterator
+		}
+		if x > widthLimit && x.QuantizeUp(horzQuant) > widthLimit { // *
+			// * the correctness of the quantized check is actually debatable, but it 
+			//   does make for better consistency between measure and measureWithWrap,
+			//   which seems more relevant in practical scenarios
 			if lastSafeCount == 0 { // special case, show as much of first word as possible
 				if runeCount == 1 {
 					next := iterator.PeekNext(text)
@@ -136,26 +144,24 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 					return iterator, x, 1, codePoint
 				} else {
 					if codePoint != ' ' { iterator.Unroll(codePoint) }
-					return iterator, width, runeCount - 1, codePoint
+					return iterator, memoX, runeCount - 1, codePoint
 				}
 			} else {
-				if codePoint != ' ' { iterator.Unroll(codePoint) }
-				return iterator, width.QuantizeUp(horzQuant), lastSafeCount, codePoint
+				return safeIterator, lastSafeWidth, lastSafeCount, ' '
 			}
 		}
 		
 		// update loop variables and continue
-		width = x
 		prevGlyphIndex = currGlyphIndex
 	}
 }
 
-// returns the width quantized, without accounting for final wrapped spaces.
+// returns the width unquantized, without accounting for final wrapped spaces.
 func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit) (ltrStringIterator, fract.Unit, int, rune) {
-	var width, x fract.Unit // values will be negative while looping
+	var x, lastSafeWidth fract.Unit // values will be negative while looping
+	var runeCount, lastSafeCount int
+	var safeIterator ltrStringIterator
 	var prevGlyphIndex sfnt.GlyphIndex
-	var runeCount int
-	var lastSafeCount int
 
 	horzQuant := fract.Unit(self.state.horzQuantization)
 	for {
@@ -167,6 +173,7 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
 
 		// advance
+		memoX := x
 		x -= self.getOpAdvance(currGlyphIndex)
 
 		// apply kerning unless at line start
@@ -181,7 +188,11 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 
 		// stop if outside wrapLimit
 		runeCount += 1
-		if codePoint == ' ' { lastSafeCount = runeCount }
+		if codePoint == ' ' {
+			lastSafeCount = runeCount
+			lastSafeWidth = memoX
+			safeIterator = iterator
+		}
 		if x < -widthLimit && x.QuantizeUp(horzQuant) < -widthLimit {
 			if lastSafeCount == 0 { // special case, show as much of first word as possible
 				if runeCount == 1 {
@@ -191,16 +202,132 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 					return iterator, -x, 1, codePoint
 				} else {
 					if codePoint != ' ' { iterator.Unroll(codePoint) }
-					return iterator, -width, runeCount - 1, codePoint
+					return iterator, -memoX, runeCount - 1, codePoint
 				}
 			} else {
-				if codePoint != ' ' { iterator.Unroll(codePoint) }
-				return iterator, -width, lastSafeCount, codePoint
+				return safeIterator, lastSafeWidth, lastSafeCount, ' '
 			}
 		}
 		
 		// update loop variables and continue
-		width = x
+		prevGlyphIndex = currGlyphIndex
+	}
+}
+
+// returns the width unquantized, without accounting for final wrapped spaces.
+func (self *Renderer) helperMeasureWrapLineRTL(iterator rtlStringIterator, text string, widthLimit fract.Unit) (rtlStringIterator, fract.Unit, int, rune) {
+	var x, lastSafeWidth fract.Unit // values will be negative while looping
+	var runeCount, lastSafeCount int
+	var safeIterator rtlStringIterator
+	var prevGlyphIndex sfnt.GlyphIndex
+
+	horzQuant := fract.Unit(self.state.horzQuantization)
+	var memoIterator rtlStringIterator
+	for {
+		memoIterator = iterator
+		codePoint := iterator.Next(text)
+		if codePoint == -1 || codePoint == '\n' { return iterator, -x, runeCount, codePoint }
+		if codePoint == '\n' { return iterator, -x, runeCount, codePoint }
+
+		// get glyph index
+		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+
+		// advance
+		memoX := x
+		x -= self.getOpAdvance(currGlyphIndex)
+
+		// apply kerning unless at line start
+		if runeCount > 0 {
+			x -= self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
+		}
+		
+		// we need to quantize here inconditionally due to the previous advance
+		x = x.QuantizeUp(horzQuant)
+
+		// (here we would draw if we wanted to)
+
+		// stop if outside wrapLimit
+		runeCount += 1
+		if codePoint == ' ' {
+			lastSafeCount = runeCount
+			lastSafeWidth = memoX
+			safeIterator = iterator
+		}
+		if x < -widthLimit && x.QuantizeUp(horzQuant) < -widthLimit {
+			if lastSafeCount == 0 { // special case, show as much of first word as possible
+				if runeCount == 1 {
+					next := iterator.PeekNext(text)
+					if next == -1 || next == '\n' { codePoint = next }
+					if next == '\n' { iterator.Next(text) }
+					return iterator, -x, 1, codePoint
+				} else {
+					if codePoint != ' ' { iterator = memoIterator }
+					return iterator, -memoX, runeCount - 1, codePoint
+				}
+			} else {
+				return safeIterator, lastSafeWidth, lastSafeCount, ' '
+			}
+		}
+		
+		// update loop variables and continue
+		prevGlyphIndex = currGlyphIndex
+	}
+}
+
+// returns the width unquantized, without accounting for final wrapped spaces.
+func (self *Renderer) helperMeasureWrapLineReverseRTL(iterator rtlStringIterator, text string, widthLimit fract.Unit) (rtlStringIterator, fract.Unit, int, rune) {
+	var x, lastSafeWidth fract.Unit
+	var runeCount, lastSafeCount int
+	var safeIterator rtlStringIterator
+	var prevGlyphIndex sfnt.GlyphIndex
+
+	horzQuant := fract.Unit(self.state.horzQuantization)
+	var memoIterator rtlStringIterator
+	for {
+		memoIterator = iterator
+		codePoint := iterator.Next(text)
+		if codePoint == -1 || codePoint == '\n' { return iterator, x, runeCount, codePoint }
+		if codePoint == '\n' { return iterator, x, runeCount, codePoint }
+
+		// get glyph index
+		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+
+		// apply kerning unless at line start
+		memoX := x
+		if runeCount > 0 {
+			x += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
+			x = x.QuantizeUp(horzQuant)
+		}
+
+		// advance
+		x += self.getOpAdvance(currGlyphIndex)
+
+		// (here we would draw if we wanted to)
+
+		// stop if outside wrapLimit
+		runeCount += 1
+		if codePoint == ' ' {
+			lastSafeCount = runeCount
+			lastSafeWidth = memoX
+			safeIterator = iterator
+		}
+		if x > widthLimit && x.QuantizeUp(horzQuant) > widthLimit { // *
+			if lastSafeCount == 0 { // special case, show as much of first word as possible
+				if runeCount == 1 {
+					next := iterator.PeekNext(text)
+					if next == -1 || next == '\n' { codePoint = next }
+					if next == '\n' { iterator.Next(text) }
+					return iterator, x, 1, codePoint
+				} else {
+					if codePoint != ' ' { iterator = memoIterator }
+					return iterator, memoX, runeCount - 1, codePoint
+				}
+			} else {
+				return safeIterator, lastSafeWidth, lastSafeCount, ' '
+			}
+		}
+		
+		// update loop variables and continue
 		prevGlyphIndex = currGlyphIndex
 	}
 }

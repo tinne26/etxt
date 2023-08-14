@@ -2,8 +2,6 @@ package etxt
 
 import "github.com/tinne26/etxt/fract"
 
-// TODO: verify that quantization rounding is ok in both directions.
-
 // Draws the given text with the current configuration (font, size, color,
 // target, etc). The position at which the text will be drawn depends on
 // the given pixel coordinates and the renderer's align (see
@@ -226,8 +224,8 @@ func (self *Renderer) fractDrawCenterLTR(target TargetImage, text string, lineBr
 		
 		_, width, runeCount, _ := self.helperMeasureLineLTR(iterator, text)
 		position.X = x - (width >> 1)
-		iv.prevFractX = position.X.FractShift()
-		_, iv, iterator = self.drawLineLTR(target, position, iv, iterator, text, runeCount)
+		iv.prevFractX = position.X.FractShift() // TODO: is quantization correct here?
+		_, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount)
 	}
 }
 
@@ -258,6 +256,6 @@ func (self *Renderer) fractDrawCenterRTL(target TargetImage, text string, lineBr
 		_, width, runeCount, _ := self.helperMeasureLineReverseLTR(iterator, text)
 		position.X = x + (width >> 1)
 		iv.prevFractX = position.X.FractShift()
-		_, iv, iterator = self.drawLineRTL(target, position, iv, iterator, text, runeCount)
+		_, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount)
 	}
 }

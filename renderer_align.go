@@ -102,6 +102,14 @@ const (
 	LastMidline  Align = 0b0000_1010 // last Midline (if multiple lines) (rarely used)
 	LastBaseline Align = 0b0000_1100 // last Baseline (if multiple lines) (rarely used)
 
+	// TODO: consider CapLine vertical align? I know I'd use 
+	//       it more than midline. It could be Top | Midline.
+	//       But yeah, probably better extend va to 5 bits.
+	//       Regarding LastCapLine... maybe I should leave only
+	//       LastBaseline? It's the only really practical one.
+	//       And it's not tragic because this can be implemented
+	//       easily on the user side too.
+
 	// Full aligns
 	Center Align = HorzCenter | VertCenter
 	

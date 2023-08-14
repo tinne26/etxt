@@ -82,29 +82,35 @@ func (self *RendererComplex) GetFontIndex() FontIndex {
 	return self.state.fontIndex
 }
 
+// Same as [Renderer.Measure](), but expecting a [Text] value instead of a string.
+func (self *RendererComplex) Measure(text Text, x, y int) fract.Rect {
+	panic("unimplemented")
+}
+
 // Same as [Renderer.Draw](), but expecting a [Text] value instead of a string.
 func (self *RendererComplex) Draw(target TargetImage, text Text, x, y int) {
-	self.FractDraw(target, text, fract.FromInt(x), fract.FromInt(y))
+	panic("unimplemented")
+	// (*Renderer)(self).fractTextDraw(target, text, fract.FromInt(x), fract.FromInt(y))
 }
 
 // Same as [RendererFract.Draw](), but expecting a [Text] value instead of a string.
 //
 // This is the fractional version of [RendererComplex.Draw]().
-func (self *RendererComplex) FractDraw(target TargetImage, text Text, x, y fract.Unit) {
-	panic("unimplemented / TODO")
-}
+// func (self *RendererComplex) FractDraw(target TargetImage, text Text, x, y fract.Unit) {
+// 	panic("unimplemented / TODO")
+// }
 
 // Same as [Renderer.DrawWithWrap](), but expecting a [Text] value instead of a string.
-func (self *RendererComplex) DrawWithWrap(target TargetImage, text Text, x, y int, widthLimit int) {
-	self.FractDrawWithWrap(target, text, fract.FromInt(x), fract.FromInt(y), widthLimit)
-}
+// func (self *RendererComplex) DrawWithWrap(target TargetImage, text Text, x, y int, widthLimit int) {
+// 	self.FractDrawWithWrap(target, text, fract.FromInt(x), fract.FromInt(y), widthLimit)
+// }
 
 // Same as [RendererFract.DrawWithWrap](), but expecting a [Text] value instead of a string.
 //
 // This is the fractional version of [RendererComplex.DrawWithWrap]().
-func (self *RendererComplex) FractDrawWithWrap(target TargetImage, text Text, x, y fract.Unit, widthLimit int) {
-	panic("unimplemented / TODO")
-}
+// func (self *RendererComplex) FractDrawWithWrap(target TargetImage, text Text, x, y fract.Unit, widthLimit int) {
+// 	panic("unimplemented / TODO")
+// }
 
 // ---- implementations ----
 
