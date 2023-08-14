@@ -18,7 +18,16 @@ func PointsToRect(min, max Point) Rect {
 	return Rect{ Min: min, Max: max }
 }
 
-// TODO: consider IntsToRect(), ImageRectToRect()?
+func IntsToRect(minX, minY, maxX, maxY int) Rect {
+	return Rect{
+		Min: Point{ X: FromInt(minX), Y: FromInt(minY) },
+		Max: Point{ X: FromInt(maxX), Y: FromInt(maxY) },
+	}
+}
+
+func FromImageRect(rect image.Rectangle) Rect {
+	return IntsToRect(rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
+}
 
 func (self Rect) ImageRect() image.Rectangle {
 	minX, minY, maxX, maxY := self.ToInts()
