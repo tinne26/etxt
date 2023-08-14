@@ -4,13 +4,13 @@ import "os"
 import "log"
 import "fmt"
 import "math"
-import "image"
 import "image/color"
 
 import "github.com/hajimehoshi/ebiten/v2/inpututil"
 import "github.com/hajimehoshi/ebiten/v2"
 
 import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/fract"
 import "github.com/tinne26/etxt/font"
 
 // This example is an interactive demo for testing text aligns.
@@ -87,9 +87,9 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	scale := ebiten.DeviceScaleFactor()
 	w, h := bounds.Dx(), bounds.Dy()
 	canvas.Fill(color.RGBA{ 3, 2, 0, 255 })
-	line := canvas.SubImage(image.Rect(self.x, 0, self.x + 1, h)).(*ebiten.Image)
+	line := fract.IntsToRect(self.x, 0, self.x + 1, h).Clip(canvas)
 	line.Fill(color.RGBA{ 32, 32, 18, 255 })
-	line  = canvas.SubImage(image.Rect(0, self.y, w, self.y + 1)).(*ebiten.Image)
+	line  = fract.IntsToRect(0, self.y, w, self.y + 1).Clip(canvas)
 	line.Fill(color.RGBA{ 32, 32, 18, 255 })
 
 	// draw helper text

@@ -7,6 +7,7 @@ import "math"
 import "image/color"
 
 import "github.com/hajimehoshi/ebiten/v2"
+import "github.com/hajimehoshi/ebiten/v2/inpututil"
 
 import "github.com/tinne26/etxt"
 import "github.com/tinne26/etxt/font"
@@ -19,8 +20,8 @@ import "github.com/tinne26/etxt/font"
 
 type Game struct {
 	text *etxt.Renderer
-	sinceLastSpecialKey int // to control a repeat effect for backspace and enter
 	content []rune // not very efficient, but AppendInputChars uses runes
+	wrapMode bool
 }
 
 func (self *Game) Layout(winWidth, winHeight int) (int, int) {
@@ -32,47 +33,63 @@ func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 }
 
 func (self *Game) Update() error {
-	backspacePressed := ebiten.IsKeyPressed(ebiten.KeyBackspace)
-	enterPressed     := ebiten.IsKeyPressed(ebiten.KeyEnter)
+	var keyRepeat = func(key ebiten.Key) bool {
+		ticks := inpututil.KeyPressDuration(key)
+		return ticks == 1 || (ticks > 14 && (ticks - 14) % 9 == 0)
+	}
 
-	if backspacePressed && self.sinceLastSpecialKey >= 7 && len(self.content) >= 1 {
-		self.sinceLastSpecialKey = 0
+	if inpututil.IsKeyJustPressed(ebiten.KeyControlLeft) || inpututil.IsKeyJustPressed(ebiten.KeyControlRight) {
+		self.wrapMode = !self.wrapMode
+	}
+
+	if keyRepeat(ebiten.KeyBackspace) && len(self.content) >= 1 {
 		self.content = self.content[0 : len(self.content) - 1]
-	} else if enterPressed && self.sinceLastSpecialKey >= 20 {
-		self.sinceLastSpecialKey = 0
+	} else if keyRepeat(ebiten.KeyEnter) {
 		self.content = append(self.content, '\n')
 	} else {
-		self.sinceLastSpecialKey += 1
 		self.content = ebiten.AppendInputChars(self.content)
 	}
 
 	return nil
 }
 
-func (self *Game) Draw(screen *ebiten.Image) {
+func (self *Game) Draw(canvas *ebiten.Image) {
 	// dark background
-	screen.Fill(color.RGBA{ 2, 1, 0, 255 })
+	canvas.Fill(color.RGBA{ 2, 1, 0, 255 })
 
-	// draw text's area rectangle
-	self.text.SetSize(18) // important for measuring!
-	bounds := screen.Bounds()
+	// get canvas size and basic coords
+	bounds := canvas.Bounds()
 	w, h := bounds.Dx(), bounds.Dy()
-	x, y := h/32, h/32
-	rect := self.text.Measure(string(self.content))
-	rect  = rect.AddInts(x, y)
-	area := screen.SubImage(rect.ImageRect()).(*ebiten.Image)
-	area.Fill(color.RGBA{ 8, 72, 88, 255 })
+	pad := int((ebiten.DeviceScaleFactor()*float64(h))/64)
+	x, y := pad*2, pad*2
+	
+	//  highlight text's area rectangle and draw text
+	areaColor := color.RGBA{ 8, 72, 88, 255 }
+	content := string(self.content)
+	if self.wrapMode { // measure and draw
+		maxLineWidth := w - 2*x
+		textArea := self.text.MeasureWithWrap(content, maxLineWidth)
+		textArea.AddInts(x, y).Clip(canvas).Fill(areaColor)
+		self.text.DrawWithWrap(canvas, content, x, y, maxLineWidth)
+	} else {
+		textArea := self.text.Measure(content)
+		textArea.AddInts(x, y).Clip(canvas).Fill(areaColor)
+		self.text.Draw(canvas, content, x, y)
+	}
 
-	// draw text
-	self.text.SetAlign(etxt.Top | etxt.Left)
-	self.text.Draw(screen, string(self.content), x, y)
-
-	// draw fps and other info for fun
+	// draw instructions, fps and other info for fun
+	self.text.Utils().StoreState()
+	defer self.text.Utils().RestoreState()
 	self.text.SetSize(14)
 	self.text.SetAlign(etxt.Right | etxt.Baseline)
-	info := fmt.Sprintf("%d glyphs - %.2fFPS", len(self.content), ebiten.ActualFPS())
-	pad := int((ebiten.DeviceScaleFactor()*float64(h))/64)
-	self.text.Draw(screen, info, w - pad, h - pad)
+	var info string
+	fps := ebiten.ActualFPS()
+	if self.wrapMode {
+		info = fmt.Sprintf("%d glyphs - %.2fFPS | Line Wrap On [CTRL]", len(self.content), fps)
+	} else {
+		info = fmt.Sprintf("%d glyphs - %.2fFPS | Line Wrap Off [CTRL]", len(self.content), fps)
+	}
+	self.text.Draw(canvas, info, w - pad, h - pad)
 }
 
 func main() {
@@ -93,10 +110,13 @@ func main() {
 	renderer.Utils().SetCache8MiB()
 	renderer.SetColor(color.RGBA{255, 255, 255, 255}) // white
 	renderer.SetFont(sfntFont)
+	renderer.SetSize(18)
+	renderer.SetAlign(etxt.Top | etxt.Left)
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/measure")
 	ebiten.SetWindowSize(640, 480)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	err = ebiten.RunGame(&Game{
 		text: renderer, 
 		content: []rune("Interactive text"),

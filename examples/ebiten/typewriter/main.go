@@ -4,7 +4,6 @@ import "os"
 import "log"
 import "fmt"
 import "math"
-import "image"
 import "image/color"
 import "math/rand"
 import "regexp"
@@ -324,17 +323,17 @@ func (self *Game) Update() error {
 	return nil
 }
 
-func (self *Game) Draw(screen *ebiten.Image) {
+func (self *Game) Draw(canvas *ebiten.Image) {
 	// dark background
-	screen.Fill(color.RGBA{ 0, 0, 20, 255 })
+	canvas.Fill(color.RGBA{ 0, 0, 20, 255 })
 
 	// determine positioning and draw
-	w, h := screen.Size()
+	w, h := canvas.Size()
 	scale := ebiten.DeviceScaleFactor()
 	offset1 := int(16*scale)
 	offset2 := int(32*scale)
-	area := image.Rect(offset1, offset1, w - offset2, h - offset2)
-	self.typewriter.Draw(screen.SubImage(area).(*ebiten.Image))
+	area := fract.IntsToRect(offset1, offset1, w - offset2, h - offset2)
+	self.typewriter.Draw(area.Clip(canvas))
 }
 
 func main() {
