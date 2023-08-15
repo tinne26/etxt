@@ -158,15 +158,12 @@ func (self *Renderer) fractDrawWithWrapLeftLTR(target TargetImage, text string, 
 			position, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount)
 		}
 
-		// advance line unless on last line without line break
-		if lastRune == '\n' || lastRune != -1 {
-			if lastRune == '\n' { _ = iterator.Next(text) }
-			iv.increaseLineBreakNth()
-			position = self.advanceLine(position, startX, iv.lineBreakNth)
-			if position.Y > maxY { break }
-		}
-		if lastRune == -1 { break } // TODO: couldn't this be moved up and the previous condition removed?
-		                            //       like, line breaks and -1 can't happen at the same time.
+		// stop here or advance line
+		if lastRune == -1 { break }
+		if lastRune == '\n' { _ = iterator.Next(text) }
+		iv.increaseLineBreakNth()
+		position = self.advanceLine(position, startX, iv.lineBreakNth)
+		if position.Y > maxY { break }
 	}
 }
 
@@ -189,15 +186,13 @@ func (self *Renderer) fractDrawWithWrapLeftRTL(target TargetImage, text string, 
 		if runeCount > 0 {
 			position, iv, iterator = self.helperDrawLineReverseRTL(target, position, iv, iterator, text, runeCount)
 		}
-
-		// advance line unless on last line without line break
-		if lastRune == '\n' || lastRune != -1 {
-			if lastRune == '\n' { _ = iterator.Next(text) }
-			iv.increaseLineBreakNth()
-			position = self.advanceLine(position, startX, iv.lineBreakNth)
-			if position.Y > maxY { break }
-		}
+		
+		// stop here or advance line
 		if lastRune == -1 { break }
+		if lastRune == '\n' { _ = iterator.Next(text) }
+		iv.increaseLineBreakNth()
+		position = self.advanceLine(position, startX, iv.lineBreakNth)
+		if position.Y > maxY { break }
 	}
 }
 
@@ -221,19 +216,17 @@ func (self *Renderer) fractDrawWithWrapRightLTR(target TargetImage, text string,
 			position, iv, iterator = self.helperDrawLineRTL(target, position, iv, iterator, text, runeCount)
 		}
 
-		// advance line unless on last line without line break
-		if lastRune == '\n' || lastRune != -1 {
-			if lastRune == '\n' { _ = iterator.Next(text) }
-			iv.increaseLineBreakNth()
-			position = self.advanceLine(position, startX, iv.lineBreakNth)
-			if position.Y > maxY { break }
-		}
+		// stop here or advance line
 		if lastRune == -1 { break }
+		if lastRune == '\n' { _ = iterator.Next(text) }
+		iv.increaseLineBreakNth()
+		position = self.advanceLine(position, startX, iv.lineBreakNth)
+		if position.Y > maxY { break }
 	}
 }
 
 // Precondition: x and y are already quantized.
-func (self *Renderer) fractDrawWithWrapRightRTL(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {	
+func (self *Renderer) fractDrawWithWrapRightRTL(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
 	// set up traversal variables
 	var iterator ltrStringIterator
 	var position fract.Point = fract.UnitsToPoint(x, y)
@@ -251,23 +244,67 @@ func (self *Renderer) fractDrawWithWrapRightRTL(target TargetImage, text string,
 			position, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount)
 		}
 
-		// advance line unless on last line without line break
-		if lastRune == '\n' || lastRune != -1 {
-			if lastRune == '\n' { _ = iterator.Next(text) }
-			iv.increaseLineBreakNth()
-			position = self.advanceLine(position, startX, iv.lineBreakNth)
-			if position.Y > maxY { break }
-		}
+		// stop here or advance line
 		if lastRune == -1 { break }
+		if lastRune == '\n' { _ = iterator.Next(text) }
+		iv.increaseLineBreakNth()
+		position = self.advanceLine(position, startX, iv.lineBreakNth)
+		if position.Y > maxY { break }
 	}
 }
 
 // Precondition: y is already quantized, x is not (for better precision).
 func (self *Renderer) fractDrawWithWrapCenterLTR(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
-	panic("unimplemented")
+	// set up traversal variables
+	var iterator ltrStringIterator
+	var position fract.Point = fract.UnitsToPoint(x, y)
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(position)
+	}
+
+	var iv drawInternalValues
+	iv.prevFractX = x.FractShift()
+	iv.lineBreakNth = lineBreakNth
+	for { // for each wrap line
+		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
+		if runeCount > 0 {
+			position.X = x - (lineWidth >> 1)
+			_, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount)
+		}
+
+		// stop here or advance line
+		if lastRune == -1 { break }
+		if lastRune == '\n' { _ = iterator.Next(text) }
+		iv.increaseLineBreakNth()
+		position = self.advanceLine(position, 0, iv.lineBreakNth)
+		if position.Y > maxY { break }
+	}
 }
 
 // Precondition: y is already quantized, x is not (for better precision).
 func (self *Renderer) fractDrawWithWrapCenterRTL(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
-	panic("unimplemented")
+	// set up traversal variables
+	var iterator ltrStringIterator
+	var position fract.Point = fract.UnitsToPoint(x, y)
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(position)
+	}
+
+	var iv drawInternalValues
+	iv.prevFractX = x.FractShift()
+	iv.lineBreakNth = lineBreakNth
+	for { // for each wrap line
+		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
+		if runeCount > 0 {
+			position.X = x + (lineWidth >> 1)
+			position, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount)
+		}
+
+		// stop here or advance line
+		if lastRune == -1 { break }
+		if lastRune == '\n' { _ = iterator.Next(text) }
+		iv.increaseLineBreakNth()
+		position = self.advanceLine(position, 0, iv.lineBreakNth)
+		if position.Y > maxY { break }
+	}
 }

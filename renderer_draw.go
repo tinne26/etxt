@@ -222,9 +222,8 @@ func (self *Renderer) fractDrawCenterLTR(target TargetImage, text string, lineBr
 			continue
 		}
 		
-		_, width, runeCount, _ := self.helperMeasureLineLTR(iterator, text)
-		position.X = x - (width >> 1)
-		iv.prevFractX = position.X.FractShift() // TODO: is quantization correct here?
+		_, lineWidth, runeCount, _ := self.helperMeasureLineLTR(iterator, text)
+		position.X = x - (lineWidth >> 1)
 		_, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount)
 	}
 }
@@ -253,9 +252,8 @@ func (self *Renderer) fractDrawCenterRTL(target TargetImage, text string, lineBr
 			continue
 		}
 		
-		_, width, runeCount, _ := self.helperMeasureLineReverseLTR(iterator, text)
-		position.X = x + (width >> 1)
-		iv.prevFractX = position.X.FractShift()
+		_, lineWidth, runeCount, _ := self.helperMeasureLineReverseLTR(iterator, text)
+		position.X = x + (lineWidth >> 1)
 		_, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount)
 	}
 }
