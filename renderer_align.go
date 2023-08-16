@@ -1,7 +1,7 @@
 package etxt
 
 // Aligns tell a [Renderer] how to interpret the coordinates
-// that some of its methods —like [Renderer.Draw]()— receive.
+// that [Renderer.Draw]() and other methods receive.
 //
 // More concretely: given some text, we have a text box or bounding
 // rectangle that contains it. The text align specifies which part of
@@ -46,11 +46,13 @@ func (self Align) Adjusted(align Align) Align {
 	}
 }
 
-// Returns a textual description of the align in the form
-// "(VertAlign | HorzAlign)". For example: "(Top | Right)",
-// "(VertCenter | HorzCenter)", "(Baseline | Left)", etc.
-// If only one component is defined, only that component
-// will be written.
+// Returns a textual description of the align. For example:
+//   (Top | Right).String() == "(Top | Right)"
+//   (Right | Top).String() == "(Top | Right)"
+//   Center.String() == "(VertCenter | HorzCenter)"
+//   (Baseline | Left).String() == "(Baseline | Left)"
+//   HorzCenter.String() == "(HorzCenter)"
+//   Bottom.String() == "(Bottom)"
 func (self Align) String() string {
 	if self == 0 { return "(ZeroAlign)" }
 	if self.Vert() == 0 { return "(" + self.horzString() + ")" }
@@ -80,10 +82,8 @@ func (self Align) horzString() string {
 	}
 }
 
-// Align constants for renderer operations.
-//
-// Since aligns have both a vertical and a horizontal component,
-// you can use a bitwise OR when setting them, e.g.,
+// Aligns have a vertical and a horizontal component. To set
+// both components at once, you may use a bitwise OR, as in
 // [Renderer.SetAlign](etxt.Left | etxt.Bottom). To retrieve or
 // compare the individual components, avoid bitwise operations
 // and use [Align.Vert]() and [Align.Horz]() instead.

@@ -18,15 +18,15 @@ func (self *Renderer) Utils() *RendererUtils {
 }
 
 // This type exists only for documentation and structuring purposes,
-// acting as a [gateway] to utility [Renderer] functions.
+// acting as a [gateway] to utility functions for a [Renderer].
 //
 // In general, this type is used through method chaining:
 //   renderer.Utils().SetCache8MiB()
 //
 // The focus of this type are non-essential but handy functions
-// that can make it easier to set up the [Renderer] properties.
-// To put an example, most programs on [etxt/examples/ebiten]
-// make use of these.
+// that can make it easier to set up [Renderer] properties or
+// perform certain operations. Most programs on [etxt/examples/ebiten]
+// make use of this.
 //
 // [gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
 // [examples/ebiten]: https://github.com/tinne26/etxt/tree/main/examples/ebiten
@@ -55,7 +55,7 @@ func (self *RendererUtils) GetLineHeight() float64 {
 }
 
 // This function only exists to soothe troubled souls.
-// In practice, there's no rational reason to ever use it.
+// Good reasons to use it in practice may not exist.
 //
 // Sets default values for any uninitialized properties that are
 // required to make the renderer produce visible results, except
@@ -123,7 +123,7 @@ func (self *RendererUtils) SetFontBytes(data []byte) error {
 //  - [Align], color, size, scale, [BlendMode], [FontIndex],
 //    active font, rasterizer, sizer, quantization and
 //    text [Direction].
-// Notably, the custom rendering function, the inactive font set
+// Notably, custom rendering functions, inactive fonts
 // and the cache handler are not stored.
 //
 // For improved safety when storing states, consider looking

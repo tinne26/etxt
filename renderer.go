@@ -49,7 +49,7 @@ type Renderer struct {
 	restorableStates []restorableState
 	
 	cacheHandler cache.GlyphCacheHandler
-	gfxFuncs []func(*Renderer, TargetImage, fract.Rect, uint16)
+	layerFuncs []func(*Renderer, TargetImage, fract.Rect, uint16)
 	customDrawFn func(TargetImage, sfnt.GlyphIndex, fract.Point)
 	fonts []*sfnt.Font
 	buffer sfnt.Buffer
@@ -60,7 +60,7 @@ type Renderer struct {
 // Setting a font through [Renderer.SetFont]() or [RendererUtils.SetFontBytes]()
 // is required before being able to operate with it. It's also heavily
 // recommended to set a cache (none by default) right from the start, for
-// example with [RendererUtils.SetCache8MiB]().
+// example using [RendererUtils.SetCache8MiB]().
 func NewRenderer() *Renderer {
 	// No font sizer change notification required (there's no font yet)
 	return &Renderer{

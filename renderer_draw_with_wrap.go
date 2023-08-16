@@ -3,10 +3,10 @@ package etxt
 import "github.com/tinne26/etxt/fract"
 
 // Same as [Renderer.Draw](), but using a width limit for line wrapping.
-// The line wrapping algorithm is a trivial greedy algorithm using
-// spaces as the only line breaking points.
+// The algorithm is a trivial greedy algorithm that only considers spaces
+// as line wrapping candidates.
 //
-// The widthLimit must must be given in real units, not logical ones.
+// The widthLimit must be given in real units, not logical ones.
 // This means that unlike text sizes, the widthLimit won't be internally
 // multiplied by the renderer's scale factor.
 func (self *Renderer) DrawWithWrap(target TargetImage, text string, x, y, widthLimit int) {

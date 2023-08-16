@@ -3,9 +3,8 @@ package etxt
 import "github.com/tinne26/etxt/fract"
 
 // Draws the given text with the current configuration (font, size, color,
-// target, etc). The position at which the text will be drawn depends on
-// the given pixel coordinates and the renderer's align (see
-// [Renderer.SetAlign]() rules).
+// target, etc). The text drawing position is determined by the given pixel
+// coordinates and the renderer's align (see [Renderer.SetAlign]() rules).
 //
 // Missing glyphs in the current font will cause the renderer to panic.
 // See [RendererGlyph.GetRuneIndex]() for further advice if you need to

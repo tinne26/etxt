@@ -22,7 +22,7 @@ func (self *Renderer) Measure(text string) fract.Rect {
 // Same as [Renderer.Measure](), but using a width limit for line wrapping.
 // Typically used in conjunction with [Renderer.DrawWithWrap]().
 //
-// The widthLimit must must be given in real units, not logical ones.
+// The widthLimit must be given in real units, not logical ones.
 // This means that unlike text sizes, the widthLimit won't be internally
 // multiplied by the renderer's scale factor.
 //

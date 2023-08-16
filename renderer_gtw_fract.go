@@ -15,15 +15,12 @@ func (self *Renderer) Fract() *RendererFract {
 // acting as a [gateway] to operate a [Renderer] with fractional units.
 //
 // Fractional units give us an increased level of precision when
-// drawing or measuring text. This is typically relevant when animating
-// or trying to respect the text flow with the highest precision 
-// possible.
+// drawing or measuring text. The use-cases for this are rather
+// limited; as a rule of thumb, ignore these advanced features
+// unless you find yourself really needing them.
 //
 // In general, this type is used through method chaining:
 //   renderer.Fract().Draw(canvas, text, x, y)
-//
-// The fractional getters and setters can also be useful when saving state
-// of the renderer to be restored later, avoiding floating point conversions.
 //
 // All the fractional operations depend on the [fract.Unit] type, so make
 // sure to check out the [etxt/fract] subpackage if you need more context
@@ -34,40 +31,40 @@ type RendererFract Renderer
 
 // ---- wrapper methods ----
 
-// Fractional version of [Renderer.SetSize]().
+// Fractional and lower level version of [Renderer.SetSize]().
 func (self *RendererFract) SetSize(size fract.Unit) {
 	(*Renderer)(self).fractSetSize(size)
 }
 
-// Fractional version of [Renderer.GetSize]().
+// Fractional and lower level version of [Renderer.GetSize]().
 func (self *RendererFract) GetSize() fract.Unit {
 	return (*Renderer)(self).fractGetSize()
 }
 
-// Returns the scaled text size (logicalSize*scale).
-// 
-// This method is only intended be used when you want to
-// access specific metrics through the renderer's sizer.
-func (self *RendererFract) GetScaledSize() fract.Unit {
-	return self.state.scaledSize
-}
-
-// Same as [Renderer.SetScale](), but avoiding a conversion from float64
-// to [fract.Unit].
+// Fractional and lower level version of [Renderer.SetScale]().
 func (self *RendererFract) SetScale(scale fract.Unit) {
 	(*Renderer)(self).fractSetScale(scale)
 }
 
-// Fractional version of [Renderer.GetScale]().
+// Fractional and lower level version of [Renderer.GetScale]().
 func (self *RendererFract) GetScale() fract.Unit {
 	return (*Renderer)(self).fractGetScale()
+}
+
+// Returns the scaled text size (logicalSize*scale).
+// 
+// This method is exposed mainly for when you want to
+// access specific metrics through the renderer's sizer.
+func (self *RendererFract) GetScaledSize() fract.Unit {
+	return self.state.scaledSize
 }
 
 // Sets the horizontal quantization level to be used on subsequent
 // operations. Valid values are limited to the existing Qt constants
 // (e.g. [QtNone], [QtFull], [QtHalf]).
 //
-// By default, the horizontal quantization is [Qt4th].
+// By default, the horizontal quantization is [Qt4th]. See also
+// [RendererFract.SetVertQuantization]().
 func (self *RendererFract) SetHorzQuantization(horz fract.Unit) {
 	(*Renderer)(self).fractSetHorzQuantization(horz)
 }
@@ -76,13 +73,13 @@ func (self *RendererFract) SetHorzQuantization(horz fract.Unit) {
 // operations. Valid values are limited to the existing Qt constants
 // (e.g. [Qt4th], [Qt8th], [Qt16th]).
 //
-// By default, the vertical quantization is [QtFull].
+// By default, the vertical quantization is [QtFull]. See also
+// [RendererFract.SetHorzQuantization]().
 func (self *RendererFract) SetVertQuantization(horz fract.Unit) {
 	(*Renderer)(self).fractSetVertQuantization(horz)
 }
 
 // Returns the current horizontal and vertical quantization levels.
-// See [RendererFract.SetQuantization]() for more context.
 func (self *RendererFract) GetQuantization() (horz, vert fract.Unit) {
 	return (*Renderer)(self).fractGetQuantization()
 }

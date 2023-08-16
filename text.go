@@ -67,8 +67,12 @@ func NewText() *Text {
 }
 
 type textCancelFormatDirective uint8
-const PLF textCancelFormatDirective = 66
-const CAF textCancelFormatDirective = 67
+
+// Text formatting directives related to [Text.A]().
+const (
+	PLF textCancelFormatDirective = 66
+	CAF textCancelFormatDirective = 67
+)
 
 // Utility method to dynamically add any kind of content or format you
 // want to the Text. It's less type safe and less performant than manually
@@ -83,9 +87,10 @@ func (self *Text) A(args ...any) *Text {
 		case string     : _ = self.Add(typedArg)
 		case []byte     : _ = self.AddUtf8(typedArg)
 		case rune       : _ = self.AddRune(typedArg)
-		case color.RGBA : _ = self.PushColor(typedArg)
 		case FontIndex  : _ = self.PushFont(typedArg)
 		case fract.Unit : _ = self.AddPad(typedArg)
+		case color.Color:
+			_ = self.PushColor(typedArg)
 		case []sfnt.GlyphIndex:
 			_ = self.AddGlyphs(typedArg)
 		case sfnt.GlyphIndex:
@@ -177,7 +182,7 @@ func (self *Text) AddGraphic(gfxId uint8, logicalAdvance fract.Unit, payload uin
 
 // Formatting directive to set a background draw function.
 // To cancel the directive, use [Text.Pop]() or [Text.PopAll]().
-func (self *Text) PushBackGFX(gfxId uint8, logicalPad fract.Unit, payload uint16) *Text {
+func (self *Text) PushBackLayer(layerFuncIndex LayerFuncIndex, logicalPad fract.Unit, payload uint16) *Text {
 	f1, f2, f3 := fractToBytes(logicalPad)
 	p1, p2 := uint8(payload), uint8(payload >> 8)
 	self.buffer = append(self.buffer, []byte{'\x1F', '\x03', gfxId, f1, f2, f3, p1, p2}...)
@@ -186,7 +191,7 @@ func (self *Text) PushBackGFX(gfxId uint8, logicalPad fract.Unit, payload uint16
 
 // Formatting directive to set a foreground draw function.
 // To cancel the directive, use [Text.Pop]() or [Text.PopAll]().
-func (self *Text) PushFrontGFX(gfxId uint8, logicalPad fract.Unit, payload uint16) *Text {
+func (self *Text) PushFrontLayer(layerFuncIndex LayerFuncIndex, logicalPad fract.Unit, payload uint16) *Text {
 	f1, f2, f3 := fractToBytes(logicalPad)
 	p1, p2 := uint8(payload), uint8(payload >> 8)
 	self.buffer = append(self.buffer, []byte{'\x1F', '\x04', gfxId, f1, f2, f3, p1, p2}...)
@@ -195,8 +200,22 @@ func (self *Text) PushFrontGFX(gfxId uint8, logicalPad fract.Unit, payload uint1
 
 // Formatting directive to alter the text color. To cancel
 // the directive, use [Text.Pop]() or [Text.PopAll]().
-func (self *Text) PushColor(rgba color.RGBA) *Text {
-	self.buffer = append(self.buffer, []byte{'\x1F', '\x05', rgba.R, rgba.G, rgba.B, rgba.A}...)
+//
+// Colors will be internally converted to RGBA, so losses
+// could happen.
+func (self *Text) PushColor(textColor color.Color) *Text {
+	rgbaColor, isRGBA := textColor.(color.RGBA)
+	var r, g, b, a uint8
+	if isRGBA {
+		r, g, b, a = rgbaColor.R, rgbaColor.G, rgbaColor.B, rgbaColor.A
+	} else {
+		r32, g32, b32, a32 := rgbaColor.RGBA()
+		r = uint8(r32/65535)
+		g = uint8(g32/65535)
+		b = uint8(b32/65535)
+		a = uint8(a32/65535)
+	}
+	self.buffer = append(self.buffer, []byte{'\x1F', '\x05', r, g, b, a}...)
 	return self
 }
 

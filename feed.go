@@ -29,7 +29,7 @@ type Feed struct {
 //
 // Notice that the high coupling to the renderer makes working with
 // feeds potentially finicky and unsafe. In most cases, creating a
-// feed for each function where a feed is required is the most sane
+// feed for each function where a feed is required is the sanest
 // approach.
 func NewFeed(renderer *Renderer) *Feed {
 	return &Feed{ Renderer: renderer }

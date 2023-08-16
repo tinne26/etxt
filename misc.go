@@ -8,7 +8,7 @@ import "github.com/tinne26/etxt/fract"
 
 // Helper types, wrappers, aliases and functions.
 
-// A handy type alias for sfnt.Font so you don't need to
+// A handy type alias for [sfnt.Font] so you don't need to
 // import it when already working with etxt.
 type Font = sfnt.Font
 
@@ -18,13 +18,29 @@ type Font = sfnt.Font
 // and use your own named constants in the relevant context,
 // like:
 //   const (
-//	      RegularFont FontIndex = iota
+//       RegularFont FontIndex = iota
 //       BoldFont
 //       ItalicFont
 //   )
 type FontIndex uint8
 
-// Quantization levels for [RendererFract.SetQuantization]().
+// Quantization levels are used to control the trade-off between
+// memory usage and glyph positioning precision. Less theoretically:
+//  - A font is a collection of glyph outlines. Each time we want to
+//    draw a glyph at a specific size, we need to rasterize its outline
+//    into a bitmap. That's expensive, so we want to cache the bitmaps.
+//  - Now we have some text and we want to start drawing each letter
+//    one after another, but... most of the time, the glyph positions
+//    won't align to the pixel grid perfectly. Should we force this
+//    alignment? Or should we rasterize glyph variants for each subposition?
+// The answer is that it depends on what we are trying to do. Quantization
+// levels allow us to adjust the number of positional variants we want to
+// allow for each glyph. More variants means more memory usage. Less
+// variants mean less positioning precision.
+//
+// Quantization levels can be configured with [RendererFract.SetHorzQuantization]()
+// and [RendererFract.SetVertQuantization](). Stick to the defaults unless you
+// are trying to animate text with movement or know what you are doing.
 //
 // Only the equispaced quantization values are given. Other values like
 // [fract.Unit](22) (which approximates one third of a pixel, ceil(64/3))
@@ -37,7 +53,7 @@ const (
 	Qt8th  = fract.Unit( 8) // quantize glyph positions to 1/ 8ths of a pixel
 	Qt4th  = fract.Unit(16) // quantize glyph positions to 1/ 4ths of a pixel
 	QtHalf = fract.Unit(32) // quantize glyph positions to half of a pixel
-	QtFull = fract.Unit(64) // full glyph position quantization (default)
+	QtFull = fract.Unit(64) // full glyph position quantization
 )
 
 // Renderers can have their text direction configured as
@@ -67,6 +83,18 @@ func (self Direction) String() string {
 		return "UnknownTextDirection"
 	}
 }
+
+// Auxiliary function signature used with [Text] and [RendererComplex].
+// LayerFuncs can be triggered in order to render custom graphical layers
+// in front or behind indicated text fragments. This can be used to create
+// text highlighting rectangles, text cursors, primitive strikethrough and 
+// underline effects, censoring bars, etc.
+// 
+// See [Text.PushFrontLayer]() and [Text.PushBackLayer]().
+type LayerFunc = []func(*Renderer, TargetImage, fract.Rect, uint16)
+
+// See [LayerFunc] and [RendererComplex.RegisterLayerFunc]().
+type LayerFuncIndex uint8
 
 // Glyph indices are used to specify which font glyph are we working
 // with. Glyph indices are a low level construct that most users of

@@ -6,7 +6,7 @@ import "github.com/tinne26/etxt/fract"
 
 // This type exists only for documentation and structuring purposes,
 // acting as a [gateway] to access advanced [Renderer] properties and
-// operating directly with glyphs and the more flexible [Text] type.
+// operating with the more flexible [Text] type.
 //
 // These types and features are mainly relevant when working with
 // rich text, [complex scripts] and text shaping.
@@ -73,6 +73,8 @@ func (self *RendererComplex) GetFonts() []*sfnt.Font {
 // Sets the active font index to the given value. If the index
 // exceeds the bounds of the underlying slice, the slice will be
 // resized to make the index referenceable.
+//
+// For more context, see [RendererComplex.RegisterFont]().
 func (self *RendererComplex) SetFontIndex(index FontIndex) {
 	(*Renderer)(self).complexSetFontIndex(index)
 }
@@ -91,6 +93,22 @@ func (self *RendererComplex) Measure(text Text, x, y int) fract.Rect {
 func (self *RendererComplex) Draw(target TargetImage, text Text, x, y int) {
 	panic("unimplemented")
 	// (*Renderer)(self).fractTextDraw(target, text, fract.FromInt(x), fract.FromInt(y))
+}
+
+// Registers a custom callback that can be triggered for specific text fragments
+// while drawing [Text]. See [LayerFunc] for more details.
+//
+// If the index exceeds the bounds of the underlying slice, the slice will be
+// resized to make the index referenceable. Unless you let the whole renderer
+// be garbage collected, there is no way to release the underlying slice.
+func (self *RendererComplex) RegisterLayerFunc(fn LayerFunc, index LayerFuncIndex) {
+	panic("unimplemented")
+}
+
+// Returns the renderer's underlying slice of registered [LayerFunc] functions.
+// See [RendererComplex.RegisterLayerFunc](). Operate at your own risk.
+func (self *RendererComplex) GetLayerFuncs() []LayerFunc {
+	panic("unimplemented")
 }
 
 // Same as [RendererFract.Draw](), but expecting a [Text] value instead of a string.
