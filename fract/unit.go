@@ -145,7 +145,7 @@ func (self Unit) ToFloat64() float64 {
 
 // The conversion is exact in the +/-16777216 Units range. Beyond that
 // range, which corresponds to +/-2^18 (+/-262144) in the decimal
-// numbering system), conversions become progressively less precise.
+// numbering system, conversions become progressively less precise.
 func (self Unit) ToFloat32() float32 {
 	return float32(self)/64.0
 }
@@ -161,78 +161,97 @@ func (self Unit) ToIntFloor() int {
 	return (int(self) +  0) >> 6
 }
 
+// Returns the integer ceil of the unit.
 func (self Unit) ToIntCeil() int {
 	return (int(self) + 63) >> 6
 }
 
+// Returns the closest int to the unit in the direction
+// given by the reference parameter.
 func (self Unit) ToIntToward(reference int) int {
 	floor := self.ToIntFloor()
 	if floor >= reference { return floor }
 	return self.ToIntCeil()
 }
 
+// Returns the closest int to the unit in the direction
+// opposite to the reference parameter.
 func (self Unit) ToIntAway(reference int) int {
 	ceil := self.ToIntCeil()
 	if ceil > reference { return ceil }
 	return self.ToIntFloor()
 }
 
+// Round down and return as integer.
 func (self Unit) ToIntHalfDown() int {
 	return (int(self) + 31) >> 6
 }
 
+// Round up and return as integer.
 func (self Unit) ToIntHalfUp() int {
 	return (int(self) + 32) >> 6
 }
 
+// Rounds the unit in the direction given by the reference parameter.
 func (self Unit) ToIntHalfToward(reference int) int {
 	if self >= FromInt(reference) { return self.ToIntHalfDown() }
 	return self.ToIntHalfUp()
 }
 
+// Rounds the unit away from the reference parameter.
 func (self Unit) ToIntHalfAway(reference int) int {
 	if self <= FromInt(reference) { return self.ToIntHalfDown() }
 	return self.ToIntHalfUp()
 }
 
+// Returns the floor value of the unit.
 func (self Unit) Floor() Unit {
 	return self & ^0x3F
 }
 
+// Returns the ceil value of the unit.
 func (self Unit) Ceil() Unit {
 	return (self + 0x3F).Floor()
 }
 
+// Returns the closest whole value in the direction given
+// by the refence parameter.
 func (self Unit) Toward(reference int) Unit {
 	if self >= FromInt(reference) { return self.Floor() }
 	return self.Ceil()
 }
 
+// Returns the closest whole value in the direction 
+// opposite to the refence parameter.
 func (self Unit) Away(reference int) Unit {
 	if self <= FromInt(reference) { return self.Floor() }
 	return self.Ceil()
 }
 
+// Rounds down the unit.
 func (self Unit) HalfDown() Unit {
 	return (self + 31).Floor()
 }
 
+// Rounds up the unit.
 func (self Unit) HalfUp() Unit {
 	return (self + 32).Floor()
 }
 
+// Rounds the unit towards the given reference parameter.
 func (self Unit) HalfToward(reference int) Unit {
 	if self >= FromInt(reference) { return self.HalfDown() }
 	return self.HalfUp()
 }
 
+// Rounds the unit away from the given reference parameter.
 func (self Unit) HalfAway(reference int) Unit {
 	if self <= FromInt(reference) { return self.HalfDown() }
 	return self.HalfUp()
 }
 
 // Given a fractional step between 1 and 64, it quantizes the
-// Unit to that fractional value, rounding up in case of ties.
+// unit to that fractional value, rounding up in case of ties.
 func (self Unit) QuantizeUp(step Unit) Unit {
 	// safety assertions
 	if step > 64 { panic("step > 64") }	
@@ -251,7 +270,7 @@ func (self Unit) QuantizeUp(step Unit) Unit {
 }
 
 // Given a fractional step between 1 and 64, it quantizes the
-// Unit to that fractional value, rounding down in case of ties.
+// unit to that fractional value, rounding down in case of ties.
 func (self Unit) QuantizeDown(step Unit) Unit {
 	// safety assertions
 	if step > 64 { panic("step > 64") }	
