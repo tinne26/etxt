@@ -99,12 +99,12 @@ func (self *Feed) Reset() {
 //
 // Quantization will be checked before every drawing operation and adjusted
 // if necessary (even vertical quantization).
-func (self *Feed) Draw(target TargetImage, codePoint rune) {
+func (self *Feed) Draw(target Target, codePoint rune) {
 	self.DrawGlyph(target, self.Renderer.Glyph().GetRuneIndex(codePoint))
 }
 
 // Same as [Feed.Draw](), but taking a glyph index instead of a rune.
-func (self *Feed) DrawGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex) {
+func (self *Feed) DrawGlyph(target Target, glyphIndex sfnt.GlyphIndex) {
 	self.traverseGlyph(target, glyphIndex, true)
 }
 
@@ -155,7 +155,7 @@ func (self *Feed) LineBreak() {
 }
 
 // Private traverse method used for Draw and Advance.
-func (self *Feed) traverseGlyph(target TargetImage, glyphIndex sfnt.GlyphIndex, drawMode bool) {
+func (self *Feed) traverseGlyph(target Target, glyphIndex sfnt.GlyphIndex, drawMode bool) {
 	// make sure all relevant properties are initialized
 	renderer := self.Renderer
 	qtHorz, qtVert := renderer.fractGetQuantization()

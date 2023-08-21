@@ -11,8 +11,8 @@ import "github.com/tinne26/etxt/fract"
 
 // Alias to allow compiling the package without Ebitengine (-tags gtxt).
 //
-// Without Ebitengine, TargetImage defaults to [image/draw.Image].
-type TargetImage = *ebiten.Image
+// Without Ebitengine, Target defaults to [image/draw.Image].
+type Target = *ebiten.Image
 
 // A GlyphMask is the image that results from rasterizing a glyph.
 // You rarely need to use glyph masks directly unless you are working
@@ -47,7 +47,7 @@ type drawOptions *ebiten.DrawImageOptions
 // The default glyph drawing function used in renderers. Do not confuse with
 // the main [Renderer.Draw]() function. DefaultDrawFunc is a low level function,
 // rarely necessary except when paired with [Renderer.Traverse]*() operations.
-func (self *Renderer) defaultDrawFunc(target TargetImage, origin fract.Point, mask GlyphMask) {
+func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask GlyphMask) {
 	if mask == nil { return } // spaces and empty glyphs will be nil
 
 	// TODO: maybe switch to DrawTriangles, but specially, move opts out (tricky due to gtxt)

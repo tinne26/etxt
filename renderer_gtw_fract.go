@@ -88,11 +88,11 @@ func (self *RendererFract) GetQuantization() (horz, vert fract.Unit) {
 // 	return (*Renderer)(self).fractMeasureHeight(text)
 // }
 
-func (self *RendererFract) Draw(target TargetImage, text string, x, y fract.Unit) {
+func (self *RendererFract) Draw(target Target, text string, x, y fract.Unit) {
 	(*Renderer)(self).fractDraw(target, text, x, y)
 }
 
-func (self *RendererFract) DrawWithWrap(target TargetImage, text string, x, y fract.Unit, widthLimit int) {
+func (self *RendererFract) DrawWithWrap(target Target, text string, x, y fract.Unit, widthLimit int) {
 	(*Renderer)(self).fractDrawWithWrap(target, text, x, y, fract.FromInt(widthLimit))
 }
 

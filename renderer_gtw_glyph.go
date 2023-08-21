@@ -29,7 +29,7 @@ func (self *Renderer) Glyph() *RendererGlyph {
 // Default glyph drawing function. This is a very low level function,
 // almost only relevant if you are trying to implement custom draw
 // functions for [RendererGlyph.SetDrawFunc]().
-func (self *RendererGlyph) DrawMask(target TargetImage, mask GlyphMask, origin fract.Point) {
+func (self *RendererGlyph) DrawMask(target Target, mask GlyphMask, origin fract.Point) {
 	(*Renderer)(self).glyphDrawMask(target, mask, origin)
 }
 
@@ -55,7 +55,7 @@ func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 //
 // [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/main/examples/ebiten/colorful/main.go
 // [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/main/examples/ebiten/shaking/main.go
-func (self *RendererGlyph) SetDrawFunc(drawFn func(TargetImage, sfnt.GlyphIndex, fract.Point)) {
+func (self *RendererGlyph) SetDrawFunc(drawFn func(Target, sfnt.GlyphIndex, fract.Point)) {
 	// Note: we could actually allow the font and the sizer to be changed, but this
 	//       has implications on measuring. We wouldn't be able to measure properly,
 	//       which also has impact on centering and other relative positioning
@@ -114,7 +114,7 @@ func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 	return self.loadGlyphMask(self.state.activeFont, index, origin)
 }
 
-func (self *Renderer) glyphDrawMask(target TargetImage, mask GlyphMask, origin fract.Point) {
+func (self *Renderer) glyphDrawMask(target Target, mask GlyphMask, origin fract.Point) {
 	self.cacheHandler.NotifyFractChange(origin)
 	self.defaultDrawFunc(target, origin, mask)
 }

@@ -7,7 +7,7 @@ import "image/draw"
 import "image/color"
 import "golang.org/x/image/math/fixed"
 
-type TargetImage = draw.Image
+type Target = draw.Image
 type GlyphMask = *image.Alpha
 
 type BlendMode uint8

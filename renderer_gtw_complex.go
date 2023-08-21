@@ -6,7 +6,7 @@ import "github.com/tinne26/etxt/fract"
 
 // This type exists only for documentation and structuring purposes,
 // acting as a [gateway] to access advanced [Renderer] properties and
-// operating with the more flexible [Text] type.
+// operating with the more flexible [Twine] type.
 //
 // These types and features are mainly relevant when working with
 // rich text, [complex scripts] and text shaping.
@@ -46,6 +46,9 @@ func (self *RendererComplex) GetDirection() Direction {
 // is relevant when working with rich text, for example when trying to
 // combine regular, bold and italic subfamilies in the same draw call.
 //
+// You may use [NextFontIndex] to register the font at the next
+// available index, which you will get back as the return value.
+//
 // To change the active font, use [RendererComplex.SetFontIndex]().
 // The more basic [Renderer.SetFont]() method operates exclusively
 // on the active font.
@@ -57,8 +60,8 @@ func (self *RendererComplex) GetDirection() Direction {
 //    the whole renderer be garbage collected.
 //  - Setting a nil font to an index beyond the bounds of the underlying
 //    slice won't panic or be ignored, it will make the slice grow.
-func (self *RendererComplex) RegisterFont(font *sfnt.Font, index FontIndex) {
-	(*Renderer)(self).complexRegisterFont(font, index)
+func (self *RendererComplex) RegisterFont(index FontIndex, font *sfnt.Font) FontIndex {
+	return (*Renderer)(self).complexRegisterFont(index, font)
 }
 
 // Returns the renderer fonts available for use with rich text.
@@ -84,51 +87,54 @@ func (self *RendererComplex) GetFontIndex() FontIndex {
 	return self.state.fontIndex
 }
 
-// Same as [Renderer.Measure](), but expecting a [Text] value instead of a string.
-func (self *RendererComplex) Measure(text Text, x, y int) fract.Rect {
+// Same as [Renderer.Measure](), but expecting a [Twine] instead of a string.
+func (self *RendererComplex) Measure(twine Twine, x, y int) fract.Rect {
 	panic("unimplemented")
 }
 
-// Same as [Renderer.Draw](), but expecting a [Text] value instead of a string.
-func (self *RendererComplex) Draw(target TargetImage, text Text, x, y int) {
-	panic("unimplemented")
-	// (*Renderer)(self).fractTextDraw(target, text, fract.FromInt(x), fract.FromInt(y))
+// Same as [Renderer.Draw](), but expecting a [Twine] instead of a string.
+//
+// Current list of limitations that we may relax in the future:
+//  - Text direction can't be changed in the middle of the text.
+//  - No version with line wrapping available.
+// Other limitations, like quantization not being allowed to change
+// while drawing, are expected to be permanent. Regarding size changes,
+// some unique conditions apply, see [Twine.AddLineMetricsRefresh]().
+func (self *RendererComplex) Draw(target Target, twine Twine, x, y int) {
+	(*Renderer)(self).complexDrawTwine(target, twine, x, y)
 }
 
 // Registers a custom callback that can be triggered for specific text fragments
-// while drawing [Text]. See [LayerFunc] for more details.
+// or positions while drawing a [Twine]. See [TwineEffectFunc] for more details.
+//
+// You may use [NextEffectKey] to register the function at the next available
+// index, which you will get back as the return value.
 //
 // If the index exceeds the bounds of the underlying slice, the slice will be
-// resized to make the index referenceable. Unless you let the whole renderer
-// be garbage collected, there is no way to release the underlying slice.
-func (self *RendererComplex) RegisterLayerFunc(fn LayerFunc, index LayerFuncIndex) {
-	panic("unimplemented")
+// resized to make the index referenceable. You can't register more than 192
+// functions.
+// 
+// Unless you let the whole renderer be garbage collected, there is no way to
+// release the underlying slice.
+func (self *RendererComplex) RegisterEffectFunc(key TwineEffectKey, fn TwineEffectFunc) TwineEffectKey {
+	return (*Renderer)(self).complexRegisterEffectFunc(key, fn)
 }
 
-// Returns the renderer's underlying slice of registered [LayerFunc] functions.
-// See [RendererComplex.RegisterLayerFunc](). Operate at your own risk.
-func (self *RendererComplex) GetLayerFuncs() []LayerFunc {
-	panic("unimplemented")
+func (self *RendererComplex) RegisterMotionFunc(key TwineMotionKey, fn TwineMotionFunc) TwineMotionKey {
+	return (*Renderer)(self).complexRegisterMotionFunc(key, fn)
 }
 
-// Same as [RendererFract.Draw](), but expecting a [Text] value instead of a string.
-//
-// This is the fractional version of [RendererComplex.Draw]().
-// func (self *RendererComplex) FractDraw(target TargetImage, text Text, x, y fract.Unit) {
-// 	panic("unimplemented / TODO")
-// }
+// Returns the renderer's underlying slice of registered [TwineEffectFunc] functions.
+// See also [RendererComplex.RegisterEffectFunc](). Operate at your own risk.
+func (self *RendererComplex) GetEffectFuncs() []TwineEffectFunc {
+	return self.twineEffectFuncs
+}
 
-// Same as [Renderer.DrawWithWrap](), but expecting a [Text] value instead of a string.
-// func (self *RendererComplex) DrawWithWrap(target TargetImage, text Text, x, y int, widthLimit int) {
-// 	self.FractDrawWithWrap(target, text, fract.FromInt(x), fract.FromInt(y), widthLimit)
-// }
-
-// Same as [RendererFract.DrawWithWrap](), but expecting a [Text] value instead of a string.
-//
-// This is the fractional version of [RendererComplex.DrawWithWrap]().
-// func (self *RendererComplex) FractDrawWithWrap(target TargetImage, text Text, x, y fract.Unit, widthLimit int) {
-// 	panic("unimplemented / TODO")
-// }
+// Returns the renderer's underlying slice of registered [TwineMotionFunc] functions.
+// See also [RendererComplex.RegisterMotionFunc](). Operate at your own risk.
+func (self *RendererComplex) GetMotionFuncs() []TwineMotionFunc {
+	return self.twineMotionFuncs
+}
 
 // ---- implementations ----
 
@@ -143,14 +149,21 @@ func (self *Renderer) complexSetDirection(dir Direction) {
 	}
 }
 
-func (self *Renderer) complexRegisterFont(font *sfnt.Font, index FontIndex) {
+func (self *Renderer) complexRegisterFont(index FontIndex, font *sfnt.Font) FontIndex {
+	if index == 255 {
+		iindex := len(self.fonts)
+		if iindex >= 255 { panic("can't register more than 254 fonts") }
+		index = FontIndex(iindex)
+	}
+
 	if index == self.state.fontIndex {
 		self.SetFont(font)
 	} else {
-		fontIndex := int(self.state.fontIndex)
-		self.fonts = ensureSliceSize(self.fonts, fontIndex + 1)
-		self.fonts[fontIndex] = font
+		self.fonts = ensureSliceSize(self.fonts, int(index + 1))
+		self.fonts[index] = font
 	}
+
+	return index
 }
 
 func (self *Renderer) complexSetFontIndex(index FontIndex) {
@@ -164,4 +177,36 @@ func (self *Renderer) complexSetFontIndex(index FontIndex) {
 		self.state.activeFont = newFont
 		self.notifyFontChange(newFont)
 	}
+}
+
+func (self *Renderer) complexRegisterEffectFunc(key TwineEffectKey, fn TwineEffectFunc) TwineEffectKey {
+	if key > 192 {
+		if key == 255 {
+			ikey := len(self.twineEffectFuncs)
+			if ikey >= 193 { panic("can't register more than 192 TwineEffectFuncs") }
+			key = TwineEffectKey(ikey)
+		} else {
+			panic("TextFuncIndices above 192 are reserved for internal use")
+		}
+	}
+	
+	self.twineEffectFuncs = ensureSliceSize(self.twineEffectFuncs, int(key) + 1)
+	self.twineEffectFuncs[key] = fn
+	return key
+}
+
+func (self *Renderer) complexRegisterMotionFunc(key TwineMotionKey, fn TwineMotionFunc) TwineMotionKey {
+	if key > 192 {
+		if key == 255 {
+			ikey := len(self.twineMotionFuncs)
+			if ikey >= 193 { panic("can't register more than 192 TwineMotionFuncs") }
+			key = TwineMotionKey(ikey)
+		} else {
+			panic("TextFuncIndices above 192 are reserved for internal use")
+		}
+	}
+	
+	self.twineMotionFuncs = ensureSliceSize(self.twineMotionFuncs, int(key) + 1)
+	self.twineMotionFuncs[key] = fn
+	return key
 }

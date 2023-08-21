@@ -3,7 +3,9 @@
 
 **NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
-**etxt** is a package for [vectorial](https://github.com/tinne26/etxt/blob/main/docs/panorama.md) text rendering in Golang designed to be used with [**Ebitengine**](https://github.com/hajimehoshi/ebiten), the 2D game engine made by [Hajime Hoshi](https://github.com/hajimehoshi) for Golang.
+**etxt** is a package for [vectorial](https://github.com/tinne26/etxt/blob/main/docs/panorama.md)[^1] text rendering in Golang designed to be used with [**Ebitengine**](https://github.com/hajimehoshi/ebiten), the 2D game engine made by [Hajime Hoshi](https://github.com/hajimehoshi) for Golang.
+
+[^1]: If you are using pixel-art-like vectorial fonts, read [these tips](https://github.com/tinne26/etxt/blob/main/docs/pixel-tips.md).
 
 While Ebitengine already includes a basic [**ebiten/text**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text) package, **etxt** improves it in the following ways:
 - Makes text size and text align easy to change.
@@ -88,12 +90,12 @@ func main() {
 }
 ```
 
-You can try running this yourself with[^1]:
+You can try running this yourself with[^2]:
 ```
 go run github.com/tinne26/etxt/examples/ebiten/words@latest
 ```
 
-[^1]: You will need Golang >=1.18, and if you have never used Ebitengine before, you may need to [install some dependencies](https://ebitengine.org/en/documents/install.html?os=linux) (typically only on Linux or FreeBSD).
+[^2]: You will need Golang >=1.18, and if you have never used Ebitengine before, you may need to [install some dependencies](https://ebitengine.org/en/documents/install.html?os=linux) (typically only on Linux or FreeBSD).
 
 This is a very simple and self-contained example. If you want to learn more, make sure to take a look at [etxt/examples](https://github.com/tinne26/etxt/tree/main/examples)!
 

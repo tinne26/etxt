@@ -49,8 +49,10 @@ type Renderer struct {
 	restorableStates []restorableState
 	
 	cacheHandler cache.GlyphCacheHandler
-	layerFuncs []func(*Renderer, TargetImage, fract.Rect, uint16)
-	customDrawFn func(TargetImage, sfnt.GlyphIndex, fract.Point)
+	twineEffectFuncs []TwineEffectFunc
+	twineMotionFuncs []TwineMotionFunc
+	twineStorage []any
+	customDrawFn func(Target, sfnt.GlyphIndex, fract.Point)
 	fonts []*sfnt.Font
 	buffer sfnt.Buffer
 }

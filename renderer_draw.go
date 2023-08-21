@@ -9,22 +9,22 @@ import "github.com/tinne26/etxt/fract"
 // Missing glyphs in the current font will cause the renderer to panic.
 // See [RendererGlyph.GetRuneIndex]() for further advice if you need to
 // make your system more robust.
-func (self *Renderer) Draw(target TargetImage, text string, x, y int) {
+func (self *Renderer) Draw(target Target, text string, x, y int) {
 	self.fractDraw(target, text, fract.FromInt(x), fract.FromInt(y))
 }
 
 // x and y may be unquantized
-func (self *Renderer) fractDraw(target TargetImage, text string, x, y fract.Unit) {
+func (self *Renderer) fractDraw(target Target, text string, x, y fract.Unit) {
+	// preconditions
+	if target == nil { panic("can't draw on nil Target") }
+	if self.state.activeFont == nil { panic("can't draw text with nil font (tip: Renderer.SetFont())") }
+	if self.state.fontSizer  == nil { panic("can't draw with a nil sizer (tip: NewRenderer())") }
+	if self.state.rasterizer == nil { panic("can't draw with a nil rasterizer (tip: NewRenderer())") }
+
 	// return directly on superfluous invocations
 	if text == "" { return }
 	bounds := target.Bounds()
 	if bounds.Empty() { return }
-	
-	// preconditions
-	if target == nil { panic("can't draw on nil TargetImage") }
-	if self.state.activeFont == nil { panic("can't draw text with nil font (tip: Renderer.SetFont())") }
-	if self.state.fontSizer  == nil { panic("can't draw with a nil sizer (tip: NewRenderer())") }
-	if self.state.rasterizer == nil { panic("can't draw with a nil rasterizer (tip: NewRenderer())") }
 	
 	// adjust Y position
 	horzQuant, vertQuant := self.fractGetQuantization()
@@ -105,7 +105,7 @@ func (self *Renderer) fractDraw(target TargetImage, text string, x, y fract.Unit
 }
 
 // Precondition: x and y are already quantized.
-func (self *Renderer) fractDrawLeftLTR(target TargetImage, text string, lineBreakNth int, x, y, maxY fract.Unit) {
+func (self *Renderer) fractDrawLeftLTR(target Target, text string, lineBreakNth int, x, y, maxY fract.Unit) {
 	position := fract.UnitsToPoint(x, y)
 	var iv drawInternalValues
 	iv.prevFractX = position.X.FractShift()
@@ -123,13 +123,13 @@ func (self *Renderer) fractDrawLeftLTR(target TargetImage, text string, lineBrea
 			position = self.advanceLine(position, x, iv.lineBreakNth)
 			if position.Y > maxY { break }
 		} else {
-			position, iv = self.drawGlyphLTR(target, position, codePoint, iv)
+			position, iv = self.drawRuneLTR(target, position, codePoint, iv)
 		}
 	}
 }
 
 // Precondition: x and y are already quantized.
-func (self *Renderer) fractDrawLeftRTL(target TargetImage, text string, lineBreakNth int, x, y, maxY fract.Unit) {
+func (self *Renderer) fractDrawLeftRTL(target Target, text string, lineBreakNth int, x, y, maxY fract.Unit) {
 	position := fract.UnitsToPoint(x, y)
 	var iv drawInternalValues
 	iv.prevFractX = position.X.FractShift()
@@ -148,13 +148,13 @@ func (self *Renderer) fractDrawLeftRTL(target TargetImage, text string, lineBrea
 			position = self.advanceLine(position, x, iv.lineBreakNth)
 			if position.Y > maxY { break }
 		} else {
-			position, iv = self.drawGlyphLTR(target, position, codePoint, iv)
+			position, iv = self.drawRuneLTR(target, position, codePoint, iv)
 		}
 	}
 }
 
 // Precondition: x and y are already quantized.
-func (self *Renderer) fractDrawRightLTR(target TargetImage, text string, lineBreakNth int, x, y, maxY fract.Unit) {
+func (self *Renderer) fractDrawRightLTR(target Target, text string, lineBreakNth int, x, y, maxY fract.Unit) {
 	position := fract.UnitsToPoint(x, y)
 	var iv drawInternalValues
 	iv.prevFractX = position.X.FractShift()
@@ -173,13 +173,13 @@ func (self *Renderer) fractDrawRightLTR(target TargetImage, text string, lineBre
 			position = self.advanceLine(position, x, iv.lineBreakNth)
 			if position.Y > maxY { break }
 		} else {
-			position, iv = self.drawGlyphRTL(target, position, codePoint, iv)
+			position, iv = self.drawRuneRTL(target, position, codePoint, iv)
 		}
 	}
 }
 
 // Precondition: x and y are already quantized.
-func (self *Renderer) fractDrawRightRTL(target TargetImage, text string, lineBreakNth int, x, y, maxY fract.Unit) {
+func (self *Renderer) fractDrawRightRTL(target Target, text string, lineBreakNth int, x, y, maxY fract.Unit) {
 	position := fract.UnitsToPoint(x, y)
 	var iv drawInternalValues
 	iv.prevFractX = position.X.FractShift()
@@ -197,13 +197,13 @@ func (self *Renderer) fractDrawRightRTL(target TargetImage, text string, lineBre
 			position = self.advanceLine(position, x, iv.lineBreakNth)
 			if position.Y > maxY { break }
 		} else {
-			position, iv = self.drawGlyphRTL(target, position, codePoint, iv)
+			position, iv = self.drawRuneRTL(target, position, codePoint, iv)
 		}
 	}
 }
 
 // Precondition: y is already quantized, x is not (for better precision).
-func (self *Renderer) fractDrawCenterLTR(target TargetImage, text string, lineBreakNth int, x, y, maxY fract.Unit) {
+func (self *Renderer) fractDrawCenterLTR(target Target, text string, lineBreakNth int, x, y, maxY fract.Unit) {
 	position := fract.UnitsToPoint(x, y)
 	var iv drawInternalValues
 	iv.prevFractX = x.FractShift()
@@ -228,7 +228,7 @@ func (self *Renderer) fractDrawCenterLTR(target TargetImage, text string, lineBr
 }
 
 // Precondition: y is already quantized, x is not (for better precision).
-func (self *Renderer) fractDrawCenterRTL(target TargetImage, text string, lineBreakNth int, x, y, maxY fract.Unit) {
+func (self *Renderer) fractDrawCenterRTL(target Target, text string, lineBreakNth int, x, y, maxY fract.Unit) {
 	// There are multiple approaches here:
 	// - iterate text from left to right, but measure and draw in reverse
 	// - iterate from right to left, but measure and draw normally

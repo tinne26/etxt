@@ -149,13 +149,13 @@ func (self *RendererUtils) RestoreState() bool {
 //  - Regularly asserting that the number of stored states
 //    stays below a reasonable limit for your use-case in
 //    order to prevent memory leaks.
-//  - Passing zero to the function whenever you want to ensure
-//    that the states stack is completely empty.
+//  - Passing zero whenever you want to ensure that the
+//    states stack is completely empty.
 func (self *RendererUtils) AssertMaxStoredStates(n int) {
 	if n > len(self.restorableStates) {
-		givenMax  := strconv.Itoa(n)
+		assertMax := strconv.Itoa(n)
 		actualMax := strconv.Itoa(len(self.restorableStates))
-		panic("expected at most " + givenMax + " stored states, found " + actualMax)
+		panic("expected at most " + assertMax + " stored states, found " + actualMax)
 	}
 }
 
@@ -189,15 +189,19 @@ func (self *Renderer) utilsStoreState() {
 
 func (self *Renderer) utilsRestoreState() bool {
 	if len(self.restorableStates) == 0 { return false }
-	
+	last := len(self.restorableStates) - 1
+	self.setState(self.restorableStates[last])
+	self.restorableStates = self.restorableStates[0 : last]
+	return true
+}
+
+func (self *Renderer) setState(state restorableState) {
 	initFont  := self.state.activeFont
 	initSizer := self.state.fontSizer
 	initSize  := self.state.scaledSize
 	initRast  := self.state.rasterizer
 	
-	last := len(self.restorableStates) - 1
-	self.state = self.restorableStates[last]
-	self.restorableStates = self.restorableStates[0 : last]
+	self.state = state
 
 	// notify changes where relevant
 	refreshSizer := (self.state.fontSizer != initSizer)
@@ -230,6 +234,4 @@ func (self *Renderer) utilsRestoreState() bool {
 			self.cacheHandler.NotifyRasterizerChange(self.state.rasterizer)
 		}
 	}
-	
-	return true
 }

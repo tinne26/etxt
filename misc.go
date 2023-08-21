@@ -23,6 +23,10 @@ type Font = sfnt.Font
 //       ItalicFont
 //   )
 type FontIndex uint8
+const (
+	
+	NextFontIndex FontIndex = 255 // see RendererComplex.RegisterFont()
+)
 
 // Quantization levels are used to control the trade-off between
 // memory usage and glyph positioning precision. Less theoretically:
@@ -83,18 +87,6 @@ func (self Direction) String() string {
 		return "UnknownTextDirection"
 	}
 }
-
-// Auxiliary function signature used with [Text] and [RendererComplex].
-// LayerFuncs can be triggered in order to render custom graphical layers
-// in front or behind indicated text fragments. This can be used to create
-// text highlighting rectangles, text cursors, primitive strikethrough and 
-// underline effects, censoring bars, etc.
-// 
-// See [Text.PushFrontLayer]() and [Text.PushBackLayer]().
-type LayerFunc = []func(*Renderer, TargetImage, fract.Rect, uint16)
-
-// See [LayerFunc] and [RendererComplex.RegisterLayerFunc]().
-type LayerFuncIndex uint8
 
 // Glyph indices are used to specify which font glyph are we working
 // with. Glyph indices are a low level construct that most users of

@@ -9,23 +9,23 @@ import "github.com/tinne26/etxt/fract"
 // The widthLimit must be given in real units, not logical ones.
 // This means that unlike text sizes, the widthLimit won't be internally
 // multiplied by the renderer's scale factor.
-func (self *Renderer) DrawWithWrap(target TargetImage, text string, x, y, widthLimit int) {
+func (self *Renderer) DrawWithWrap(target Target, text string, x, y, widthLimit int) {
 	if widthLimit > fract.MaxInt { panic("widthLimit too big, must be <= fract.MaxInt") }
 	self.fractDrawWithWrap(target, text, fract.FromInt(x), fract.FromInt(y), fract.FromInt(widthLimit))
 }
 
 // x and y are assumed to be unquantized
-func (self *Renderer) fractDrawWithWrap(target TargetImage, text string, x, y fract.Unit, widthLimit fract.Unit) {
+func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.Unit, widthLimit fract.Unit) {
+	// preconditions
+	if target == nil { panic("can't draw on nil Target") }
+	if self.state.activeFont == nil { panic("can't draw text with nil font (tip: Renderer.SetFont())") }
+	if self.state.fontSizer  == nil { panic("can't draw with a nil sizer (tip: NewRenderer())") }
+	if self.state.rasterizer == nil { panic("can't draw with a nil rasterizer (tip: NewRenderer())") }
+
 	// return directly on superfluous invocations
 	if text == "" { return }
 	bounds := target.Bounds()
 	if bounds.Empty() { return }
-	
-	// preconditions
-	if target == nil { panic("can't draw on nil TargetImage") }
-	if self.state.activeFont == nil { panic("can't draw text with nil font (tip: Renderer.SetFont())") }
-	if self.state.fontSizer  == nil { panic("can't draw with a nil sizer (tip: NewRenderer())") }
-	if self.state.rasterizer == nil { panic("can't draw with a nil rasterizer (tip: NewRenderer())") }
 	
 	// adjust Y position
 	horzQuant, vertQuant := self.fractGetQuantization()
@@ -138,7 +138,7 @@ func (self *Renderer) trimNonVisibleWithWrapRTL(text string, widthLimit, y, minB
 }
 
 // Precondition: x and y are quantized.
-func (self *Renderer) fractDrawWithWrapLeftLTR(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
+func (self *Renderer) fractDrawWithWrapLeftLTR(target Target, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
 	// set up traversal variables
 	var iterator ltrStringIterator
 	var position fract.Point = fract.UnitsToPoint(x, y)
@@ -168,7 +168,7 @@ func (self *Renderer) fractDrawWithWrapLeftLTR(target TargetImage, text string, 
 }
 
 // Precondition: x and y are quantized.
-func (self *Renderer) fractDrawWithWrapLeftRTL(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
+func (self *Renderer) fractDrawWithWrapLeftRTL(target Target, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
 	// set up traversal variables
 	var iterator rtlStringIterator
 	iterator.Init(text)
@@ -197,7 +197,7 @@ func (self *Renderer) fractDrawWithWrapLeftRTL(target TargetImage, text string, 
 }
 
 // Precondition: x and y are already quantized.
-func (self *Renderer) fractDrawWithWrapRightLTR(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {	
+func (self *Renderer) fractDrawWithWrapRightLTR(target Target, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {	
 	// set up traversal variables
 	var iterator rtlStringIterator
 	iterator.Init(text)
@@ -226,7 +226,7 @@ func (self *Renderer) fractDrawWithWrapRightLTR(target TargetImage, text string,
 }
 
 // Precondition: x and y are already quantized.
-func (self *Renderer) fractDrawWithWrapRightRTL(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
+func (self *Renderer) fractDrawWithWrapRightRTL(target Target, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
 	// set up traversal variables
 	var iterator ltrStringIterator
 	var position fract.Point = fract.UnitsToPoint(x, y)
@@ -254,7 +254,7 @@ func (self *Renderer) fractDrawWithWrapRightRTL(target TargetImage, text string,
 }
 
 // Precondition: y is already quantized, x is not (for better precision).
-func (self *Renderer) fractDrawWithWrapCenterLTR(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
+func (self *Renderer) fractDrawWithWrapCenterLTR(target Target, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
 	// set up traversal variables
 	var iterator ltrStringIterator
 	var position fract.Point = fract.UnitsToPoint(x, y)
@@ -282,7 +282,7 @@ func (self *Renderer) fractDrawWithWrapCenterLTR(target TargetImage, text string
 }
 
 // Precondition: y is already quantized, x is not (for better precision).
-func (self *Renderer) fractDrawWithWrapCenterRTL(target TargetImage, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
+func (self *Renderer) fractDrawWithWrapCenterRTL(target Target, text string, lineBreakNth int, x, y, widthLimit, maxY fract.Unit) {
 	// set up traversal variables
 	var iterator ltrStringIterator
 	var position fract.Point = fract.UnitsToPoint(x, y)
