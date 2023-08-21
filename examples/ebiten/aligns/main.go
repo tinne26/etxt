@@ -102,6 +102,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	self.text.Draw(canvas, info, pad, h - pad)
 
 	// draw aligned text
+	self.text.Utils().AssertMaxRestorePoints(0)
 	self.text.Utils().StoreState()
 	defer self.text.Utils().RestoreState()
 
@@ -114,7 +115,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	case 0: // align
 		content = self.align.String()
 	case 1: // multiline
-		content = "the word for seeing\nthrough the eyes of others\nas if they were your own"
+		content = "she always saw\nthrough the eyes of others\nas if they were her own"
 	case 2: // uppercase
 		content = "STOP SHOUTING LIKE THAT!"
 	case 3:

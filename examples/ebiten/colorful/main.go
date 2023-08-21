@@ -69,7 +69,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 
 // This is the function that we use to override the text renderer's default draw
 // function. It's set on the main through renderer.Glyph().SetDrawFunc().
-func (self *Game) drawColorfulGlyph(target etxt.TargetImage, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
+func (self *Game) drawColorfulGlyph(target etxt.Target, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
 	// derive the color for the current letter from the initial/ values on
 	// each color channel, the current offset, and the sine function
 	r := (math.Sin(self.red + self.shift) + 1.0)/2.0

@@ -1,4 +1,4 @@
-module github.com/tinne26/etxt/examples/ebiten/colorful
+module github.com/tinne26/etxt/examples/ebiten/text
 
 go 1.18
 
