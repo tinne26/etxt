@@ -4,6 +4,44 @@ import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
 
+// expects a quantized position, returns an unquantized position
+func (self *Renderer) advanceGlyphLTR(target Target, position fract.Point, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
+	// apply kerning unless coming from line break
+	if iv.lineBreakNth != 0 {
+		iv.lineBreakNth = 0
+	} else {
+		position.X += self.getOpKernBetween(iv.prevGlyphIndex, currGlyphIndex)
+	}
+	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
+
+	// (here we would draw if we wanted to)
+
+	// advance
+	position.X += self.getOpAdvance(currGlyphIndex)
+
+	iv.prevGlyphIndex = currGlyphIndex
+	return position, iv
+}
+
+// expects a quantized position, returns a quantized position
+func (self *Renderer) advanceGlyphRTL(target Target, position fract.Point, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
+	// advance
+	position.X -= self.getOpAdvance(currGlyphIndex)
+
+	// apply kerning unless coming from line break
+	if iv.lineBreakNth != 0 {
+		iv.lineBreakNth = 0
+	} else {
+		position.X -= self.getOpKernBetween(currGlyphIndex, iv.prevGlyphIndex)
+	}
+	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	
+	// (here we would draw if we wanted to)
+
+	iv.prevGlyphIndex = currGlyphIndex
+	return position, iv
+}
+
 // Preconditions: font and sizer are not nil
 func (self *Renderer) helperMeasureHeight(text string) fract.Unit {
 	if text == "" { return 0 }

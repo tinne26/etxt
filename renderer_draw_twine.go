@@ -36,7 +36,8 @@ func (self *Renderer) fractDrawTwine(target Target, twine Twine, x, y fract.Unit
 	// skip non-visible portions of the text in the target
 	var lineBreakNth int = -1
 	maxBaselineY := fract.FromInt(bounds.Max.Y) + lineHeight
-	// TODO, unclear if worth it here
+	// TODO, unclear if worth it here, it can get quite crazy
+	// with accumulated effects and so on.
 
 	// subdelegate to relevant draw function
 	memoState := self.state
@@ -47,7 +48,9 @@ func (self *Renderer) fractDrawTwine(target Target, twine Twine, x, y fract.Unit
 
 // Precondition: x and y are already quantized.
 func (self *Renderer) fractDrawTwineLeftLTR(target Target, twine Twine, lineBreakNth int, x, y, maxY fract.Unit) {
-	operator := newTwineOperator(self, twine)
+	var rewind bool
+	var operator directTwineOperator
+	operator.Initialize(self, twine)
 	position := fract.UnitsToPoint(x, y)
 	var iv drawInternalValues
 	iv.prevFractX = position.X.FractShift()
@@ -55,29 +58,48 @@ func (self *Renderer) fractDrawTwineLeftLTR(target Target, twine Twine, lineBrea
 	if self.cacheHandler != nil {
 		self.cacheHandler.NotifyFractChange(position)
 	}
-
-	var iterator ltrTwineIterator
+	
 	for {
-		glyphIndex, codePoint := iterator.Next(twine)
-		if codePoint == -1 { break }
-		if codePoint == rune(twineCcBegin) {
-			operator, position, iv = iterator.ProcessCC(target, self, operator, position, iv)
-			continue
+		glyphIndex, codePoint := operator.Next()
+		if codePoint == -1 {		
+			position.X, iv.prevGlyphIndex, rewind = operator.NotifyLineEnd(self, target, position.X, iv.prevGlyphIndex)
+			if rewind { continue }
+			break
 		}
+		if codePoint == rune(twineCcBegin) {
+			position.X, iv.prevGlyphIndex = operator.ProcessCC(self, target, position, iv.prevGlyphIndex)
+			iv.lineBreakNth = 0 // reset line break counter
+		} else if codePoint == '\n' {
+			var rewind bool
+			position.X, iv.prevGlyphIndex, rewind = operator.NotifyLineEnd(self, target, position.X, iv.prevGlyphIndex)
+			if rewind {
+				// TODO: for centered draw, I may have to call NotifyLineStart again with a rewind var
+				iv.lineBreakNth = 0 // reset line break counter
+				continue
+			}
 
-		if codePoint == '\n' {
 			iv.increaseLineBreakNth()
-			position = self.advanceLine(position, x, iv.lineBreakNth)
+			position = operator.AdvanceLine(self, target, position, x, iv.lineBreakNth)
 			if position.Y > maxY { break }
+			operator.NotifyNewBaseline(position.Y) // life is harsh
+			position.X = operator.NotifyLineStart(self, target, position.X)
 		} else {
 			if codePoint != -2 {
 				glyphIndex = self.getGlyphIndex(self.state.activeFont, codePoint)
 			}
-			position, iv = self.drawGlyphLTR(target, position, glyphIndex, iv)
+			if operator.measuring {
+				position, iv = self.advanceGlyphLTR(target, position, glyphIndex, iv)
+			} else { // drawing
+				position, iv = self.drawGlyphLTR(target, position, glyphIndex, iv)
+			}
 		}
 	}
 	
-	// last popAll may be redundant in a lot of cases, but some graphical
-	// effects require the pop to trigger anyway, so we can't skip this
-	position.X = operator.PopAll(self, target, position.X)
+	// last popAll is redundant in most cases, but some graphical
+	// effects do require the final pop trigger, so we can't skip this
+	position.X, iv.prevGlyphIndex, rewind = operator.PopAll(self, target, position.X, iv.prevGlyphIndex)
+	if rewind { // this can happen for symmetry reasons (TODO: have actual tests for this, it's tricky as hell)
+		position.X, iv.prevGlyphIndex, rewind = operator.PopAll(self, target, position.X, iv.prevGlyphIndex)
+		if rewind { panic("broken code") }
+	}	
 }

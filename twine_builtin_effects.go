@@ -1,5 +1,3 @@
-//go:build !gtxt
-
 package etxt
 
 import "image/color"
@@ -8,61 +6,75 @@ import "image/color"
 
 import "github.com/tinne26/etxt/fract"
 
-func (self *Renderer) twineStoragePush(value any) {
-	self.twineStorage = append(self.twineStorage, value)
-}
-
-func (self *Renderer) twineStoragePop() any {
-	last := len(self.twineStorage) - 1
-	value := self.twineStorage[last]
-	self.twineStorage = self.twineStorage[ : last]
-	return value
-}
-
 // implements EffectPushColor
-func twineEffectPushColor(
-	renderer *Renderer, payload []byte, flags TwineEffectFlags,
-	target Target, _ fract.Point, _ fract.Rect,
-) fract.Unit {
-	// ignore on measuring
-	if flags.IsMeasure() { return 0 }
+func twineEffectPushColor(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
+	// usage asserts
+	args.AssertPayloadLen(4)
+	args.AssertOnPre(false)
+	
+	// bypass if measuring
+	if args.Measuring() { return 0 }
 
-	// some safety asserts
-	if len(payload) != 4 { panic("unexpected") }
-	if flags.IsPre() { panic("unexpected") }
-
-	// push or pop
-	switch flags.GetTrigger() {
+	// handle each trigger situation
+	switch args.GetTrigger() {
 	case TwineTriggerPush:
 		renderer.twineStoragePush(renderer.GetColor())
-		renderer.SetColor(color.RGBA{payload[0], payload[1], payload[2], payload[3]})
+		r, g, b, a := args.Payload[0], args.Payload[1], args.Payload[2], args.Payload[3]
+		renderer.SetColor(color.RGBA{r, g, b, a})
 	case TwineTriggerPop:
 		renderer.SetColor(renderer.twineStoragePop().(color.Color))
+	case TwineTriggerLineBreak, TwineTriggerLineStart:
+		// unused, not necessary
 	default:
 		panic("unexpected")
 	}
+
 	return 0
 }
 
 // implements EffectPushFont
-func twineEffectPushFont(
-	renderer *Renderer, payload []byte, flags TwineEffectFlags,
-	target Target, _ fract.Point, _ fract.Rect,
-) fract.Unit {
-	// some safety asserts
-	if len(payload) != 1 { panic("unexpected") }
-	if flags.IsPre() { panic("unexpected") }
+func twineEffectPushFont(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
+	// usage asserts
+	args.AssertPayloadLen(1)
+	args.AssertOnPre(false)
 
-	// push or pop
-	switch flags.GetTrigger() {
+	// handle each trigger situation
+	switch args.GetTrigger() {
 	case TwineTriggerPush:
 		renderer.twineStoragePush(renderer.state.fontIndex)
-		renderer.Complex().SetFontIndex(FontIndex(payload[0]))
+		renderer.Complex().SetFontIndex(FontIndex(args.Payload[0]))
 	case TwineTriggerPop:
 		index := renderer.twineStoragePop().(FontIndex)
 		renderer.Complex().SetFontIndex(index)
+	case TwineTriggerLineBreak, TwineTriggerLineStart:
+		// unused, not necessary
 	default:
 		panic("unexpected")
 	}
+
+	return 0
+}
+
+// implements EffectShiftSize
+func twineEffectShiftSize(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
+	// usage asserts
+	args.AssertPayloadLen(1)
+	args.AssertOnPre(false)
+
+	// handle each trigger situation
+	switch args.GetTrigger() {
+	case TwineTriggerPush:
+		renderer.twineStoragePush(renderer.state.logicalSize)
+		sizeShift := fract.FromInt(int(int8(args.Payload[0])))
+		renderer.Fract().SetSize(renderer.state.logicalSize + sizeShift)
+	case TwineTriggerPop:
+		size := renderer.twineStoragePop().(fract.Unit)
+		renderer.Fract().SetSize(size)
+	case TwineTriggerLineBreak, TwineTriggerLineStart:
+		// unused, not necessary
+	default:
+		panic("unexpected")
+	}
+
 	return 0
 }

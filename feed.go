@@ -164,6 +164,9 @@ func (self *Feed) traverseGlyph(target Target, glyphIndex sfnt.GlyphIndex, drawM
 	dir := self.Renderer.Complex().GetDirection()
 	switch dir {
 	case LeftToRight:
+		// TODO: revise both advances and compare with renderer.drawGlyphLTR
+		//       and renderer.advanceGlyphLTR and so on
+
 		// apply kerning unless coming from line break
 		if self.LineBreakAcc == 0 {
 			self.Position.X += renderer.getOpKernBetween(self.PrevGlyphIndex, glyphIndex)	

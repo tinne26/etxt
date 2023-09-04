@@ -24,7 +24,6 @@ type Font = sfnt.Font
 //   )
 type FontIndex uint8
 const (
-	
 	NextFontIndex FontIndex = 255 // see RendererComplex.RegisterFont()
 )
 

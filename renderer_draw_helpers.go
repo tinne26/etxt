@@ -42,7 +42,7 @@ func (self *Renderer) drawRuneLTR(target Target, position fract.Point, codePoint
 	return self.drawGlyphLTR(target, position, glyph, iv)
 }
 
-// expects an quantized position, returns an unquantized position
+// expects a quantized position, returns an unquantized position
 func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
 	// apply kerning unless coming from line break
 	if iv.lineBreakNth != 0 {
@@ -72,6 +72,7 @@ func (self *Renderer) drawRuneRTL(target Target, position fract.Point, codePoint
 	return self.drawGlyphRTL(target, position, glyph, iv)
 }
 
+// expects a quantized position, returns a quantized position
 func (self *Renderer) drawGlyphRTL(target Target, position fract.Point, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
 	// advance
 	position.X -= self.getOpAdvance(currGlyphIndex)
