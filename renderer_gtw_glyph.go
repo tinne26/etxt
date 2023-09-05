@@ -43,7 +43,7 @@ func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 // Overrides the renderer's glyph drawing function with a custom
 // one. You can set it to nil to go back to the default behavior.
 //
-// The default implementation is an optimized equivalent of:
+// The default implementation is a streamlined equivalent of:
 //   mask := renderer.Glyph().LoadMask(glyphIndex, origin)
 //   renderer.Glyph().DrawMask(target, mask, origin)
 // See [examples/ebiten/colorful] and [examples/ebiten/shaking]
@@ -110,7 +110,9 @@ func (self *RendererGlyph) GetRasterizer() mask.Rasterizer {
 // ---- underlying implementations ----
 
 func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, origin fract.Point) GlyphMask {
-	self.cacheHandler.NotifyFractChange(origin)
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(origin)
+	}
 	return self.loadGlyphMask(self.state.activeFont, index, origin)
 }
 

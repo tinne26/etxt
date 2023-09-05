@@ -33,8 +33,10 @@ func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
 // origin position communicated to the cache if relevant.
 func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, origin fract.Point) GlyphMask {
 	// if the mask is available in the cache, that's all
-	glyphMask, found := self.cacheHandler.GetMask(index)
-	if found { return glyphMask }
+	if self.cacheHandler != nil {
+		glyphMask, found := self.cacheHandler.GetMask(index)
+		if found { return glyphMask }
+	}
 
 	// glyph mask not cached, let's rasterize on our own
 	segments, err := font.LoadGlyph(&self.buffer, index, fixed.Int26_6(self.state.scaledSize), nil)
@@ -50,8 +52,10 @@ func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, orig
 	if err != nil { panic("RasterizeGlyphMask failed: " + err.Error()) }
 
 	// pass to cache and return
-	glyphMask = convertAlphaImageToGlyphMask(alphaMask)
-	self.cacheHandler.PassMask(index, glyphMask)
+	glyphMask := convertAlphaImageToGlyphMask(alphaMask)
+	if self.cacheHandler != nil {
+		self.cacheHandler.PassMask(index, glyphMask)
+	}
 	return glyphMask
 }
 

@@ -4,6 +4,8 @@ import "time"
 import "math/rand"
 import "testing"
 
+// TODO: may want to add tests proving the correct omission of redundant onChange notifications.
+
 func TestFloat32UnitRangeStability(t *testing.T) {
 	if unitFP32FromUint16(0) != -1 { t.Fatal("expected minus one") }
 	if unitFP32FromUint16(65535) != 1 { t.Fatal("expected one") }

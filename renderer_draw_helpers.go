@@ -54,7 +54,9 @@ func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyp
 
 	if position.X.FractShift() != iv.prevFractX {
 		iv.prevFractX = position.X.FractShift()
-		self.cacheHandler.NotifyFractChange(position)
+		if self.cacheHandler != nil {
+			self.cacheHandler.NotifyFractChange(position)
+		}
 	}
 
 	// draw glyph
@@ -87,7 +89,9 @@ func (self *Renderer) drawGlyphRTL(target Target, position fract.Point, currGlyp
 
 	if position.X.FractShift() != iv.prevFractX {
 		iv.prevFractX = position.X.FractShift()
-		self.cacheHandler.NotifyFractChange(position)
+		if self.cacheHandler != nil {
+			self.cacheHandler.NotifyFractChange(position)
+		}
 	}
 	
 	// draw glyph

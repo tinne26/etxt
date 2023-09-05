@@ -4,6 +4,16 @@ import "testing"
 
 import "github.com/tinne26/etxt/fract"
 
+func TestFauxMinusOneSkew(t *testing.T) {
+	// minus one skew is represented with a zero, and it's easy to mess up initialization
+	rast := FauxRasterizer{}
+	rast.SetSkewFactor(-1)
+	skew := rast.GetSkewFactor()
+	if skew != -1.0 {
+		t.Fatalf("expected skew to be %f, got %f", -1.0, skew)
+	}
+}
+
 func TestFauxOblique(t *testing.T) {
 	tests := []struct{
 		skew float32

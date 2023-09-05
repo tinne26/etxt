@@ -60,7 +60,9 @@ func (self *FauxRasterizer) SetSkewFactor(factor float32) {
 		if factor < -1.0 { factor = -1.0 }
 		skewUint16  := uint16FromUnitFP32(factor)
 		skewMask    := uint64(skewUint16) << 16
-		if (self.signature & 0x00000000_FFFF0000) == skewMask { return } // early return
+		if (self.signature & 0x00000000_FFFF0000) == skewMask && (self.signature & 0x00001000_00000000) != 0 {
+			return // early return
+		}
 		skewFloat32 := unitFP32FromUint16(skewUint16)
 		self.skewing = skewFloat32
 

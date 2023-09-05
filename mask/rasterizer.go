@@ -69,6 +69,8 @@ type vectorTracer interface {
 // not include any active lines or curves (e.g.: space glyphs).
 func Rasterize(outline sfnt.Segments, rasterizer Rasterizer, origin fract.Point) (*image.Alpha, error) {
 	// return nil if the outline don't include lines or curves
+	// TODO: actually, one could argue that this should be on the rasterizer,
+	// as some rasterizers may want to draw something even for empty glyphs...
 	for _, segment := range outline {
 		if segment.Op == sfnt.SegmentOpMoveTo { continue }
 		return rasterizer.Rasterize(outline, origin)

@@ -1,5 +1,5 @@
 package etxt
-import "fmt"
+
 import "testing"
 
 import "github.com/tinne26/etxt/fract"
@@ -32,7 +32,7 @@ func TestMeasureWithWrap(t *testing.T) {
 		for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {
 			for _, dir := range []Direction{ LeftToRight, RightToLeft } {
 				// configure renderer with current params
-				fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
+				//fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
 				renderer.Fract().SetHorzQuantization(qt)
 				renderer.SetAlign(align)
 				renderer.Complex().SetDirection(dir)
