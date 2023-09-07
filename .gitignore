@@ -16,6 +16,11 @@ docs/*.css
 *.ttf
 *.otf
 
+# ignore generated testdata files
+testdata_*.go
+!testdata_test.go
+!testdata_generate.go
+
 # ignore root copies of scripts if anyone uses them
 /*.sh
 /*.bat
