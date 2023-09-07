@@ -167,9 +167,10 @@ func (self *Renderer) mixImageInto(src GlyphMask, target draw.Image, srcRect, ta
 		for x := 0; x < width; x++ {
 			// get mask alpha applied to our main drawing color
 			level := src.AlphaAt(srcOffX + x, srcOffY + y).A
-			if level == 0 { continue }
 			var newColor color.Color
-			if level == 255 {
+			if level == 0 {
+				newColor = color.RGBA{0, 0, 0, 0}
+			} else if level == 255 {
 				newColor = directColor
 			} else {
 				newColor = rescaledAlpha(r, g, b, a, level)
