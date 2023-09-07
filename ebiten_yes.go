@@ -38,21 +38,15 @@ type GlyphMask = *ebiten.Image
 // [Blend]: https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#Blend
 type BlendMode = ebiten.Blend
 
-type drawOptions *ebiten.DrawImageOptions
-
-// func newDrawOpts() drawOptions {
-// 	return &ebiten.DrawImageOptions{}
-// }
-
-// The default glyph drawing function used in renderers. Do not confuse with
-// the main [Renderer.Draw]() function. DefaultDrawFunc is a low level function,
-// rarely necessary except when paired with [Renderer.Traverse]*() operations.
+// Underlying default glyph drawing function for renderers.
+// Can be overridden with Renderer.Glyph().SetDrawFunc(...).
 func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask GlyphMask) {
 	if mask == nil { return } // spaces and empty glyphs will be nil
 
 	// TODO: maybe switch to DrawTriangles, but specially, move opts out (tricky due to gtxt)
 	//       and have color set only when necessary, translations reset, blend mode set only
-	//       when necessary, etc. Or maybe not.
+	//       when necessary, etc. Or maybe not. At least write a quick benchmark to see the
+	//       impact of moving opts out.
 	opts := ebiten.DrawImageOptions{}
 	srcRect := mask.Bounds()
 	opts.GeoM.Translate(float64(origin.X.ToIntFloor() + srcRect.Min.X), float64(origin.Y.ToIntFloor() + srcRect.Min.Y))

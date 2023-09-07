@@ -117,7 +117,9 @@ func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 }
 
 func (self *Renderer) glyphDrawMask(target Target, mask GlyphMask, origin fract.Point) {
-	self.cacheHandler.NotifyFractChange(origin)
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(origin)
+	}
 	self.defaultDrawFunc(target, origin, mask)
 }
 
