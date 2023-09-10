@@ -77,7 +77,8 @@ func GetIdentifier(font *sfnt.Font) (string, error) {
 // contain them multiple times too.
 //
 // If you load fonts dynamically, it is good practice to use this function
-// to make sure that the fonts include all the glyphs that you require.
+// or the simpler [IsMissingRunes]() to make sure that the fonts include all
+// the glyphs that you require.
 func GetMissingRunes(font *sfnt.Font, text string) ([]rune, error) {
 	buffer := getSfntBuffer()
 	defer releaseSfntBuffer(buffer)
@@ -89,4 +90,17 @@ func GetMissingRunes(font *sfnt.Font, text string) ([]rune, error) {
 		if index == 0 { missing = append(missing, codePoint) }
 	}
 	return missing, nil
+}
+
+// Simpler alternative to [GetMissingRunes]().
+func IsMissingRunes(font *sfnt.Font, text string) (bool, error) {
+	buffer := getSfntBuffer()
+	defer releaseSfntBuffer(buffer)
+
+	for _, codePoint := range text {
+		index, err := font.GlyphIndex(buffer, codePoint)
+		if err != nil { return false, err }
+		if index == 0 { return true, nil }
+	}
+	return false, nil
 }

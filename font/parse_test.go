@@ -35,8 +35,8 @@ func TestParse(t *testing.T) {
 	}
 
 	_, _, err = ParseFromPath("fake/path/must/not/exist/yay.ttf")
-	if err == nil || !strings.Contains(err.Error(), "cannot find") {
-		t.Fatal("expected error with 'cannot find' in its contents")
+	if !isPathNotExistErr(err) {
+		t.Fatalf("expected error of path/file not existing, got '%s'", err)
 	}
 	
 	fakefs := fakeFS{}
@@ -73,4 +73,12 @@ func TestParse(t *testing.T) {
 	if err == nil || err.Error() != "fakeClose" {
 		t.Fatalf("expected err == \"fakeClose\", but got '%s'", err)
 	}
+}
+
+func isPathNotExistErr(err error) bool {
+	if err == nil { return false }
+	if strings.Contains(err.Error(), "cannot find") { return true } // windows
+	if strings.Contains(err.Error(), "no such file or directory") { return true } // linux
+	// ... (more OSes may be relevant, but I only wrote the ones I have test scripts for)
+	return false
 }

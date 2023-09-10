@@ -45,11 +45,11 @@ func (self *RendererUtils) SetCache8MiB() {
 }
 
 // Utility method to get the current line height. Equivalent to:
-//   buffer := renderer.GetBuffer()
 //   font   := renderer.GetFont()
+//   buffer := renderer.GetBuffer()
 //   size   := renderer.Fract().GetScaledSize()
 //   sizer  := renderer.GetSizer()
-//   lineHeight := sizer.LineHeight(buffer, font, size).ToFloat64()
+//   lineHeight := sizer.LineHeight(font, buffer, size).ToFloat64()
 func (self *RendererUtils) GetLineHeight() float64 {
 	return (*Renderer)(self).utilsGetLineHeight()
 }
@@ -62,45 +62,6 @@ func (self *RendererUtils) GetLineHeight() float64 {
 // for the font. Notice that the cache handler isn't included.
 func (self *RendererUtils) FillMissingProperties() {
 	(*Renderer)(self).utilsFillMissingProperties()
-}
-
-func (self *Renderer) utilsFillMissingProperties() {
-	if self.state.rasterizer == nil {
-		self.glyphSetRasterizer(&mask.DefaultRasterizer{})
-	}
-	if self.state.fontColor == nil {
-		self.state.fontColor = color.RGBA{255, 255, 255, 255}
-	}
-	if self.state.horzQuantization == 0 {
-		self.state.horzQuantization = uint8(Qt4th)
-	}
-	if self.state.vertQuantization == 0 {
-		self.state.vertQuantization = uint8(QtFull)
-	}
-	if self.state.align & alignVertBits == 0 {
-		self.state.align = self.state.align | Baseline
-	}
-	if self.state.align & alignHorzBits == 0 {
-		self.state.align = self.state.align | Left
-	}
-
-	var refreshSize bool
-	if self.state.scale == 0 {
-		self.state.scale = 64
-		refreshSize = true
-	}
-	if self.state.logicalSize == 0 {
-		self.state.logicalSize = 16*fract.One
-		refreshSize = true
-	}
-	if refreshSize {
-		self.refreshScaledSize() // also notifies the cache handler and sizer
-	}
-
-	if self.state.fontSizer == nil {
-		self.state.fontSizer = &sizer.DefaultSizer{}
-		self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
-	}
 }
 
 // Utility method to set the font by passing its raw data and letting
@@ -181,6 +142,45 @@ func (self *Renderer) utilsSetFontBytes(data []byte) error {
 
 func (self *Renderer) utilsGetLineHeight() float64 {
 	return self.state.fontSizer.LineHeight(self.state.activeFont, &self.buffer, self.state.scaledSize).ToFloat64()
+}
+
+func (self *Renderer) utilsFillMissingProperties() {
+	if self.state.rasterizer == nil {
+		self.glyphSetRasterizer(&mask.DefaultRasterizer{})
+	}
+	if self.state.fontColor == nil {
+		self.state.fontColor = color.RGBA{255, 255, 255, 255}
+	}
+	if self.state.horzQuantization == 0 {
+		self.state.horzQuantization = uint8(Qt4th)
+	}
+	if self.state.vertQuantization == 0 {
+		self.state.vertQuantization = uint8(QtFull)
+	}
+	if self.state.align & alignVertBits == 0 {
+		self.state.align = self.state.align | Baseline
+	}
+	if self.state.align & alignHorzBits == 0 {
+		self.state.align = self.state.align | Left
+	}
+
+	var refreshSize bool
+	if self.state.scale == 0 {
+		self.state.scale = 64
+		refreshSize = true
+	}
+	if self.state.logicalSize == 0 {
+		self.state.logicalSize = 16*fract.One
+		refreshSize = true
+	}
+	if refreshSize {
+		self.refreshScaledSize() // also notifies the cache handler and sizer
+	}
+
+	if self.state.fontSizer == nil {
+		self.state.fontSizer = &sizer.DefaultSizer{}
+		self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
+	}
 }
 
 func (self *Renderer) utilsStoreState() {

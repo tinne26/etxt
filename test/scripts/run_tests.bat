@@ -9,4 +9,4 @@ go test -tags gtxt -count "1" -cover ./... | findstr /R "^[^?]"
 :: but it helps catch build tag mixups
 echo.
 echo [testing with Ebitengine...]
-go test -tags test -count "1" -cover ./... | findstr /R "^[^?]"
+go test -count "1" -cover ./... | findstr /R "^[^?]"
