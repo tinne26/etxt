@@ -63,21 +63,6 @@ func (self *DefaultCacheHandler) PassMask(index sfnt.GlyphIndex, mask GlyphMask)
 	self.cache.PassMask(self.activeKey, mask)
 }
 
-// Provides access to [DefaultCache.ApproxByteSize]().
-func (self *DefaultCacheHandler) ApproxCacheByteSize() int {
-	return self.cache.ApproxByteSize()
-}
-
-// Provides access to [DefaultCache.PeakSize]().
-func (self *DefaultCacheHandler) PeakCacheSize() int {
-	return self.cache.PeakSize()
-}
-
-// Provides access to [DefaultCache.NumEntries]().
-func (self *DefaultCacheHandler) NumEntries() int {
-	return self.cache.NumEntries()
-}
-
 // Provides access to the underlying [DefaultCache].
 func (self *DefaultCacheHandler) Cache() *DefaultCache {
 	return self.cache

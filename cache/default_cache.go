@@ -2,131 +2,131 @@ package cache
 
 import "sync"
 import "sync/atomic"
-import "math/rand"
 
 // The default etxt cache. It is concurrent-safe (though not optimized
 // or expected to be used under heavily concurrent scenarios), it has
 // memory bounds and uses random sampling for evicting entries.
 type DefaultCache struct {
 	cachedMasks map[[3]uint64]*cachedMaskEntry
-	rng *rand.Rand
-	spaceBytesLeft uint32
-	lowestBytesLeft uint32
-	byteSizeLimit uint32
 	mutex sync.RWMutex
+	capacity uint64
+	currentSize uint64
+	peakSize uint64 // (max ever size)
+	accessTick uint64 // (see toNextAccessTick() for overflow details)
 }
 
-// Creates a new cache bounded by the given size. Negative values
-// will panic.
+// Creates a new cache bounded by the given capacity. Negative 
+// values will panic.
 //
 // Values below 32*1024 (32KiB) are not recommended; allowing the
 // cache to grow up to a few MiBs in size is generally preferable.
 // For more concrete size estimations, the package overview includes
 // a more detailed explanation.
-func NewDefaultCache(maxByteSize int) *DefaultCache {
-	if maxByteSize < 0 { panic("maxByteSize < 0") } // likely a dev mistake
+func NewDefaultCache(capacityInBytes int) *DefaultCache {
+	if capacityInBytes < 0 { panic("capacityInBytes < 0") } // likely a dev mistake
 	return &DefaultCache {
 		cachedMasks: make(map[[3]uint64]*cachedMaskEntry, 128),
-		spaceBytesLeft: uint32(maxByteSize),
-		lowestBytesLeft: uint32(maxByteSize),
-		byteSizeLimit: uint32(maxByteSize),
-		rng: rand.New(rand.NewSource(systemMonoNanoTime()^0x36285016_051A1E33)),
+		capacity: uint64(capacityInBytes),
 	}
 }
 
-// Attempts to remove the entry with the lowest eviction cost from a
-// small pool of samples. May not remove anything in some cases.
-//
-// The returned value is the freed space, which must be manually
-// added to spaceBytesLeft by the caller.
-func (self *DefaultCache) removeRandEntry(hotness uint32, instant uint32) uint32 {
-	const SampleSize = 10 // NOTE: we could make this configurable, but not a big deal
+func (self *DefaultCache) removeRandOldEntry() {
+	// working values and variables
+	const RequiredSamples = 10 // NOTE: we could make this configurable, but not a big deal
+	var oldestAccess uint64 = 0xFFFF_FFFF_FFFF_FFFF
+	var oldestEntryKey [3]uint64
+	var entriesSampled int
 
+	// pseudo-random entry sampling
 	self.mutex.RLock()
-	var selectedKey [3]uint64
-	lowestHotness := ^uint32(0)
-	samplesTaken  := 0
 	for key, cachedMaskEntry := range self.cachedMasks {
-		currHotness := cachedMaskEntry.Hotness(instant)
-		// on lower hotness, update selected eviction target
-		if currHotness < lowestHotness {
-			lowestHotness = currHotness
-			selectedKey = key
+		access := cachedMaskEntry.LastAccess()
+		if access <= oldestAccess {
+			oldestAccess = access
+			oldestEntryKey = key
 		}
 
 		// break if we already took enough samples
-		samplesTaken += 1
-		if samplesTaken >= SampleSize { break }
+		entriesSampled += 1
+		if entriesSampled >= RequiredSamples { break }
 	}
 	self.mutex.RUnlock()
 
-	// delete selected entry, if any
-	freedSpace := uint32(0)
-	if lowestHotness < hotness {
-		self.mutex.Lock()
-		entry, stillExists := self.cachedMasks[selectedKey]
-		if stillExists {
-			delete(self.cachedMasks, selectedKey)
-			freedSpace = entry.ByteSize
-		}
-		self.mutex.Unlock()
+	// delete oldest entry found
+	self.mutex.Lock()
+	cachedMaskEntry, stillExists := self.cachedMasks[oldestEntryKey]
+	if stillExists {
+		delete(self.cachedMasks, oldestEntryKey)
+		maskSize := uint64(cachedMaskEntry.ByteSize())
+		atomic.AddUint64(&self.currentSize, ^(maskSize - 1))
 	}
-	return freedSpace
+	self.mutex.Unlock()
 }
 
 // Stores the given mask with the given key.
 func (self *DefaultCache) PassMask(key [3]uint64, mask GlyphMask) {
-	const MaxMakeRoomAttempts = 2
-
-	// see if we have enough space to add the mask, or try to
-	// make some room otherwise
-	maskEntry, instant := newCachedMaskEntry(mask)
-	if maskEntry.ByteSize > atomic.LoadUint32(&self.byteSizeLimit) { return }
-	spaceBytesLeft := atomic.LoadUint32(&self.spaceBytesLeft)
-	freedSpace := uint32(0)
-	if maskEntry.ByteSize > spaceBytesLeft {
-		hotness := maskEntry.Hotness(instant)
-		missingSpace := maskEntry.ByteSize - spaceBytesLeft
-		for i := 0; i < MaxMakeRoomAttempts; i++ {
-			freedSpace += self.removeRandEntry(hotness, instant)
-			if freedSpace >= missingSpace { goto roomMade }
-		}
-
-		// we didn't make enough room for the new entry. desist.
-		if freedSpace != 0 {
-			atomic.AddUint32(&self.spaceBytesLeft, freedSpace)
-		}
-		return
+	// create mask cached entry
+	tick := self.toNextAccessTick()
+	maskEntry := newCachedMaskEntry(mask, tick)
+	maskSize := uint64(maskEntry.ByteSize())
+	if maskSize > atomic.LoadUint64(&self.capacity) { return } // awkward
+	
+	// see if we have enough space to add (without concurrent checking)
+	for attempt := 0; attempt < 5; attempt++ {
+		if self.hasRoomForMask(maskSize) { break }
+		self.removeRandOldEntry()
 	}
 
-roomMade:
 	// add the mask to the cache
 	self.mutex.Lock()
-	defer self.mutex.Unlock()
-	if freedSpace != 0 { atomic.AddUint32(&self.spaceBytesLeft, freedSpace) }
-	_, maskAlreadyExists := self.cachedMasks[key]
-	if maskAlreadyExists { return }
-	if atomic.LoadUint32(&self.spaceBytesLeft) < maskEntry.ByteSize { return }
-	newLeft := atomic.AddUint32(&self.spaceBytesLeft, ^uint32(maskEntry.ByteSize - 1))
-	if newLeft < atomic.LoadUint32(&self.lowestBytesLeft) {
-		atomic.StoreUint32(&self.lowestBytesLeft, newLeft)
+	preMask, maskAlreadyExists := self.cachedMasks[key]
+	if maskAlreadyExists {
+		delete(self.cachedMasks, key)
+		preMaskSize := uint64(preMask.ByteSize())
+		atomic.AddUint64(&self.currentSize, ^(preMaskSize - 1))
 	}
-	self.cachedMasks[key] = maskEntry
+	if self.hasRoomForMask(maskSize) {
+		self.cachedMasks[key] = maskEntry
+		newSize := atomic.AddUint64(&self.currentSize, maskSize)
+		if atomic.LoadUint64(&self.peakSize) < newSize {
+			atomic.StoreUint64(&self.peakSize, newSize)
+		}
+	}
+	self.mutex.Unlock()
 }
 
-// Returns an approximation of the number of bytes taken by the
-// glyph masks currently stored in the cache.
-func (self *DefaultCache) ApproxByteSize() int {
-	return int(atomic.LoadUint32(&self.byteSizeLimit) - atomic.LoadUint32(&self.spaceBytesLeft))
+func (self *DefaultCache) hasRoomForMask(maskSize uint64) bool {
+	capacity := atomic.LoadUint64(&self.capacity)
+	if capacity < maskSize { return false }
+	size := atomic.LoadUint64(&self.currentSize)
+	return size <= capacity - maskSize
 }
 
-// Returns an approximation of the maximum amount of bytes that the
-// cache has been filled with at any point of its life.
+// Returns the capacity of the cache, in bytes.
+func (self *DefaultCache) Capacity() int {
+	return int(atomic.LoadUint64(&self.capacity))
+}
+
+// Returns an approximation of the number of bytes taken
+// by the glyph masks currently stored in the cache.
+func (self *DefaultCache) CurrentSize() int {
+	return int(atomic.LoadUint64(&self.currentSize))
+}
+
+func (self *DefaultCache) remainingCapacity() uint64 {
+	currSize := atomic.LoadUint64(&self.currentSize)
+	capacity := atomic.LoadUint64(&self.capacity)
+	if currSize >= capacity { return 0 }
+	return capacity - currSize
+}
+
+// Returns an approximation of the maximum amount of bytes that 
+// the cache has been filled with at any point of its life.
 //
 // This method can be useful to determine the actual usage of a cache
 // within your application and set its capacity to a reasonable value.
 func (self *DefaultCache) PeakSize() int {
-	return int(atomic.LoadUint32(&self.byteSizeLimit) - atomic.LoadUint32(&self.lowestBytesLeft))
+	return int(atomic.LoadUint64(&self.peakSize))
 }
 
 // Returns the number of cached masks currently in the cache.
@@ -143,8 +143,31 @@ func (self *DefaultCache) GetMask(key [3]uint64) (GlyphMask, bool) {
 	entry, found := self.cachedMasks[key]
 	self.mutex.RUnlock()
 	if !found { return nil, false }
-	entry.IncreaseAccessCount()
+
+	tick := self.toNextAccessTick()
+	entry.UpdateAccess(tick)
 	return entry.Mask, true
+}
+
+// Like GetMask, but doesn't update the last access for the mask
+// on the cache. Used for debugging, where we sometimes need to observe
+// without causing side-effects.
+func (self *DefaultCache) sneakyGetMask(key [3]uint64) (GlyphMask, bool) {
+	self.mutex.RLock()
+	entry, found := self.cachedMasks[key]
+	self.mutex.RUnlock()
+	return entry.Mask, found
+}
+
+func (self *DefaultCache) toNextAccessTick() uint64 {
+	tick := atomic.AddUint64(&self.accessTick, 1)
+	if tick == 0 {
+		// human error is much more likely than the event itself,
+		// so panicking makes more sense than a fallback (which
+		// would also be easy to write in three lines)
+		panic("broken code (or +243k years elapsed drawing 10k glyphs per frame at 240fps)")
+	}
+	return tick
 }
 
 // Returns a new cache handler for the current cache. While DefaultCache

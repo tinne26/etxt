@@ -13,8 +13,8 @@
 // screen size and can absolutely not pretend to cache all the masks that
 // the renderers may generate. The [DefaultCache.PeakSize]() function is
 // a good tool to assist you, but you will have to figure out your requirements
-// by yourself. Of course, you can also just use etxt.Cache8MiB and see how far
-// does that get you.
+// by yourself. Of course, you can also just use Renderer.Utils().SetCache8MiB()
+// and see how far does that get you.
 //
 // To give a more concrete size reference, though, let's assume a normal or
 // small reading font size, where each glyph mask is around 11x11 on average

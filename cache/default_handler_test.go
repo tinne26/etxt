@@ -1,6 +1,5 @@
 package cache
 
-import "sync/atomic"
 import "testing"
 
 import "github.com/tinne26/etxt/mask"
@@ -15,7 +14,7 @@ func TestDefaultHandler(t *testing.T) {
 	handler.NotifySizeChange(12 << 6)
 	handler.NotifyFractChange(fract.Point{1, 1})
 
-	if handler.ApproxCacheByteSize() != 0 {
+	if handler.Cache().CurrentSize() != 0 {
 		t.Fatal("no mask yet size != 0")
 	}
 
@@ -30,7 +29,7 @@ func TestDefaultHandler(t *testing.T) {
 	if !found { t.Fatal("expected mask in cache") }
 	if mask != nil { t.Fatal("expected nil mask") }
 
-	gotSize := handler.PeakCacheSize()
+	gotSize := handler.Cache().PeakSize()
 	if gotSize != constMaskSizeFactor {
 		t.Fatalf("expected %d bytes, got %d", constMaskSizeFactor, gotSize)
 	}
@@ -39,21 +38,24 @@ func TestDefaultHandler(t *testing.T) {
 	if !found { t.Fatal("expected mask at the given key") }
 	if mask != nil { t.Fatal("expected nil mask") }
 
-	freed := cache.removeRandEntry(100000, cacheEntryInstant())
+	preSize := cache.CurrentSize()
+	cache.removeRandOldEntry()
+	freed := preSize - cache.CurrentSize()
 	if freed != constMaskSizeFactor {
 		t.Fatalf("expected %d freed bytes, got %d", constMaskSizeFactor, freed)
 	}
-	atomic.AddUint32(&cache.spaceBytesLeft, constMaskSizeFactor)
 
-	freed = cache.removeRandEntry(100000, cacheEntryInstant())
+	preSize = cache.CurrentSize()
+	cache.removeRandOldEntry()
+	freed = preSize - cache.CurrentSize()
 	if freed != 0 {
 		t.Fatalf("expected 0 freed bytes, got %d", freed)
 	}
 
-	gotSize = handler.ApproxCacheByteSize()
+	gotSize = handler.Cache().CurrentSize()
 	if gotSize != 0 { t.Fatalf("expected 0 bytes, got %d", gotSize) }
 
-	gotSize = handler.PeakCacheSize()
+	gotSize = handler.Cache().PeakSize()
 	if gotSize != constMaskSizeFactor {
 		t.Fatalf("expected %d bytes, got %d", constMaskSizeFactor, gotSize)
 	}
