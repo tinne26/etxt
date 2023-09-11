@@ -264,7 +264,7 @@ func main() {
 	helpRend.SetSize(16)
 	helpRend.SetFont(sfntFont)
 	helpRend.SetAlign(etxt.Center)
-	helpRend.SetColor(color.RGBA{255, 255, 255, 150})
+	helpRend.SetColor(color.RGBA{128, 128, 128, 128})
 
 	// get original italic angle information
 	postTable := sfntFont.PostTable()
