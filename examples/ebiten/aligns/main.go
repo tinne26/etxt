@@ -102,7 +102,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	self.text.Draw(canvas, info, pad, h - pad)
 
 	// draw aligned text
-	self.text.Utils().AssertMaxRestorePoints(0)
+	self.text.Utils().AssertMaxStoredStates(0)
 	self.text.Utils().StoreState()
 	defer self.text.Utils().RestoreState()
 
@@ -143,7 +143,7 @@ func main() {
 	renderer := etxt.NewRenderer()
 	renderer.Utils().SetCache8MiB()
 	renderer.SetFont(sfntFont)
-	renderer.SetColor(color.RGBA{128, 128, 128, 255}) // white
+	renderer.SetColor(color.RGBA{128, 128, 128, 255})
 	renderer.SetAlign(etxt.LastBaseline | etxt.Left)
 	renderer.SetSize(15)
 

@@ -3,182 +3,177 @@ package main
 import "os"
 import "log"
 import "fmt"
-import "time"
 import "math"
 import "image/color"
 
+import "golang.org/x/image/font/sfnt"
+
 import "github.com/hajimehoshi/ebiten/v2"
-import "golang.org/x/image/math/fixed"
+import "github.com/hajimehoshi/ebiten/v2/inpututil"
 
 import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/esizer"
+import "github.com/tinne26/etxt/font"
+import "github.com/tinne26/etxt/fract"
 
-// NOTE: to honor the beauty of fonts, I decided to make this example
-//       resizable and fullscreen-able (press F, but release fast or
-//       it will re-trigger). You can navigate glyphs with the up/down
-//       arrows. You can also press H to switch on/off the current glyph
-//       info. Enjoy your fonts!
+// This example is more of an homage to beautiful typography than
+// anything else. You can basically see all the glyphs of a font,
+// navigating with up/down arrows and using F to go fullscreen.
+// You can also press H to hide/show the glyph indices info.
+//
+// The only interesting part of the example is probably the fact
+// that it uses a low-level drawing mechanism, getting info directly
+// from the sizer, aligning glyphs manually and drawing them with
+// Renderer.Glyph().DrawMask().
+// 
+// You can run it like this:
+//   go run github.com/tinne26/etxt/examples/ebiten/all_glyphs@latest path/to/font.ttf
+//
+// Enjoy your fonts!
 
-const GlyphSize    = 64   // controls the glyph size
-const GlyphSpacing = 1.24 // controls the space around/between glyphs
+const GlyphSize    = 50   // controls the glyph size
+const GlyphSpacing = 1.25 // controls the space around/between glyphs
 
 type Game struct {
-	txtRenderer *etxt.Renderer
+	text *etxt.Renderer
 	numGlyphs int
-	position int
-	spacing int
-	lastPressTime time.Time
-	glyphs []etxt.GlyphIndex
-
-	screenWidth int
-	screenHeight int
-	hint bool
-	hintRenderer *etxt.Renderer
-	bottomFade *ebiten.Image
+	glyphIndex int
+	glyphsPerLine int
+	showHints bool
+	canShowHints bool
+	fadeShader *ebiten.Shader
 }
 
-func NewGame(renderer *etxt.Renderer, font *etxt.Font, noHint bool) *Game {
-	numGlyphs := font.NumGlyphs()
-	fixedSizer := &esizer.FixedSizer{}
-	renderer.SetSizer(fixedSizer)
-
-	var hintRenderer *etxt.Renderer
-	if !noHint {
-		hintRenderer = etxt.NewStdRenderer()
-		hintRenderer.SetFont(font)
-		hintRenderer.SetSizePx(int(14*ebiten.DeviceScaleFactor()))
-		hintRenderer.SetHorzAlign(etxt.Right)
-		cache := etxt.NewDefaultCache(1024*1024) // 1MB cache
-		hintRenderer.SetCacheHandler(cache.NewHandler())
-		hintRenderer.SetColor(color.RGBA{92, 92, 92, 255})
-	}
-
-	game := &Game {
-		txtRenderer: renderer,
-		numGlyphs: numGlyphs,
-		position: 0,
-		spacing: 0,
-		lastPressTime: time.Now(),
-		screenWidth: 640,
-		screenHeight: 480,
-		hint: true,
-		hintRenderer: hintRenderer,
-	}
-	game.refreshScreenProperties()
-	return game
+// Simple shader for a bottom fade effect.
+var shaderSrc []byte = []byte(`
+package main
+func Fragment(_ vec4, _ vec2, color vec4) vec4 {
+	return vec4(0, 0, 0, ease(color.a))
 }
 
-func (self *Game) refreshScreenProperties() {
-	size := self.txtRenderer.GetSizePxFract()
-	spacing := int((float64(size)*GlyphSpacing)/64.0)
-	sizer := self.txtRenderer.GetSizer().(*esizer.FixedSizer)
-	sizer.SetAdvance(spacing)
-	glyphsPerLine := self.screenWidth/spacing
-	if glyphsPerLine != len(self.glyphs) {
-		self.glyphs = make([]etxt.GlyphIndex, glyphsPerLine)
-	}
-	self.spacing = spacing
-	self.bottomFade = ebiten.NewImage(self.screenWidth, 16)
-	self.bottomFade.Fill(color.RGBA{0, 0, 0, 64})
+func ease(t float) float { // ease out cubic
+	return 1.0 - pow(1.0 - t, 3.0)
 }
+`)
 
-func (self *Game) Layout(w int, h int) (int, int) {
+func (self *Game) Layout(_, _ int) (int, int) { panic("use Ebitengine >=v2.5.0") }
+func (self *Game) LayoutF(logicWinWidth, logicWinHeight float64) (float64, float64) {
+	self.glyphsPerLine = int(logicWinWidth/(GlyphSize*GlyphSpacing))
 	scale := ebiten.DeviceScaleFactor()
-	sw, sh := int(math.Ceil(float64(w)*scale)), int(math.Ceil(float64(h)*scale))
-	if sw != self.screenWidth || sh != self.screenHeight {
-		self.screenWidth  = sw
-		self.screenHeight = sh
-		self.refreshScreenProperties()
-	}
-	return sw, sh
+	self.text.SetScale(scale)
+	canvasWidth  := math.Ceil(logicWinWidth*scale)
+	canvasHeight := math.Ceil(logicWinHeight*scale)
+	return canvasWidth, canvasHeight
 }
 
 func (self *Game) Update() error {
-	now := time.Now()
-	if now.Sub(self.lastPressTime) < time.Millisecond*250 {
-		return nil
-	}
-
-	if ebiten.IsKeyPressed(ebiten.KeyF) {
+	// fullscreen toggle
+	if inpututil.IsKeyJustPressed(ebiten.KeyF) {
 		ebiten.SetFullscreen(!ebiten.IsFullscreen())
-		self.lastPressTime = now
 		return nil
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyH) {
-		self.hint = !self.hint
-		self.lastPressTime = now
+	// hints toggle
+	if inpututil.IsKeyJustPressed(ebiten.KeyH) {
+		self.showHints = !self.showHints
 		return nil
 	}
 
-	up   := ebiten.IsKeyPressed(ebiten.KeyUp)
-	down := ebiten.IsKeyPressed(ebiten.KeyDown)
-	glyphsPerLine := len(self.glyphs)
-	line := self.position/glyphsPerLine
-	maxLine := (self.numGlyphs + glyphsPerLine - 1)/glyphsPerLine
-	maxLine -= (self.screenHeight/self.spacing)
-	if self.numGlyphs > glyphsPerLine { maxLine += 1 }
-	if maxLine < 0 { maxLine = 0 }
+	// helper function
+	var repeatTrigger = func(key ebiten.Key) bool {
+		ticks := inpututil.KeyPressDuration(key)
+		return ticks == 1 || (ticks > 14 && (ticks - 14) % 9 == 0)
+	}	
 
-	if self.position > 0 && up {
-		self.position -= glyphsPerLine
-		if self.position < 0 { self.position = 0 }
-		self.lastPressTime = now
-	} else if line < maxLine && down {
-		self.position += glyphsPerLine
-		if self.position >= self.numGlyphs {
-			self.position = self.numGlyphs - 1
+	// move to previous line
+	if self.glyphIndex > 0 && repeatTrigger(ebiten.KeyUp) {
+		self.glyphIndex -= self.glyphsPerLine
+		if self.glyphIndex < 0 { self.glyphIndex = 0 }
+		return nil
+	}
+
+	// move to next line
+	nextLineStart := self.glyphIndex + self.glyphsPerLine
+	if nextLineStart < self.numGlyphs && repeatTrigger(ebiten.KeyDown) {
+		self.glyphIndex += self.glyphsPerLine
+		if self.glyphIndex >= self.numGlyphs {
+			self.glyphIndex = self.numGlyphs - 1
 		}
-		self.lastPressTime = now
 	}
+
 	return nil
 }
 
-func (self *Game) Draw(screen *ebiten.Image) {
+func (self *Game) Draw(canvas *ebiten.Image) {
 	// dark background
-	screen.Fill(color.RGBA{ 0, 0, 0, 255 })
+	canvas.Fill(color.RGBA{ 0, 0, 0, 255 })
 
-	// draw text
-	self.txtRenderer.SetTarget(screen)
-	currentPos := self.position
-	sp := self.spacing // I'm gonna use this to death
-	lineWidth  := sp*len(self.glyphs) - sp/3
-	leftMargin := (self.screenWidth - lineWidth)/2
-	for i := 0; i < (self.screenHeight + sp - 1)/sp; i++ {
-		// set the glyph indices to draw
-		lastPos := currentPos + len(self.glyphs)
-		if lastPos >= self.numGlyphs { lastPos = self.numGlyphs }
-		if lastPos <= currentPos { continue }
-		for i := 0; currentPos + i < lastPos; i++ {
-			self.glyphs[i] = etxt.GlyphIndex(currentPos + i)
+	// get canvas dimensions
+	bounds := canvas.Bounds()
+	w, h := bounds.Dx(), bounds.Dy()
+
+	// get some metrics
+	scale := ebiten.DeviceScaleFactor()
+	scaledGlyphSize := GlyphSize*scale
+	xAdvance := fract.FromFloat64(GlyphSpacing*scaledGlyphSize)
+	lineWidth := fract.FromInt(self.glyphsPerLine).Mul(xAdvance)
+	xStart := (fract.FromInt(w) - lineWidth)/2
+
+	buffer := self.text.GetBuffer()
+	font   := self.text.GetFont()
+	size   := self.text.Fract().GetScaledSize()
+	sizer  := self.text.GetSizer()
+	lineHeight := sizer.LineHeight(font, buffer, size).ToFloat64()
+	ascent     := sizer.Ascent(font, buffer, size)
+
+	// draw glyphs
+	vertPad := fract.FromFloat64(12*scale)
+	var position fract.Point = fract.UnitsToPoint(xStart, vertPad) // (top-left origin, not baseline)
+	var index int = self.glyphIndex
+	linesDrawn := 0
+	for index < self.numGlyphs {
+		for i := 0; i < self.glyphsPerLine; i++ {
+			// get glyph advance, determine baseline drawing point, draw mask
+			glyphIndex := sfnt.GlyphIndex(index)
+			glyphAdvance := sizer.GlyphAdvance(font, buffer, size, glyphIndex)
+			origin := position.AddUnits((xAdvance - glyphAdvance)/2, ascent)
+			origin.X = origin.X.QuantizeUp(etxt.QtFull)
+			mask := self.text.Glyph().LoadMask(glyphIndex, origin)
+			self.text.Glyph().DrawMask(canvas, mask, origin)
+
+			// increase index, advance position
+			index += 1
+			if index >= self.numGlyphs { break }
+			position.X += xAdvance
 		}
 
-		// draw the glyphs
-		glyphs := self.glyphs[0 : lastPos - currentPos]
-		x, y := leftMargin, (sp*3)/4 + i*sp
-		self.txtRenderer.TraverseGlyphs(glyphs, fixed.P(x, y),
-			func (dot fixed.Point26_6, index etxt.GlyphIndex) {
-				mask := self.txtRenderer.LoadGlyphMask(index, dot)
-				self.txtRenderer.DefaultDrawFunc(dot, mask, index)
-			})
-
-		// advance to next glyphs
-		currentPos = lastPos
+		linesDrawn += 1
+		position.X = xStart
+		position.Y += fract.FromFloat64(lineHeight*GlyphSpacing)
+		position.Y = position.Y.QuantizeUp(etxt.QtFull)
+		if position.Y.ToIntCeil() > h { break }
 	}
 
-	// make the bottom fade out
-	for i := 0; i < 16; i++ {
-		opts := &ebiten.DrawImageOptions{}
-		opts.GeoM.Translate(0, float64(self.screenHeight - 16 + i))
-		screen.DrawImage(self.bottomFade, opts)
-	}
+	// draw bottom fade
+	fh := int(GlyphSize*scale) // fade height
+	canvas.DrawTrianglesShader(
+		[]ebiten.Vertex{
+			ebiten.Vertex{ DstX: 0, DstY: float32(h - fh), SrcX: 0, SrcY: 0, ColorA: 0 },
+			ebiten.Vertex{ DstX: float32(w), DstY: float32(h - fh), SrcX: 0, SrcY: 0, ColorA: 0 },
+			ebiten.Vertex{ DstX: 0, DstY: float32(h), SrcX: 0, SrcY: 0, ColorA: 1.0 },
+			ebiten.Vertex{ DstX: float32(w), DstY: float32(h), SrcX: 0, SrcY: 0, ColorA: 1.0 },
+		}, []uint16{0, 1, 2, 1, 3, 2}, self.fadeShader, nil,
+	)
 
 	// draw current glyph index and total
-	if self.hint && self.hintRenderer != nil {
-		self.hintRenderer.SetTarget(screen)
-		text := fmt.Sprintf("%d of %d glyphs", self.position + 1, self.numGlyphs)
-		self.hintRenderer.Draw(text, self.screenWidth - 4, self.screenHeight - 6)
-		self.hintRenderer.SetTarget(nil)
+	if self.canShowHints && self.showHints {
+		self.text.Utils().AssertMaxStoredStates(0)
+		self.text.Utils().StoreState()
+		self.text.SetAlign(etxt.Baseline | etxt.Right)
+		self.text.SetColor(color.RGBA{92, 92, 92, 255})
+		self.text.SetSize(14)
+		text := fmt.Sprintf("%d..%d of %d glyphs", self.glyphIndex + 1, index, self.numGlyphs)
+		self.text.Draw(canvas, text, w - int(8*scale), h - int(8*scale))
+		self.text.Utils().RestoreState()
 	}
 }
 
@@ -191,19 +186,17 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(10*1024*1024) // 10MB
-	// **IMPORTANT CACHE INFO**
-	// In almost every example we have been setting caches to 1GB,
-	// mostly because we weren't expecting to fill them anywhere near
-	// that. In this example, instead, we are setting the cache to a
-	// more reasonable value, because otherwise the cache could really
-	// fill up a lot for some fonts.
-	//
+	// create and configure renderer
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB() // *
+	renderer.SetSize(GlyphSize)
+	renderer.SetFont(sfntFont)
+	
+	// * (random educational cache note)
 	// This example is almost a textbook situation for a cache: glyphs
 	// only appear once, and if they are on the screen they will be
 	// heavily reused, but once we scroll past them, they aren't likely
@@ -213,23 +206,25 @@ func main() {
 	// cache uses random sampling for eviction, not perfect LRU, but
 	// the results should be quite decent anyway.
 
-	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(int(ebiten.DeviceScaleFactor()*GlyphSize))
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.Left)
-
-	// determine if we have the right glyphs to show hint text
-	const alphabet = " ofglyphs0123456789"
-	missing, err := etxt.GetMissingRunes(font, alphabet)
+	// create the game struct
+	shader, err := ebiten.NewShader(shaderSrc)
 	if err != nil { log.Fatal(err) }
+	missing, err := font.IsMissingRunes(sfntFont, " ofglyphs0123456789")
+	if err != nil { log.Fatal(err) }
+	game := &Game {
+		text: renderer,
+		numGlyphs: sfntFont.NumGlyphs(),
+		glyphIndex: 0,
+		showHints: !missing,
+		canShowHints: !missing,
+		fadeShader: shader,
+	}
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/all_glyphs")
 	ebiten.SetWindowResizable(true)
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetCursorMode(ebiten.CursorModeHidden) // doing this right, boys...
-	err = ebiten.RunGame(NewGame(renderer, font, len(missing) > 0))
+	err = ebiten.RunGame(game)
 	if err != nil { log.Fatal(err) }
 }

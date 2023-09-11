@@ -129,7 +129,6 @@ func main() {
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/twine")
 	ebiten.SetWindowSize(640, 480)
-	//etxt.SetAppIcon()
 	err = ebiten.RunGame(&Game{
 		text: renderer,
 		twine: twine,

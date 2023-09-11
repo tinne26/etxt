@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.5.0
-	github.com/tinne26/etxt v0.0.9-alpha.6.0.20230821225710-e6ea9a4bb2df
+	github.com/tinne26/etxt v0.0.9-alpha.6.0.20230910212102-97433c2c6819
 	golang.org/x/image v0.9.0
 )
 

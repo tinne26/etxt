@@ -29,6 +29,11 @@ func (self *Renderer) Glyph() *RendererGlyph {
 // Default glyph drawing function. This is a very low level function,
 // almost only relevant if you are trying to implement custom draw
 // functions for [RendererGlyph.SetDrawFunc]().
+//
+// Important: this function will not apply any quantization to the
+// given origin position. If you want to respect the quantization
+// levels currently configured on the renderer and you have computed
+// the origin point on your own, you must quantize manually.
 func (self *RendererGlyph) DrawMask(target Target, mask GlyphMask, origin fract.Point) {
 	(*Renderer)(self).glyphDrawMask(target, mask, origin)
 }
@@ -82,6 +87,8 @@ func (self *RendererGlyph) GetRuneIndex(codePoint rune) sfnt.GlyphIndex {
 // Caches the given glyph with the current font and scaled size.
 // The caching is attempted for each fractional position allowed
 // by the current quantization configuration.
+//
+// To obtain a glyph index from a rune, consider [RendererGlyph.GetRuneIndex]().
 //
 // Notice that the success of this method depends on the renderer's
 // cache configuration too. If there's no cache, the cache doesn't

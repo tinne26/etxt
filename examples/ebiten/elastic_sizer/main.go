@@ -164,7 +164,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	// draw fps and instructions text
 	sizer.SetPadding(0)
 	self.text.SetSize(InfoTextSize)
-	self.text.SetColor(color.RGBA{255, 255, 255, 128})
+	self.text.SetColor(color.RGBA{128, 128, 128, 128})
 	self.text.SetAlign(etxt.Baseline) // vertical
 	
 	// (fps on the right side)
@@ -216,7 +216,7 @@ func main() {
 	//   with and without quantization.
 
 	// run the game
-	ebiten.SetWindowTitle("etxt/examples/ebiten/elastic")
+	ebiten.SetWindowTitle("etxt/examples/ebiten/elastic_sizer")
 	ebiten.SetWindowSize(840, 360)
 	err = ebiten.RunGame(NewGame(renderer))
 	if err != nil { log.Fatal(err) }
@@ -235,9 +235,9 @@ func precacheText(renderer *etxt.Renderer, text string) {
 	}
 
 	// print info about cache size
-	cacheHandler := renderer.GetCacheHandler().(*cache.DefaultCacheHandler)
-	peakSize := cacheHandler.PeakCacheSize()
+	cache := renderer.GetCacheHandler().(*cache.DefaultCacheHandler).Cache()
+	peakSize := cache.PeakSize()
 	mbSize := float64(peakSize)/(1024*1024)
-	numEntries := cacheHandler.NumEntries()
+	numEntries := cache.NumEntries()
 	fmt.Printf("Cache size after pre-caching: %d entries, %d bytes (%.2fMB)\n", numEntries, peakSize, mbSize)
 }
