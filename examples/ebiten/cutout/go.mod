@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.5.0
-	github.com/tinne26/etxt v0.0.9-alpha.6.0.20230911125122-1998cb2896d9
+	github.com/tinne26/etxt v0.0.9-alpha.6.0.20230927071134-ae6ca461b6e6
 )
 
 require (
