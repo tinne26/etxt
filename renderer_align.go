@@ -26,6 +26,12 @@ func (self Align) Vert() Align { return alignVertBits & self }
 // following: [Left], [HorzCenter], [Right].
 func (self Align) Horz() Align { return alignHorzBits & self }
 
+// Returns whether the align has the vertical component defined.
+func (self Align) HasVertComponent() bool { return alignVertBits & self != 0 }
+
+// Returns whether the align has the horizontal component defined.
+func (self Align) HasHorzComponent() bool { return alignHorzBits & self != 0 }
+
 // Returns the result of overriding the current align with
 // the non-empty components of the given align. If both
 // components are defined for the given align, the result
@@ -67,9 +73,10 @@ func (self Align) vertString() string {
 	case VertCenter: return "VertCenter"
 	case Baseline: return "Baseline"
 	case Bottom: return "Bottom"
-	case LastMidline:  return "LastMidline"
-	case LastBaseline:  return "LastBaseline"
-	default: return "VertUnknown"
+	case LastMidline: return "LastMidline"
+	case LastBaseline: return "LastBaseline"
+	default:
+		return "VertUnknown"
 	}
 }
 
@@ -78,7 +85,8 @@ func (self Align) horzString() string {
 	case Left: return "Left"
 	case HorzCenter: return "HorzCenter"
 	case Right: return "Right"
-	default: return "HorzUnknown"
+	default:
+		return "HorzUnknown"
 	}
 }
 

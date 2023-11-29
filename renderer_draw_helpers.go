@@ -27,10 +27,18 @@ func (self *Renderer) internalGlyphDraw(target Target, glyphIndex sfnt.GlyphInde
 	}
 }
 
+// TODO: this is used even on measuring, maybe find a better name.
+// opSlidingValues. Technically, maybe drawInternalValues are never
+// used without position, so maybe we could add that too and shorten
+// some code. but unclear.
 type drawInternalValues struct {
+	lineBreakNth int
 	prevFractX fract.Unit
 	prevGlyphIndex sfnt.GlyphIndex
-	lineBreakNth int
+}
+
+func (self *drawInternalValues) interruptKerning() {
+	self.lineBreakNth = -1
 }
 
 func (self *drawInternalValues) increaseLineBreakNth() {
@@ -45,10 +53,10 @@ func (self *Renderer) drawRuneLTR(target Target, position fract.Point, codePoint
 // expects a quantized position, returns an unquantized position
 func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
 	// apply kerning unless coming from line break
-	if iv.lineBreakNth != 0 {
-		iv.lineBreakNth = 0
-	} else {
+	if iv.lineBreakNth == 0 {
 		position.X += self.getOpKernBetween(iv.prevGlyphIndex, currGlyphIndex)
+	} else {
+		iv.lineBreakNth = 0
 	}
 	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
 
@@ -80,10 +88,10 @@ func (self *Renderer) drawGlyphRTL(target Target, position fract.Point, currGlyp
 	position.X -= self.getOpAdvance(currGlyphIndex)
 
 	// apply kerning unless coming from line break
-	if iv.lineBreakNth != 0 {
-		iv.lineBreakNth = 0
-	} else {
+	if iv.lineBreakNth == 0 {
 		position.X -= self.getOpKernBetween(currGlyphIndex, iv.prevGlyphIndex)
+	} else {
+		iv.lineBreakNth = 0
 	}
 	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
 

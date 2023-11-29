@@ -29,8 +29,7 @@ import "github.com/tinne26/etxt/fract"
 //  - [Renderer.Fract](), to access specialized fractional positioning functionality.
 //  - [Renderer.Glyph](), to access low level functions for glyphs and
 //    glyph masks.
-//  - [Renderer.Complex](), to access advanced functionality related to
-//    rich text and complex scripts.
+//  - [Renderer.Twine](), to access rich text and [Twine] functionality.
 //
 // To create a renderer, using [NewRenderer]() is recommended. Otherwise,
 // you will need to set lots of properties manually or depend on
@@ -132,6 +131,30 @@ func (self *Renderer) SetScale(scale float64) {
 // text as a float64. See [Renderer.SetScale]() for more details.
 func (self *Renderer) GetScale() float64 {
 	return self.fractGetScale().ToFloat64()
+}
+
+// Sets the text direction to be used on subsequent operations.
+//
+// Do not confuse text direction with horizontal align. Text
+// direction is typically only changed for right-to-left languages
+// like Arabic, Hebrew or Persian.
+//
+// By default, the direction is [LeftToRight].
+func (self *Renderer) SetDirection(dir Direction) {
+	// basically, this can change the text iteration order,
+	// from first \n to next, to next \n to first.
+	switch dir {
+	case LeftToRight, RightToLeft:
+		self.state.textDirection = dir
+	default:
+		panic("invalid direction")
+	}
+}
+
+// Returns the current main text direction. See [Renderer.SetDirection]()
+// for more details.
+func (self *Renderer) GetDirection() Direction {
+	return self.state.textDirection
 }
 
 // Sets the font to be used on subsequent operations. Without a

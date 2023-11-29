@@ -19,6 +19,11 @@ func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) sfnt.GlyphI
 	return index
 }
 
+func (self *Renderer) withTextDirSign(value fract.Unit) fract.Unit {
+	if self.state.textDirection == LeftToRight { return value }
+	return -value
+}
+
 func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
 	return logicalSize.MulDown(self.state.scale) // *
 	// * I prefer MulDown to compensate having used FromFloat64Up()

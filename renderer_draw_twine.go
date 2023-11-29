@@ -10,7 +10,7 @@ import "github.com/tinne26/etxt/fract"
 //   others may go backwards, so it's unclear if we should break a line
 //   after the first, after the whole batch, etc.
 
-func (self *Renderer) complexDrawTwine(target Target, twine Twine, x, y int) {
+func (self *Renderer) twineDraw(target Target, twine Twine, x, y int) {
 	self.fractDrawTwine(target, twine, fract.FromInt(x), fract.FromInt(y))
 }
 
@@ -47,10 +47,15 @@ func (self *Renderer) fractDrawTwine(target Target, twine Twine, x, y fract.Unit
 }
 
 // Precondition: x and y are already quantized.
+// TODO: I might have to provide an optimization on/off flag. In regular draws I don't think realistic
+// cases where the optimization breaks anything exist, but for the case of twines... it's another story.
+// I think the cases are still rather extreme, but it could more realistically be a thing. I can always
+// add a new CC afterwards though.
 func (self *Renderer) fractDrawTwineLeftLTR(target Target, twine Twine, lineBreakNth int, x, y, maxY fract.Unit) {
-	var rewind bool
-	var operator directTwineOperator
-	operator.Initialize(self, twine)
+	operator := getTwineOperator()
+	var mustDraw bool = true
+	operator.Initialize(self, twine, mustDraw, x, maxY)
+	
 	position := fract.UnitsToPoint(x, y)
 	var iv drawInternalValues
 	iv.prevFractX = position.X.FractShift()
@@ -58,48 +63,28 @@ func (self *Renderer) fractDrawTwineLeftLTR(target Target, twine Twine, lineBrea
 	if self.cacheHandler != nil {
 		self.cacheHandler.NotifyFractChange(position)
 	}
-	
-	for {
-		glyphIndex, codePoint := operator.Next()
-		if codePoint == -1 {		
-			position.X, iv.prevGlyphIndex, rewind = operator.NotifyLineEnd(self, target, position.X, iv.prevGlyphIndex)
-			if rewind { continue }
-			break
-		}
-		if codePoint == rune(twineCcBegin) {
-			position.X, iv.prevGlyphIndex = operator.ProcessCC(self, target, position, iv.prevGlyphIndex)
-			iv.lineBreakNth = 0 // reset line break counter
-		} else if codePoint == '\n' {
-			var rewind bool
-			position.X, iv.prevGlyphIndex, rewind = operator.NotifyLineEnd(self, target, position.X, iv.prevGlyphIndex)
-			if rewind {
-				// TODO: for centered draw, I may have to call NotifyLineStart again with a rewind var
-				iv.lineBreakNth = 0 // reset line break counter
-				continue
-			}
 
-			iv.increaseLineBreakNth()
-			position = operator.AdvanceLine(self, target, position, x, iv.lineBreakNth)
-			if position.Y > maxY { break }
-			operator.NotifyNewBaseline(position.Y) // life is harsh
-			position.X = operator.NotifyLineStart(self, target, position.X)
-		} else {
-			if codePoint != -2 {
-				glyphIndex = self.getGlyphIndex(self.state.activeFont, codePoint)
-			}
-			if operator.measuring {
-				position, iv = self.advanceGlyphLTR(target, position, glyphIndex, iv)
-			} else { // drawing
-				position, iv = self.drawGlyphLTR(target, position, glyphIndex, iv)
-			}
+loop:
+	for {
+		codePoint, glyphIndex := operator.Next()
+		switch codePoint {
+		case twineRuneEndOfText:
+			var dpReset bool
+			position, iv, dpReset = operator.PopAll(self, target, position, iv)
+			if dpReset { continue }
+			break loop
+		case '\n':
+			position, iv = operator.LineBreak(self, target, position, iv)
+			if position.Y > maxY { break loop }
+		case rune(twineCcBegin):
+			position, iv = operator.ProcessCC(self, target, position, iv)
+		case twineRuneNotAvailable:
+			position, iv = operator.OperateLTR(self, target, position, glyphIndex, iv)
+		default:
+			glyphIndex = self.getGlyphIndex(self.state.activeFont, codePoint)
+			position, iv = operator.OperateLTR(self, target, position, glyphIndex, iv)
 		}
 	}
-	
-	// last popAll is redundant in most cases, but some graphical
-	// effects do require the final pop trigger, so we can't skip this
-	position.X, iv.prevGlyphIndex, rewind = operator.PopAll(self, target, position.X, iv.prevGlyphIndex)
-	if rewind { // this can happen for symmetry reasons (TODO: have actual tests for this, it's tricky as hell)
-		position.X, iv.prevGlyphIndex, rewind = operator.PopAll(self, target, position.X, iv.prevGlyphIndex)
-		if rewind { panic("broken code") }
-	}	
+
+	releaseTwineOperator(operator)
 }

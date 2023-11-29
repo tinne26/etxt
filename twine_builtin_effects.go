@@ -10,7 +10,7 @@ import "github.com/tinne26/etxt/fract"
 func twineEffectPushColor(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
 	// usage asserts
 	args.AssertPayloadLen(4)
-	args.AssertOnPre(false)
+	args.AssertMode(SinglePass)
 	
 	// bypass if measuring
 	if args.Measuring() { return 0 }
@@ -36,16 +36,16 @@ func twineEffectPushColor(renderer *Renderer, target Target, args TwineEffectArg
 func twineEffectPushFont(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
 	// usage asserts
 	args.AssertPayloadLen(1)
-	args.AssertOnPre(false)
+	args.AssertMode(SinglePass)
 
 	// handle each trigger situation
 	switch args.GetTrigger() {
 	case TwineTriggerPush:
 		renderer.twineStoragePush(renderer.state.fontIndex)
-		renderer.Complex().SetFontIndex(FontIndex(args.Payload[0]))
+		renderer.Twine().SetFontIndex(FontIndex(args.Payload[0]))
 	case TwineTriggerPop:
 		index := renderer.twineStoragePop().(FontIndex)
-		renderer.Complex().SetFontIndex(index)
+		renderer.Twine().SetFontIndex(index)
 	case TwineTriggerLineBreak, TwineTriggerLineStart:
 		// unused, not necessary
 	default:
@@ -59,7 +59,7 @@ func twineEffectPushFont(renderer *Renderer, target Target, args TwineEffectArgs
 func twineEffectShiftSize(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
 	// usage asserts
 	args.AssertPayloadLen(1)
-	args.AssertOnPre(false)
+	args.AssertMode(SinglePass)
 
 	// handle each trigger situation
 	switch args.GetTrigger() {

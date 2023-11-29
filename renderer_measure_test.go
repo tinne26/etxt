@@ -35,7 +35,7 @@ func TestMeasureWithWrap(t *testing.T) {
 				//fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
 				renderer.Fract().SetHorzQuantization(qt)
 				renderer.SetAlign(align)
-				renderer.Complex().SetDirection(dir)
+				renderer.SetDirection(dir)
 
 				r1 := renderer.Measure("xyz")
 				r2 := renderer.MeasureWithWrap("xyz k", r1.Width().ToIntCeil())
@@ -78,7 +78,7 @@ func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, stri
 				// fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
 				renderer.Fract().SetHorzQuantization(qt)
 				renderer.SetAlign(align)
-				renderer.Complex().SetDirection(dir)
+				renderer.SetDirection(dir)
 
 				// check zero origin
 				if !fn(renderer, "\n ya\n \n").HasZeroOrigin() {
@@ -135,17 +135,17 @@ func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, stri
 	for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {	
 		renderer.SetAlign(align)
 
-		renderer.Complex().SetDirection(LeftToRight)
+		renderer.SetDirection(LeftToRight)
 		w1, h1 := fn(renderer, "\nABCD\n").Size()
-		renderer.Complex().SetDirection(RightToLeft)
+		renderer.SetDirection(RightToLeft)
 		w2, h2 := fn(renderer, "\nDCBA\n").Size()
 		if w1 != w2 || h1 != h2 {
 			t.Fatalf("expected w1, h1 == w2, h2, but got %d, %d != %d, %d", w1, h1, w2, h2)
 		}
 
-		renderer.Complex().SetDirection(LeftToRight)
+		renderer.SetDirection(LeftToRight)
 		w1, h1 = fn(renderer, "hello world").Size()
-		renderer.Complex().SetDirection(RightToLeft)
+		renderer.SetDirection(RightToLeft)
 		w2, h2 = fn(renderer, "dlrow olleh").Size()
 		if w1 != w2 || h1 != h2 {
 			t.Fatalf("expected w1, h1 == w2, h2, but got %d, %d != %d, %d", w1, h1, w2, h2)

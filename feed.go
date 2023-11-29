@@ -10,7 +10,7 @@ import "github.com/tinne26/etxt/fract"
 // and modifying positions or configurations in between.
 //
 // As a rule of thumb, you should only resort to feeds if
-// neither [Renderer.Draw](), [RendererComplex.Draw](), nor
+// neither [Renderer.Draw](), [RendererTwine.Draw](), nor
 // [RendererGlyph.SetDrawFunc]() give you enough control to do
 // what you want. Make sure you are well acquainted with the
 // basic methods first.
@@ -161,7 +161,7 @@ func (self *Feed) traverseGlyph(target Target, glyphIndex sfnt.GlyphIndex, drawM
 	qtHorz, qtVert := renderer.fractGetQuantization()
 
 	// traverse in the proper direction
-	dir := self.Renderer.Complex().GetDirection()
+	dir := self.Renderer.GetDirection()
 	switch dir {
 	case LeftToRight:
 		// TODO: revise both advances and compare with renderer.drawGlyphLTR

@@ -12,7 +12,7 @@ import "github.com/tinne26/etxt/fract"
 // import it when already working with etxt.
 type Font = sfnt.Font
 
-// See [RendererComplex.RegisterFont]() and related functions.
+// See [RendererTwine.RegisterFont]() and related functions.
 //
 // When using multiple fonts, you are encouraged to define
 // and use your own named constants in the relevant context,
@@ -24,7 +24,7 @@ type Font = sfnt.Font
 //   )
 type FontIndex uint8
 const (
-	NextFontIndex FontIndex = 255 // see RendererComplex.RegisterFont()
+	NextFontIndex FontIndex = 255 // see RendererTwine.RegisterFont()
 )
 
 // Quantization levels are used to control the trade-off between
@@ -60,7 +60,7 @@ const (
 )
 
 // Renderers can have their text direction configured as
-// left-to-right or right-to-left. See [RendererComplex.SetDirection]().
+// left-to-right or right-to-left. See [Renderer.SetDirection]().
 //
 // Directions can be casted directly to [unicode/bidi] directions:
 //   bidi.Direction(etxt.LeftToRight).

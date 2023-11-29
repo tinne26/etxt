@@ -11,11 +11,10 @@ import "github.com/tinne26/etxt/fract"
 
 // TODO:
 // List of underspecified cases:
-// - auto wrapping + effects returning a negative advance that would
-//   allow fitting more glyphs on lineBreak trigger.
-// - handling of negative advances going beyond start of line [TODO: untested]
-// - using AssertOnPre() for misuse detection instead of having it built
-//   into the type is a bit dubious
+// - handling of negative advances going beyond start of line
+// - after pads, positions might be unquantized. hmm. it's not technically wrong,
+//   but it feels weird that quantization is enabled and yet we can call the effect
+//   functions with non-quantized positions. make sure it doesn't lead to bugs
 
 type twineCode = uint8
 const (
@@ -26,12 +25,16 @@ const (
 	twineCcSwitchGlyphMode  twineCode = '\x03'
 	twineCcSwitchStringMode twineCode = '\x04'
 
-	twineCcPushEffect twineCode = '\x05'
-	twineCcPushPreEffect twineCode = '\x06'
-	twineCcPushMotion twineCode = '\x07'
+	twineCcPushSinglePassEffect twineCode = '\x05'
+	twineCcPushDoublePassEffect twineCode = '\x06'
+	twineCcPushEffectWithSpacing twineCode = '\x07'
+	twineCcPushMotion twineCode = '\x08'
+
+	twineCcPushLineRestartMarker twineCode = '\x09'
+	twineCcClearLineRestartMarker twineCode = '\x0A'
 
 	// TODO: text direction, which is another level of trickiness.
-	// May end up just removing text direction completely, it's such
+	// Might end up just removing text direction completely, it's such
 	// a pain (and anyone that cares about it will already pass the
 	// glyphs directly encoded in twines).
 	// Also consider space earmarking and stop/resume glyph drawing.
@@ -42,7 +45,8 @@ const (
 type popSpecialDirective uint8
 
 // Constants for popping special directives on [Weave]().
-// Ignore unless using [RendererComplex] and [Twine] values.
+// Ignore unless using [RendererTwine.Draw]() and other
+// operation with [Twine] objects.
 const (
 	Pop    popSpecialDirective = 66 // pop last pushed directive still active
 	PopAll popSpecialDirective = 67 // pop all pushed directives still active
@@ -62,11 +66,11 @@ const (
 // Twines are fairly low level, so writing your own builder types, wrappers
 // and functions tailored to your specific use-cases can often be appropriate.
 //
-// Twine rendering is done through [RendererComplex] drawing functions.
+// Twine rendering is done through [RendererTwine] drawing functions.
 type Twine struct {
 	Buffer []byte
 	Ticks uint64
-	InGlyphMode bool
+	InGlyphMode bool // we start in utf8 mode, not glyph mode
 }
 
 // Creates a [Twine] from the given arguments. For example:
@@ -96,40 +100,90 @@ func Weave(args ...any) Twine {
 }
 
 // TwineEffectFunc is the function signature for custom functions used
-// with [Twine] values and [RendererComplex].
+// with [Twine] objects.
 // 
 // Effect functions can be triggered in order to change some renderer
 // configurations on the fly, render custom graphical layers on top of
 // certain text fragments, create primitive strikethrough or underline
-// effects, censoring bars, text cursors, highlighting rectangles, padding
-// rectangles and many more.
+// effects, censoring bars, text cursors, highlighting rectangles, add
+// padding and many more.
 //
-// In order to be so flexible, effect functions have to deal with many
-// parameters. Many are organized under [TwineEffectArgs], so see that
-// type for further details. For the returned [fract.Unit], it tells
-// the renderer how much to advance the pen position in the x axis (most
-// often unused).
+// In order to be so flexible, effect functions have to deal with a fair
+// amount of parameters and different call points. See [TwineEffectArgs]
+// for further details. For the returned [fract.Unit], it tells the renderer
+// how much to advance the pen position in the x axis (this is an advanced
+// feature that's not used most of the time).
 //
 // See also [TwineMotionFunc].
 type TwineEffectFunc = func(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit
 
+// Related to [TwineEffectFunc].
+// 
+// Effects can be used in two different modes: 
+//  - Single pass mode: the effect function will be invoked at its start
+//    and end points with whatever information is available at the moment.
+//  - Double pass mode: whenever we try to draw with the effect, we will
+//    perform an initial pass measuring the text content within the span
+//    of the effect so its width is known at rendering time. This is more
+//    expensive, but some effects require it in order to draw some stuff
+//    behind the text or compute more advanced metrics or whatever.
+type TwineEffectMode bool
+const (
+	SinglePass TwineEffectMode = true
+	DoublePass TwineEffectMode = false
+)
+
+func (self TwineEffectMode) controlCode() byte {
+	switch self {
+	case SinglePass: return twineCcPushSinglePassEffect
+	case DoublePass: return twineCcPushDoublePassEffect
+	default:
+		panic("invalid effect mode")
+	}
+}
+
 // TwineEffectArgs are used to communicate the conditions under which
 // a [TwineEffectFunc] is invoked. Twine effect functions can be called 
-// while measuring, drawing, on line breaks, when jumping back to a
-// previous point in the twine that we had advanced due to measuring,
-// etc. Typically, one uses a switch on [TwineEffectArgs.GetTrigger](),
-// and only checks [TwineEffectArgs.Drawing](), [TwineEffectArgs.Measuring]()
-// and [TwineEffectArgs.OnPre]() when necessary.
+// while measuring, drawing, on line breaks, etc. I won't pretend this
+// is easy; you will have to go through the documentation while slowly
+// putting all the pieces together.
 //
-// The payload can be used to pass some predefined values to an effect.
-// The slice is always a reference to the actual values in the [Twine]
-// buffer, so you may even modify them on the fly for your own hacky
-// purposes (if you are that kind of person).
+// For the moment, here's a general description of the public fields:
+//  - Payload: can be used to pass some predefined values to an effect.
+//    The slice is always a reference to the actual values in the [Twine]
+//    buffer, so you may even modify them on the fly for your own hacky
+//    purposes (if you are that kind of person).
+//  - Origin: the pen position where the effect started. If the effect
+//    spans multiple lines, the origin will be reset to the start of
+//    each new one. The PrePad, if any, extends behind the origin X.
+//  - Ascent, Descent: low-level metrics. They indicate the ascent/descent of
+//    the current line as absolute values. See [Twine.AddLineMetricsRefresh]()
+//    for more details on how line metrics and size changes work with twines.
+//  - KnownWidth: the maximum known width of the content within the scope of
+//    the effect. On effect pops, line breaks and double-pass effect draw 
+//    passes, this will match the actual width of the text. If a minimum content
+//    width is set, that will be reflected too. In any other case, the max known
+//    width remains unknown. In case of multiple lines, the value only reflects
+//    the width within the current line.
+//  - PrePad: optional effect padding specified through [Twine.PushEffectWithSpacing]().
+//    Notice that pre padding values can change based on whether the effect is
+//    only starting or wrapping into a new line.
+//  - KnownPostPad: optional effect padding similar to PrePad, with the difference
+//    that the value is only known in the same circumstances as KnownWidth.
 type TwineEffectArgs struct {
 	Payload []byte
-	Rect fract.Rect // not always available, see HasContentRect()
 	Origin fract.Point // unreliable while measuring
+	LineAscent fract.Unit // remains constant throughout the whole line, ...
+	LineDescent fract.Unit // ... might not match the *current* font size
+	KnownWidth fract.Unit // see documentation for details on behavior
+	PrePad fract.Unit // as an absolute value. see Twine.PushEffectWithSpacing()
+	KnownPostPad fract.Unit // as an absolute value. see Twine.PushEffectWithSpacing()
 	flags uint8
+
+	// NOTE: we could use "KnownAdvance" instead of width, but even if we
+	// have to expand and add some "CcBreakpoint" (manual trigger) that receives
+	// the function key and maybe a breakpoint value, we would still need an extra
+	// "Advance/X"
 }
 
 // Returns the reason why a [TwineEffectFunc] has been invoked.
@@ -138,50 +192,66 @@ func (self *TwineEffectArgs) GetTrigger() TwineEffectTrigger {
 	return TwineEffectTrigger(self.flags & 0b0001_1111)
 }
 
-// Returns whether the effect is being invoked as a pre effect
-// (an effect with lookahead, as opposed to the regular effects).
-// See [Twine.PushPreEffect]() vs [Twine.PushEffect]() respectively.
-func (self *TwineEffectArgs) OnPre() bool {
-	return (self.flags & twineFlagOnPre) != 0
+// Returns the current effect mode: [SinglePass] or [DoublePass].
+// The effect mode is determined by [Twine.PushEffect](mode, ...).
+// Double pass effects are relevant when you need to draw behind
+// the text (e.g. a background rectangle) or know the text fragment
+// size in advance, among others.
+func (self *TwineEffectArgs) Mode() TwineEffectMode {
+	return TwineEffectMode((self.flags & twineFlagDoublePass) == 0)
 }
 
-// Returns true if the Rect field has already been set by measuring
-// the text, or false if it only contains the effect starting pen
-// position.
-//
-// For normal effects, the Rect is only available at the [TwineTriggerPop]
-// stage. For pre effects, the first call with [TwineTriggerPush] doesn't
-// have the content rect ready (as the pre effect itself may want to change
-// the renderer configuration in a way that affects the content metrics),
-// but on any later calls it does have the rect properly set.
-//
-// Notice that the Origin field and the Rect exact positions must not be
-// relied upon while [TwineEffectArgs.Measuring]() == true. Only the
-// dimensions of the rect are determined while measuring.
-func (self *TwineEffectArgs) HasContentRect() bool {
-	return (self.flags & twineFlagRectOk) != 0
+// Utility method to return the fract.Rect of the text within the scope
+// of the effect. The rect only considers the current line, and the
+// width is derived from KnownWidth. If KnownWidth is not known at the
+// time of using this method, the return value is fundamentally useless. 
+// For more details, see [TwineEffectArgs.AreMetricsKnown]().
+func (self *TwineEffectArgs) Rect() fract.Rect {
+	return fract.UnitsToRect(
+		self.Origin.X                    , // x min
+		self.Origin.Y - self.LineAscent  , // y min
+		self.Origin.X + self.KnownWidth  , // x max
+		self.Origin.Y + self.LineDescent , // y max
+	)
 }
 
-// Returns whether the effect call is happening on a drawing or
-// measuring process. While drawing, advances and configuration
-// changes that can affect metrics are relevant and must be computed.
-// In contrast, when measuring, effects that only change colors or
-// other properties that don't affect metrics can be skipped. If you
-// are having your logic depend on colors and similar shenanigans...
-// try to keep a safe distance from the kids.
+// Utility method similar to [TwineEffectArgs.Rect](), but also
+// taking pre and post padding into consideration.
+func (self *TwineEffectArgs) RectWithPads() fract.Rect {
+	return fract.UnitsToRect(
+		self.Origin.X - self.PrePad                         , // x min
+		self.Origin.Y - self.LineAscent                     , // y min
+		self.Origin.X + self.KnownWidth + self.KnownPostPad , // x max
+		self.Origin.Y + self.LineDescent                    , // y max
+	)
+}
+
+// Returns whether we are in a context in which the KnownWidth and
+// KnownPostPad are fully known.
 //
-// Additionally, when measuring, the rendering [Target] for the
-// [TwineEffectFunc] will be nil.
+// Notice that you can generally know this without calling the method
+// explicitly. The situations in which the width and post pad are available
+// are already described in [TwineEffectArgs]. That being said, sometimes
+// it's simpler and/or safer to check explicitly.
+func (self *TwineEffectArgs) AreMetricsKnown() bool {
+	return (self.GetTrigger() > TwineTriggerLineStart) ||
+	       (self.Drawing() && self.Mode() == DoublePass)
+}
+
+// Returns whether the effect function is being called while drawing
+// or measuring. While not drawing, effects that only change colors
+// or other properties that don't affect metrics can generally return
+// early.
 func (self *TwineEffectArgs) Drawing() bool {
-	return (self.flags & twineFlagDraw) != 0
+	return (self.flags & twineFlagMeasuring) == 0
 }
 
 // The inverse of [TwineEffectFlags.Drawing]().
 func (self *TwineEffectArgs) Measuring() bool {
-	return !self.Drawing()
+	return (self.flags & twineFlagMeasuring) != 0
 }
 
-// Panic if the payload length differs from the given value.
+// Panics if the payload length differs from the given value.
 func (self *TwineEffectArgs) AssertPayloadLen(numBytes int) {
 	if len(self.Payload) == numBytes { return }
 	
@@ -190,14 +260,16 @@ func (self *TwineEffectArgs) AssertPayloadLen(numBytes int) {
 	panic("TwineEffectFunc expects a payload of " + assert + " bytes, but got " + actual + " instead.")
 }
 
-// Panic if the payload length differs from the given value.
-func (self *TwineEffectArgs) AssertOnPre(onPre bool) {
-	if self.OnPre() == onPre { return }
+// Panics if the effect mode doesn't match the given one.
+func (self *TwineEffectArgs) AssertMode(effectMode TwineEffectMode) {
+	if self.Mode() == effectMode { return }
 	
-	if onPre {
-		panic("Expected TwineEffectFunc.OnPre() == true (see Twine.PushPreEffect())")
-	} else {
-		panic("Expected TwineEffectFunc.OnPre() == false (see Twine.PushEffect())")
+	// panic tip: did you set the proper mode on Twine.PushEffect(etxt.DoublePass, ...)?
+	switch effectMode {
+	case SinglePass: panic("expected TwineEffectArgs.Type() == etxt.SinglePass")
+	case DoublePass: panic("expected TwineEffectArgs.Type() == etxt.DoublePass")
+	default:
+		panic("invalid effect mode")
 	}
 }
 
@@ -212,8 +284,8 @@ func (self *TwineEffectArgs) AssertOnPre(onPre bool) {
 //  - If the effect remains active beyond the end of the line, it's
 //    invoked with [TwineTriggerLineBreak]. If the text didn't end,
 //    another invokation with [TwineTriggerLineStart] happens.
-//  - When the effect is popped or the text end is reached,
-//    the effect is invoked one last time with [TwineTriggerPop].
+//  - When the effect is popped or the text ends, the effect is invoked
+//    one last time with [TwineTriggerPop].
 // Notice that while drawing this sequence will always happen at least
 // once in draw mode, but may also happen one additional time, before
 // drawing, in measuring mode. If you are only measuring, instead,
@@ -221,21 +293,24 @@ func (self *TwineEffectArgs) AssertOnPre(onPre bool) {
 type TwineEffectTrigger uint8
 const (
 	TwineTriggerPush      TwineEffectTrigger = 0b0000_0001
-	TwineTriggerLineBreak TwineEffectTrigger = 0b0000_0010
-	TwineTriggerLineStart TwineEffectTrigger = 0b0000_0100
+	TwineTriggerLineStart TwineEffectTrigger = 0b0000_0010
+	TwineTriggerLineBreak TwineEffectTrigger = 0b0000_0100
 	TwineTriggerPop       TwineEffectTrigger = 0b0000_1000
 )
 
 const (
-	twineFlagDraw   uint8 = 0b0010_0000
-	twineFlagOnPre  uint8 = 0b1000_0000
-	twineFlagRectOk uint8 = 0b0100_0000
+	twineFlagMeasuring  uint8 = 0b0100_0000
+	twineFlagDoublePass uint8 = 0b1000_0000
 )
 
+// TODO: I made so many changes on other parts of the twine pipeline that
+// I need to reconsider this. The might be allowed to be perpendicular to
+// the other effect functions, overlapping and crossing over and so on.
+// 
 // TwineMotionFunc is a cousin of [TwineEffectFunc] specialized on movement
 // animations for text. Some examples are shaking, waving, making text look
 // like it's jumping, etc. Unlike effect functions, motion functions are
-// called for each glyph, and are skipped while only measuring.
+// called for each glyph and are skipped while only measuring.
 //
 // A single twine may use multiple motion functions for different text
 // fragments, but only one motion function can be active at a time.
@@ -256,7 +331,7 @@ type TwineMotionFunc = func(
 	globalOrder, localOrder int, ticks uint64, payload []byte,
 ) (xShift, yShift fract.Unit)
 
-// See [TwineEffectFunc] and [RendererComplex.RegisterEffectFunc]().
+// See [TwineEffectFunc] and [RendererTwine.RegisterEffectFunc]().
 // Values above 192 are reserved for internal operation.
 type TwineEffectKey uint8
 const (
@@ -266,29 +341,30 @@ const (
 	EffectPushColor TwineEffectKey = 193 // PushColor()
 	EffectPushFont TwineEffectKey = 194 // PushFont()
 	EffectShiftSize TwineEffectKey = 195 // ShiftSize()
-	//TwinePad       TwineEffectKey = 195 // expose or not?
+	//TwinePad TwineEffectKey = 195 // expose or not?
 
 	// Advanced functions not directly exposed on the Twine API [TODO: IMPLEMENT]
-	EffectCodeInline TwineEffectKey = 231 // PushEffect(key, nil or []byte{fontIndex, black})
-	EffectBackRect TwineEffectKey = 232 // PushPreEffect(key, []byte{r, g, b, a})
-	EffectRectOutline TwineEffectKey = 233 // PushEffect(key, nil = []byte{128})
-	EffectUnderline TwineEffectKey = 234 // PushEffect(key, nil = []byte{128})
-	EffectCrossOut TwineEffectKey = 235 // PushEffect(key, nil = []byte{128})
-	EffectSpoiler TwineEffectKey = 236 // PushEffect(key, []byte{black})
+	EffectCodeInline TwineEffectKey = 231 // SinglePass + (fontIndex, color) or nil (= []byte{fontIndex, black})
+	EffectBackRect TwineEffectKey = 232 // DoublePass + []byte{r, g, b, a} (alpha is optional)
+	EffectRectOutline TwineEffectKey = 233 // SinglePass + relThickness or nil (= []byte{128})
+	EffectUnderline TwineEffectKey = 234 // SinglePass + relThickness or nil (= []byte{128})
+	EffectCrossOut TwineEffectKey = 235 // SinglePass + relThickness or nil (= []byte{128})
+	EffectSpoiler TwineEffectKey = 236 // SinglePass + color or nil (= []byte{black})
 	EffectHighlightA TwineEffectKey = 237 // ...
 	EffectHighlightB TwineEffectKey = 238 // ...
 	EffectHighlightC TwineEffectKey = 239 // ...
 	EffectHoverA TwineEffectKey = 240 // ...
 	EffectHoverB TwineEffectKey = 241 // ...
 	EffectHoverC TwineEffectKey = 242 // ...
-	EffectFauxBold TwineEffectKey = 243 // PushEffect(key, nil = []byte{128})
-	EffectOblique TwineEffectKey = 244 // PushEffect(key, nil = []byte{192})
-	//TwineLineHighlight TwineEffectKey = 245 // yay or nay?
-	EffectListItem TwineEffectKey = 246 // PushEffect(key, nil = []byte{128}), uses '-' glyph
-	EffectEbi13 TwineEffectKey = 247 // PushEffect(key, nil) + immediate Pop()
+	EffectFauxBold TwineEffectKey = 243 // SinglePass + relThickness or nil (= []byte{128})
+	EffectOblique TwineEffectKey = 244 // SinglePass + relSkew or nil (= []byte{192})
+	//EffectHighlightLine TwineEffectKey = 245 // yay or nay?
+	EffectListItem TwineEffectKey = 246 // SinglePass + ¿spacing? or nil (= []byte{128}) [uses '-' glyph]
+	EffectEbi13 TwineEffectKey = 247 // SinglePass, expects immediate Pop()
 	EffectAbbr TwineEffectKey = 248 // PushEffect(key, []byte(tipString))
+	// EffectLockLineStart TwineEffectKey = 249 // locking line start to current x (TriggerLineStart padding)
 
-	// TODO: the most important function missing is
+	// TODO: the most important function missing is probably
 	//       reserving space in the buffer. that can be done
 	//       manually too, though, unclear if I should provide
 	//       a CC or what. yeah, probably a CC would be the
@@ -298,7 +374,7 @@ const (
 	//       with active content or whatever.
 )
 
-// See [TwineMotionFunc] and [RendererComplex.RegisterMotionFunc]().
+// See [TwineMotionFunc] and [RendererTwine.RegisterMotionFunc]().
 // Values above 192 are reserved for internal operation.
 type TwineMotionKey uint8
 const (
@@ -310,9 +386,12 @@ const (
 	MotionWave    TwineMotionKey = 195 // continuous sine wave
 	MotionSpooky  TwineMotionKey = 196 // circular movement within a soft sine
 	MotionJumpy   TwineMotionKey = 197 // idk if intermittent or not
+	MotionGlitchy TwineMotionKey = 198 // random jumpiness in random places
+	// TODO: motions that apply two separate intensity functions for
+	// odd and even glyphs are interesting, look into that.
 )
 
-// Chaining methods? Here's your [Weave]() on a [Twine] receiver!
+// [Weave]() on a [Twine] receiver. Useful when chaining methods.
 func (self *Twine) Weave(args ...any) *Twine {
 	// process each argument
 	for _, arg := range args {
@@ -322,7 +401,7 @@ func (self *Twine) Weave(args ...any) *Twine {
 		case rune      : _ = self.AddRune(typedArg)
 		case FontIndex : _ = self.PushFont(typedArg)
 		case TwineEffectKey:
-			_ = self.PushEffect(typedArg)
+			_ = self.PushEffect(typedArg, SinglePass)
 		case TwineMotionKey:
 			_ = self.PushMotion(typedArg, nil)
 		case color.Color:
@@ -436,33 +515,17 @@ func (self *Twine) Reset() {
 }
 
 // Appends a trigger for a [TwineEffectFunc] to the [Twine]. The related
-// function, which must be registered with [RendererComplex.RegisterEffectFunc]()
+// function, which must be registered with [RendererTwine.RegisterEffectFunc]()
 // before the twine is measured or drawn, will remain active until a [Twine.Pop]()
-// clears it. The function will be triggered at multiple points:
+// clears it. The function can be triggered at multiple points:
 //  - [TwineTriggerPush] is triggered at the start, with the text not being
-//    drawn yet and the [fract.Rect] containing only the pen position.
-//    If you need lookahead, see [Twine.PushPreEffect]() instead.
+//    drawn yet.
 //  - Zero to many sequences of [TwineTriggerLineBreak] and [TwineTriggerLineStart],
 //    for each line break. This is necessary because a single rectangle can't
-//    properly represent multiple lines.
+//    always represent multiple lines.
 //  - [TwineTriggerPop] on the next [Twine.Pop]() or at the end of the twine.
-func (self *Twine) PushEffect(key TwineEffectKey, payload ...byte) *Twine {
-	return self.appendKeyWithPayload(twineCcPushEffect, uint8(key), payload)
-}
-
-// Appends a trigger for a [TwineEffectFunc] to the [Twine]. This is very
-// similar to [Twine.PushEffect](), but with lookahead. Common uses involve
-// drawing something behind the text or configuring some properties that
-// require knowing the text rect in advance.
-// 
-// Notice that this procedure makes the [TwineEffectFunc] more expensive
-// to use, as multiple passes are necessary.
-//
-// Pre effects are significantly trickier than regular effects and you will
-// need to understand [TwineEffectArgs.HasContentRect]() and other details
-// in order to implement them correctly.
-func (self *Twine) PushPreEffect(key TwineEffectKey, payload ...byte) *Twine {
-	return self.appendKeyWithPayload(twineCcPushPreEffect, uint8(key), payload)
+func (self *Twine) PushEffect(key TwineEffectKey, effectMode TwineEffectMode, payload ...byte) *Twine {
+	return self.appendKeyWithPayload(effectMode.controlCode(), uint8(key), payload)
 }
 
 // Similar to [Twine.PushEffect](), but for motion effects. See
@@ -483,7 +546,7 @@ func (self *Twine) PushMotion(key TwineMotionKey, payload []byte) *Twine {
 // expected text size.
 // 
 // Notice that refreshed line metrics won't become effective until the
-// next line break. Refreshes directly after a new line may not work
+// next line break. Refreshes directly after a new line might not work
 // as you expect. This doesn't seem very user-friendly, but all the
 // user-friendly options have some dark side to them. For the moment
 // I prefer the explicit and plain awkwardness to the subtle, prowling
@@ -499,6 +562,41 @@ func (self *Twine) AddLineMetricsRefresh() *Twine {
 	return self
 }
 
+// ---- advance and padding tricks ----
+
+// This applies only to the next effect we find.
+func (self *Twine) PushEffectWithSpacing(key TwineEffectKey, effectMode TwineEffectMode, spacing TwineEffectSpacing, payload ...byte) *Twine {
+	cc := effectMode.controlCode()
+	self.assertValidPayloadLen(payload...)
+	if self.InGlyphMode {
+		self.Buffer = append(self.Buffer, []byte{0, 0, twineCcBegin, twineCcPushEffectWithSpacing}...)
+	} else {
+		self.Buffer = append(self.Buffer, []byte{twineCcBegin, twineCcPushEffectWithSpacing}...)
+	}
+	self.Buffer = spacing.appendData(self.Buffer)
+	self.Buffer = append(self.Buffer, []byte{cc, uint8(key), uint8(len(payload))}...)
+	if len(payload) > 0 { self.Buffer = append(self.Buffer, payload...) }
+	return self
+}
+
+func (self *Twine) PushLineRestartMarker() *Twine {
+	if self.InGlyphMode {
+		self.Buffer = append(self.Buffer, []byte{0, 0, twineCcBegin, twineCcPushLineRestartMarker}...)
+	} else {
+		self.Buffer = append(self.Buffer, []byte{twineCcBegin, twineCcPushLineRestartMarker}...)
+	}
+	return self
+}
+
+func (self *Twine) ClearLineRestartMarker() *Twine {
+	if self.InGlyphMode {
+		self.Buffer = append(self.Buffer, []byte{0, 0, twineCcBegin, twineCcClearLineRestartMarker}...)
+	} else {
+		self.Buffer = append(self.Buffer, []byte{twineCcBegin, twineCcClearLineRestartMarker}...)
+	}
+	return self
+}
+
 // ---- common functions provided for utility ----
 
 // Utility function equivalent to [Twine.PushEffect]([EffectPushColor],
@@ -507,16 +605,16 @@ func (self *Twine) AddLineMetricsRefresh() *Twine {
 // Losses may happen during conversion of textColor to [color.RGBA].
 func (self *Twine) PushColor(textColor color.Color) *Twine {
 	r, g, b, a := getRGBA8(textColor)
-	return self.PushEffect(EffectPushColor, []byte{r, g, b, a}...)
+	return self.PushEffect(EffectPushColor, SinglePass, []byte{r, g, b, a}...)
 }
 
 // Utility function equivalent to [Twine.PushEffect]([EffectPushFont],
 // []byte{uint8(index)}).
 //
 // Before rendering, the font index must have been registered with
-// [RendererComplex.RegisterFont]().
+// [RendererTwine.RegisterFont]().
 func (self *Twine) PushFont(index FontIndex) *Twine {
-	return self.PushEffect(EffectPushFont, uint8(index))
+	return self.PushEffect(EffectPushFont, SinglePass, uint8(index))
 }
 
 // Utility function equivalent to [Twine.PushEffect]([EffectShiftSize],
@@ -524,7 +622,7 @@ func (self *Twine) PushFont(index FontIndex) *Twine {
 //
 // Size changes operate under special rules, see [Twine.AddLineMetricsRefresh]() for more details.
 func (self *Twine) ShiftSize(logicalSizeChange int8) *Twine {
-	return self.PushEffect(EffectShiftSize, uint8(logicalSizeChange))
+	return self.PushEffect(EffectShiftSize, SinglePass, uint8(logicalSizeChange))
 }
 
 // ---- internal functions ----
@@ -555,19 +653,44 @@ func (self *Twine) appendGlyphIndex(index sfnt.GlyphIndex) {
 	}
 }
 
+const (
+	twineRuneEndOfText    rune =  3 // ETX
+	twineRuneNotAvailable rune = -1 // only glyph available
+)
+
+// Returns the next rune information and the index advance.
+// The glyph index is only non-zero if the rune's value is
+// twineRuneNotAvailable. You always check the rune first,
+// which can also take the twineRuneEndOfText special value.
+func (self *Twine) decodeNextAt(index int, inGlyphMode bool) (rune, sfnt.GlyphIndex, int) {
+	if index >= len(self.Buffer) { return twineRuneEndOfText, 0, 0 }
+
+	if inGlyphMode {
+		glyphIndex := sfnt.GlyphIndex(self.Buffer[index + 1]) << 8
+		glyphIndex  = sfnt.GlyphIndex(self.Buffer[index + 0]) | glyphIndex
+		if glyphIndex != 0 {
+			return twineRuneNotAvailable, glyphIndex, 2
+		}
+
+		switch self.Buffer[index + 2] {
+		case 0: // true zero, ok (see "[#1]" note)
+			return twineRuneNotAvailable, 0, 3
+		case uint8(twineCcBegin):
+			return rune(twineCcBegin), 0, 3
+		}
+		panic("invalid twine data")
+	} else {
+		codePoint, runeLen := utf8.DecodeRune(self.Buffer[index : ])
+		if codePoint == utf8.RuneError { panic("invalid rune") }
+		return codePoint, 0, runeLen
+	}
+}
+
 // ---- helpers ----
 
-// used to implement PushEffect, PushPreEffect, PushMotion
+// used to implement PushEffect, PushMotion, etc.
 func (self *Twine) appendKeyWithPayload(cc, key uint8, payload []byte) *Twine {
-	// max payload size assertion
-	if len(payload) >= 256 {
-		panic( // not ok
-			"Maximum payload size on Twine functions is 255, but got " +
-			strconv.Itoa(len(payload)) + " bytes instead",
-		)
-	}
-
-	// append stuff to the buffer
+	self.assertValidPayloadLen(payload...)
 	if self.InGlyphMode {
 		self.Buffer = append(self.Buffer, []byte{0, 0, twineCcBegin, cc, key, uint8(len(payload))}...)
 	} else {
@@ -579,7 +702,17 @@ func (self *Twine) appendKeyWithPayload(cc, key uint8, payload []byte) *Twine {
 	return self
 }
 
+func (self *Twine) assertValidPayloadLen(payload ...byte) {
+	// max payload size assertion
+	if len(payload) >= 256 {
+		panic( // not ok
+			"Maximum payload size on Twine functions is 255, but got " +
+			strconv.Itoa(len(payload)) + " bytes instead",
+		)
+	}
+}
 
+// ---- helper functions ----
 
 func fractToBytes(f fract.Unit) (byte, byte, byte) {
 	if f.Abs() > 65536*64 - 1 { panic("max fract.Unit absolute value allowed in context is 65535.984375") }
