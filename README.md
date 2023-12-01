@@ -14,7 +14,6 @@ While Ebitengine already includes the [**ebiten/text/v2**](https://pkg.go.dev/gi
 - Provides high quality documentation and [examples](https://github.com/tinne26/etxt/tree/main/examples).
 - Helps out with some extras like faux bold, faux oblique, basic line wrapping, embedded fonts, glyph quantization, line spacing, etc.
 - Exposes caches, rasterizers and sizers for you to adapt if you have more advanced needs.
-- Is more ergonomic to use.
 
 What **etxt** doesn't do:
 - No general [text layout](https://raphlinus.github.io/text/2020/10/26/text-layout.html). Features like bidi, rich text support, itemization, shaping, general hit testing, justification and others are not covered and in most cases aren't a primary goal for this package.

@@ -4,19 +4,28 @@ import "strconv"
 
 import "github.com/tinne26/etxt/fract"
 
-// Notice: any Call* operation that returns non-zero advance should
-//         drop the previous glyph information (or avoid kerning)
-
+// The effectOperationData is a helper struct used for twine operations that
+// allows us to store relevant data for calling the TwineEffectFuncs. To get
+// started, see the twine.go file.
+//
+// Notice: any Call* operation that returns non-zero advance must interrupt
+// kerning (drawInternalValues.interruptKerning()).
 type effectOperationData struct {
 	payloadStartIndex uint32 // inclusive
 	payloadEndIndex uint32 // non-inclusive
+	spacing *TwineEffectSpacing
 	origin fract.Point
 	knownWidth fract.Unit // doesn't include spacing pads
-	spacing *TwineEffectSpacing
 	forceLineBreakPostPad bool // if true, we use LineBreak post pad metrics
 	forceLineStartPrePad bool // TODO: set manually on DrawWithWrap
 	mode TwineEffectMode // ~bool
 	key uint8
+
+	// fields for twineOperatorEffectsList, should be manipulated 
+	// only through that struct
+	linkPrev uint16 // if prev == 65535, next indicates the next free index
+	linkNext uint16
+	softPopped bool
 }
 
 func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target, operator *twineOperator, newPosition fract.Point) fract.Unit {
@@ -24,7 +33,6 @@ func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target
 
 	flags := uint8(TwineTriggerLineStart)
 	if operator.onMeasuringPass {
-		flags |= twineFlagMeasuring
 		self.forceLineBreakPostPad = false
 		self.knownWidth = 0
 		// NOTE: we don't consider min width spacing here because that's always used on
@@ -58,7 +66,6 @@ func (self *effectOperationData) CallPush(renderer *Renderer, target Target, ope
 
 	flags := uint8(TwineTriggerPush)
 	if operator.onMeasuringPass {
-		flags |= twineFlagMeasuring
 		self.forceLineBreakPostPad = false
 	}
 	
@@ -102,7 +109,6 @@ func (self *effectOperationData) CallPop(renderer *Renderer, target Target, oper
 
 	// invoke function and return new x position
 	flags := uint8(TwineTriggerPop)
-	if operator.onMeasuringPass { flags |= twineFlagMeasuring }
 	self.commonCall(renderer, target, operator, x, prePad, postPad, flags)
 	return postPad
 }
@@ -122,7 +128,6 @@ func (self *effectOperationData) CallLineBreak(renderer *Renderer, target Target
 
 	// invoke function and return new x position
 	flags := uint8(TwineTriggerLineBreak)
-	if operator.onMeasuringPass { flags |= twineFlagMeasuring }
 	self.commonCall(renderer, target, operator, x, prePad, postPad, flags)
 	return postPad
 }
@@ -154,6 +159,9 @@ func (self *effectOperationData) commonCall(renderer *Renderer, target Target, o
 
 	if self.mode == DoublePass {
 		flags |= twineFlagDoublePass
+	}
+	if operator.onMeasuringPass {
+		flags |= twineFlagMeasuring
 	}
 
 	// invoke effect function with the relevant arguments

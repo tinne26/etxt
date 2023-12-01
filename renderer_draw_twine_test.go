@@ -88,6 +88,7 @@ func TestDrawTwineEffects(t *testing.T) {
 	twine.Reset()
 	twine.Add("one two three")
 	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
 	if tester.HasError() {
 		t.Fatalf("Effect func test #0 failed: %s", tester.ErrMsg())
 	}
@@ -107,6 +108,7 @@ func TestDrawTwineEffects(t *testing.T) {
 	twine.Reset()
 	twine.Add("one ").PushEffect(0, SinglePass).Add("two ").Pop().Add("three")
 	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
 	if tester.HasError() {
 		t.Fatalf("Effect func test #1 failed: %s", tester.ErrMsg())
 	}
@@ -125,6 +127,7 @@ func TestDrawTwineEffects(t *testing.T) {
 	twine.Reset()
 	twine.Add("one ").PushEffect(0, SinglePass, 1, 2, 3).Add("two ").Pop().Add("three")
 	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
 	if tester.HasError() {
 		t.Fatalf("Effect func test #2 failed: %s", tester.ErrMsg())
 	}
@@ -151,6 +154,7 @@ func TestDrawTwineEffects(t *testing.T) {
 	twine.Reset()
 	twine.Add("please ").PushEffect(0, SinglePass, 3, 6).Add("don't\nmove").Pop().Add(" like that")
 	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
 	if tester.HasError() {
 		t.Fatalf("Effect func test #3 failed: %s", tester.ErrMsg())
 	}
@@ -174,9 +178,11 @@ func TestDrawTwineEffects(t *testing.T) {
 			flags: uint8(TwineTriggerPop) | twineFlagDoublePass,
 		},	
 	})
+	t.Log("\n--- double pass test ---\n")
 	twine.Reset()
 	twine.Add("double ").PushEffect(0, DoublePass).Add("pass").Pop().Add(" mode")
 	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
 	if tester.HasError() {
 		t.Fatalf("Effect func test #4 failed: %s", tester.ErrMsg())
 	}
