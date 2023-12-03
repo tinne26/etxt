@@ -67,6 +67,13 @@ func (self *twineOperatorEffectsList) ActiveDoublePassEffectsCount() uint16 {
 	return self.activeDoublePassEffectCount
 }
 
+func (self *twineOperatorEffectsList) OnLastDoublePassEffect() bool {
+	return (
+		self.activeDoublePassEffectCount == 1 &&
+		self.activeHeadIndex != 65535 &&
+		self.list[self.activeHeadIndex].mode == DoublePass)
+}
+
 func (self *twineOperatorEffectsList) AssertAllEffectsActive() {
 	if self.activeCount == self.totalCount { return }
 	panic("twineOperatorEffectsList.AssertAllEffectsActive() failure")
@@ -128,7 +135,7 @@ func (self *twineOperatorEffectsList) Push(effectValue effectOperationData) {
 	}
 	self.rawHeadIndex = newHeadIndex
 	self.activeHeadIndex = newHeadIndex
-
+	self.totalCount += 1
 	self.increaseActiveCount(effect)
 }
 
@@ -177,6 +184,7 @@ func (self *twineOperatorEffectsList) HardPop() {
 	if self.totalCount == 0 { panic("broken code") }
 	self.totalCount -= 1
 	self.decreaseActiveCount(effect)
+	self.refreshActiveHeadIndexFromPop(effect)
 
 	// readjust linking to head, tail and between effect nodes
 	if effect.linkPrev == 65535 {
@@ -185,7 +193,7 @@ func (self *twineOperatorEffectsList) HardPop() {
 		self.list[effect.linkPrev].linkNext = effect.linkNext
 	}
 	if effect.linkNext == 65535 {
-		self.refreshActiveHeadIndexFromPop(effect)
+		self.rawHeadIndex = self.activeHeadIndex
 	} else {
 		self.list[effect.linkNext].linkPrev = effect.linkPrev
 	}
@@ -225,8 +233,8 @@ func (self *twineOperatorEffectsList) decreaseActiveCount(effect *effectOperatio
 	}
 }
 
+// Important: must also manually call self.totalCount += 1 if necessary.
 func (self *twineOperatorEffectsList) increaseActiveCount(effect *effectOperationData) {
-	self.totalCount += 1
 	self.activeCount += 1
 	if effect.mode == DoublePass {
 		self.activeDoublePassEffectCount += 1

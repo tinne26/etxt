@@ -115,7 +115,7 @@ func Weave(args ...any) Twine {
 // feature that's not used most of the time).
 //
 // See also [TwineMotionFunc].
-type TwineEffectFunc = func(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit
+type TwineEffectFunc = func(renderer *Renderer, target Target, args TwineEffectArgs)
 
 // Related to [TwineEffectFunc].
 // 
@@ -132,6 +132,14 @@ const (
 	SinglePass TwineEffectMode = true
 	DoublePass TwineEffectMode = false
 )
+func (self TwineEffectMode) string() string {
+	switch self {
+	case SinglePass: return "SinglePass"
+	case DoublePass: return "DoublePass"
+	default:
+		return "InvalidTwineEffectMode"
+	}
+}
 
 func (self TwineEffectMode) controlCode() byte {
 	switch self {

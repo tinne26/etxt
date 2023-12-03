@@ -7,11 +7,6 @@ import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt/fract"
 
-// TODO: problem: doublePassTempPopCount breaks regular pops and dp{ dp{} dp{} } sequences
-//       Basically, we don't have a good strategy for keeping the effect op data memorized
-//       when we also have pops in the middle. and the first double pass effect must be
-//       drawn first no matter what. we can't snake those wrapped dps early.
-
 // double pass reset mode constants
 type dpResetMode uint8
 const (
@@ -45,9 +40,6 @@ func releaseTwineOperator(twineOperator *twineOperator) {
 // --- twine operator ---
 
 type twineOperator struct {
-	// TODO:
-	// - struct field reordering: do late or never. code is already too complex
-
 	twine Twine // the twine we are operating on
 	index int // current index for twine.Buffer
 	inGlyphMode bool // twines can mix glyphs and utf8, so we need to keep track of this
@@ -124,9 +116,13 @@ func (self *twineOperator) OperateLTR(renderer *Renderer, target Target, positio
 
 func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position fract.Point, iv drawInternalValues) (fract.Point, drawInternalValues) {
 	// notify line end, which could trigger a double pass reset
+	//fmt.Printf("trace: LineBreak() / %s\n", self.effects.debugStr())
 	var dpReset bool
-	position, iv, dpReset = self.notifyLineBreak(renderer, target, position, iv)
+	position, iv, dpReset = self.notifyLineBreak(renderer, target, position, iv) // *
 	if dpReset { return position, iv }
+	// * notifyLineBreaks makes the CallLineBreak invokations, but it may
+	//   also trigger the double reset pass, in which case it will also
+	//   call the CallLineStart or CallPush methods
 
 	// start setting everything up for next line
 	iv.increaseLineBreakNth()
@@ -144,15 +140,18 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 
 	// check y cutoff to terminate early and pop every remaining effect in that case
 	if position.Y > self.yCutoff {
+		//fmt.Print("trace: LineBreak() cutoff\n")
 		position, iv, _ = self.PopAll(renderer, target, position, iv)
 		return position, iv
 	}
 
 	// update/invoke effects for the new line
-	if !self.performDrawPass || self.doublePassResetMode == dpResetNone {
-		// easy case: we don't have to draw, so it's all just measuring
-		// (effects changing font or font size can still affect metrics).
-		// just stay on measuring pass and trigger a LineStart for everyone
+	if !self.performDrawPass || self.effects.ActiveDoublePassEffectsCount() == 0 {
+		//fmt.Print("trace: LineBreak() / easy CallLineStart\n")
+		// easy case: we either don't have to draw (so it's all just measuring,
+		// though effects changing font or font size can still affect metrics),
+		// or we have to draw but we don't have active double pass effects so
+		// we can just call line start on everyone anyway.
 		self.effects.AssertAllEffectsActive()
 		self.effects.Each(func(effect *effectOperationData) {
 			effect.origin = position
@@ -163,6 +162,7 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 			}
 		})
 	} else {
+		//fmt.Print("trace: LineBreak() / hard pass with storeDoublePassReset\n")
 		// super annoying tricky case! if we still have double pass effects accumulated,
 		// we will need to memorize a new reset point and go into measure mode again...
 		// but only once we hit the first double pass effect. single pass effects wrapping
@@ -232,7 +232,7 @@ func (self *twineOperator) ProcessCC(renderer *Renderer, target Target, position
 	case twineCcPushSinglePassEffect:
 		self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, SinglePass)
 		advance := self.effects.Head().CallPush(renderer, target, self, position)
-		if advance > 0 {
+		if advance != 0 {
 			iv.interruptKerning()
 			position.X += renderer.withTextDirSign(advance)
 		}
@@ -249,7 +249,7 @@ func (self *twineOperator) ProcessCC(renderer *Renderer, target Target, position
 
 		// call push
 		advance := self.effects.Head().CallPush(renderer, target, self, position)
-		if advance > 0 {
+		if advance != 0 {
 			iv.interruptKerning()
 			position.X += renderer.withTextDirSign(advance)
 		}
@@ -263,6 +263,7 @@ func (self *twineOperator) ProcessCC(renderer *Renderer, target Target, position
 }
 
 func (self *twineOperator) PopAll(renderer *Renderer, target Target, position fract.Point, iv drawInternalValues) (fract.Point, drawInternalValues, bool) {
+	//fmt.Printf("trace: PopAll() / %s\n", self.effects.debugStr())
 	var dpReset bool
 	for self.effects.ActiveCount() > 0 {
 		position, iv, dpReset = self.pop(renderer, target, position, iv)
@@ -293,8 +294,9 @@ func (self *twineOperator) pop(renderer *Renderer, target Target, position fract
 	// (which is only if !performDrawPass or finally in double pass draw) we can
 	// effect.HardPop() it, otherwise we will have to use it again on the doublePass
 	// so we only effect.SoftPop() it.
-	if self.doublePassResetMode != dpResetNone && self.effects.ActiveDoublePassEffectsCount() == 1 {
+	if self.doublePassResetMode != dpResetNone && self.effects.OnLastDoublePassEffect() {
 		if !self.onMeasuringPass { panic("expected to be on measuring pass, broken code") }
+		//fmt.Printf("trace: soft pop() and reset / %s\n", self.effects.debugStr())
 		// we reset to begin the second pass when we have a double pass reset mode 
 		// configured, we are measuring and the pop the last double pass effect.
 		effect := self.effects.SoftPop()
@@ -304,17 +306,19 @@ func (self *twineOperator) pop(renderer *Renderer, target Target, position fract
 	} else if self.doublePassResetMode == dpResetNone || !self.onMeasuringPass {
 		// we hard pop when we are not in reset mode (e.g. measuring only) or 
 		// when we are drawing effect is no longer necessary
+		//fmt.Printf("trace: hard pop() / %s\n", self.effects.debugStr())
 		advance := self.effects.Head().CallPop(renderer, target, self, position.X)
-		if advance > 0 {
+		if advance != 0 {
 			iv.interruptKerning()
 			position.X += renderer.withTextDirSign(advance)
 		}
 		self.effects.HardPop()
 	} else {
 		// effect will be needed later
+		//fmt.Printf("trace: soft pop() / %s\n", self.effects.debugStr())
 		effect := self.effects.SoftPop()
 		advance := effect.CallPop(renderer, target, self, position.X)
-		if advance > 0 {
+		if advance != 0 {
 			iv.interruptKerning()
 			position.X += renderer.withTextDirSign(advance)
 		}
@@ -326,6 +330,7 @@ func (self *twineOperator) pop(renderer *Renderer, target Target, position fract
 // Appends a new effect op data value and returns the new index (first position after the payload).
 // One must still invoke CallPush or CallLineStart on the effect afterwards.
 func (self *twineOperator) appendNewEffectOpDataWithKeyAt(index int, effectMode TwineEffectMode) int {
+	//fmt.Printf("trace: appendNewEffectOpData...(%s) / %s\n", effectMode.string(), self.effects.debugStr())
 	// note: the data structure is [twineCcBegin, effectModeCc, key, payloadLen, payload...]
 	key := self.twine.Buffer[index]
 	payloadLen := self.twine.Buffer[index + 1]
@@ -360,25 +365,28 @@ func (self *twineOperator) notifyLineBreak(renderer *Renderer, target Target, po
 	// the hard case where we only deal with a certain number of effects
 	if self.doublePassResetMode == dpResetNone || !self.onMeasuringPass {
 		// simple case, notify everyone of line break
+		// (we don't pop any effect, as we need them on the next line)
 		self.effects.EachReverse(func(effect *effectOperationData) {
+			//fmt.Print("trace: notifyLineBreak() / CallLineBreak()\n")
 			advance := effect.CallLineBreak(renderer, target, self, position.X)
-			if advance > 0 {
+			if advance != 0 {
 				iv.interruptKerning()
 				position.X += renderer.withTextDirSign(advance)
 			}
 		})
-
 		return position, iv, false
 	} else {
+		
 		// hard case, notify everyone up to the furthest away double pass, then reset
 		dpCount := self.effects.ActiveDoublePassEffectsCount()
 		if dpCount == 0 { panic("broken code") } // TODO: delete later
 		
 		// soft pop everyone up to last double pass effect
 		for dpCount > 0 {
+			//fmt.Print("trace: notifyLineBreak() / SoftPop + CallLineBreak\n")
 			effect := self.effects.SoftPop()
 			advance := effect.CallLineBreak(renderer, target, self, position.X)
-			if advance > 0 {
+			if advance != 0 {
 				iv.interruptKerning()
 				position.X += renderer.withTextDirSign(advance)
 			}
@@ -397,6 +405,7 @@ func (self *twineOperator) notifyLineBreak(renderer *Renderer, target Target, po
 // (twine index, position, glyph mode, etc) and then calls LineStart or Push
 // for the relevant double pass effects.
 func (self *twineOperator) resetForSecondPass(renderer *Renderer, target Target, position fract.Point, iv drawInternalValues) (fract.Point, drawInternalValues) {
+	//fmt.Printf("trace: resetForSecondPass() / %s\n", self.effects.debugStr())
 	// safety assertion (could be removed later, but it's cheap)
 	if self.doublePassResetMode == dpResetNone || !self.onMeasuringPass || !self.performDrawPass {
 		panic("misuse of twineOperator.resetForSecondPass")
@@ -416,15 +425,19 @@ func (self *twineOperator) resetForSecondPass(renderer *Renderer, target Target,
 	// call all active effects at the start of the reset mode
 	switch self.doublePassResetMode {
 	case dpResetLineStart:
+		// recall any remaining effects that were wrapped in a multi-line
+		for self.effects.TryRecallNext() != nil {}
+
 		// multiple double pass effects can be accumulated from a previous line,
 		// so we have to call line start from the oldest double pass effect still
 		// active to the newest effect wrapped in the reset zone
 		engaged := false
 		self.effects.Each(func(effect *effectOperationData) {
 			if engaged || effect.mode == DoublePass {
+				//fmt.Print("trace: resetForSecondPass() / CallLineStart()\n")
 				engaged = true
 				advance := effect.CallLineStart(renderer, target, self, position)
-				if advance > 0 {
+				if advance != 0 {
 					iv.interruptKerning() // this might seem like it can be moved out here, but nope
 					position.X += renderer.withTextDirSign(advance)
 				}
@@ -434,24 +447,32 @@ func (self *twineOperator) resetForSecondPass(renderer *Renderer, target Target,
 		// in this case we can guarantee we have a single double pass effect,
 		// and previous effects can't be anything else than single pass effects
 		// that were already invoked in draw mode
+		//fmt.Print("trace: resetForSecondPass() / Push()\n")
 		advance := effect.CallPush(renderer, target, self, position)
-		if advance > 0 {
+		if advance != 0 {
 			iv.interruptKerning()
 			position.X += advance
 		}
 	default:
 		panic("broken code")
 	}
-
+	
 	self.doublePassResetMode = dpResetNone
 	return position, iv
 }
 
 func (self *twineOperator) storeDoublePassResetData(position fract.Point, iv drawInternalValues, resetMode dpResetMode) {
+	//fmt.Printf("trace: storing double pass reset data / %s\n", self.effects.debugStr())
 	self.doublePassResetMode = resetMode
 	self.doublePassResetX = position.X	
 	self.doublePassResetIndex = self.index
 	self.doublePassResetLineBreakNth = int32(iv.lineBreakNth)
 	self.doublePassResetPrevGlyphIndex = iv.prevGlyphIndex
 	self.doublePassResetInGlyphMode = self.inGlyphMode
+}
+
+// ---- debug ----
+func (self *twineOperator) passTypeStr() string {
+	if self.onMeasuringPass { return "measuring" }
+	return "drawing"
 }

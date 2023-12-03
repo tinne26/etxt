@@ -7,13 +7,13 @@ import "image/color"
 import "github.com/tinne26/etxt/fract"
 
 // implements EffectPushColor
-func twineEffectPushColor(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
+func twineEffectPushColor(renderer *Renderer, target Target, args TwineEffectArgs) {
 	// usage asserts
 	args.AssertPayloadLen(4)
 	args.AssertMode(SinglePass)
 	
 	// bypass if measuring
-	if args.Measuring() { return 0 }
+	if args.Measuring() { return }
 
 	// handle each trigger situation
 	switch args.GetTrigger() {
@@ -28,12 +28,10 @@ func twineEffectPushColor(renderer *Renderer, target Target, args TwineEffectArg
 	default:
 		panic("unexpected")
 	}
-
-	return 0
 }
 
 // implements EffectPushFont
-func twineEffectPushFont(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
+func twineEffectPushFont(renderer *Renderer, target Target, args TwineEffectArgs) {
 	// usage asserts
 	args.AssertPayloadLen(1)
 	args.AssertMode(SinglePass)
@@ -51,12 +49,10 @@ func twineEffectPushFont(renderer *Renderer, target Target, args TwineEffectArgs
 	default:
 		panic("unexpected")
 	}
-
-	return 0
 }
 
 // implements EffectShiftSize
-func twineEffectShiftSize(renderer *Renderer, target Target, args TwineEffectArgs) fract.Unit {
+func twineEffectShiftSize(renderer *Renderer, target Target, args TwineEffectArgs) {
 	// usage asserts
 	args.AssertPayloadLen(1)
 	args.AssertMode(SinglePass)
@@ -75,6 +71,4 @@ func twineEffectShiftSize(renderer *Renderer, target Target, args TwineEffectArg
 	default:
 		panic("unexpected")
 	}
-
-	return 0
 }

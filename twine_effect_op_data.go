@@ -29,6 +29,7 @@ type effectOperationData struct {
 }
 
 func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target, operator *twineOperator, newPosition fract.Point) fract.Unit {
+	//fmt.Printf("CallLineStart(%s) | %s\n", self.mode.string(), operator.passTypeStr())
 	self.origin = newPosition
 
 	flags := uint8(TwineTriggerLineStart)
@@ -61,6 +62,7 @@ func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target
 }
 
 func (self *effectOperationData) CallPush(renderer *Renderer, target Target, operator *twineOperator, origin fract.Point) fract.Unit {
+	//fmt.Printf("CallPush(%s) | %s\n", self.mode.string(), operator.passTypeStr())
 	self.origin = origin
 	self.knownWidth = 0
 
@@ -96,6 +98,7 @@ func (self *effectOperationData) CallPush(renderer *Renderer, target Target, ope
 }
 
 func (self *effectOperationData) CallPop(renderer *Renderer, target Target, operator *twineOperator, x fract.Unit) fract.Unit {
+	//fmt.Printf("CallPop(%s) | %s\n", self.mode.string(), operator.passTypeStr())
 	var prePad fract.Unit
 	var postPad fract.Unit
 	if self.spacing != nil {
@@ -114,6 +117,7 @@ func (self *effectOperationData) CallPop(renderer *Renderer, target Target, oper
 }
 
 func (self *effectOperationData) CallLineBreak(renderer *Renderer, target Target, operator *twineOperator, x fract.Unit) fract.Unit {
+	//fmt.Printf("CallLineBreak(%s) | %s\n", self.mode.string(), operator.passTypeStr())
 	self.forceLineBreakPostPad = true
 	var prePad fract.Unit
 	var postPad fract.Unit

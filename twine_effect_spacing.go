@@ -24,7 +24,7 @@ func (self *TwineEffectSpacing) parseFromData(data []byte) int {
 	self.ArePadsLogical    = ((control & 0b1000_0000) != 0)
 	self.IsMinWidthLogical = ((control & 0b0100_0000) != 0)
 
-	parts := (control | 0b0011_1111)
+	parts := (control & 0b0011_1111)
 	if parts > 5 { panic("invalid control byte") }
 	numDataBytes := int(parts*3 + 1)
 	if len(data) < numDataBytes { panic("invalid twine effect spacing encoding (missing parts)") }
