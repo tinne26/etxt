@@ -22,7 +22,7 @@ import "github.com/tinne26/etxt/font"
 // that this example is only trying to show how to use feeds
 // in a non-trivial way, not trying to show how to write the
 // best solution to the specific problems it deals with;
-// RendererComplex.Draw() can already be used right out of
+// RendererTwine.Draw() can already be used right out of
 // the box to solve most of the problems demonstrated in this
 // example.
 //

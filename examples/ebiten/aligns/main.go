@@ -109,7 +109,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	self.text.SetSize(18)
 	self.text.SetColor(color.RGBA{255, 255, 255, 255})
 	self.text.SetAlign(self.align)
-	self.text.Complex().SetDirection(self.direction)
+	self.text.SetDirection(self.direction)
 	var content string
 	switch self.contentType {
 	case 0: // align

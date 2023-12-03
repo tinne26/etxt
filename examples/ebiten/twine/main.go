@@ -45,7 +45,7 @@ func (self *Game) Update() error { return nil }
 
 func (self *Game) Draw(canvas *ebiten.Image) {
 	canvas.Fill(color.RGBA{ 245, 253, 198, 255 })
-	self.text.Complex().Draw(canvas, self.twine, 16, 32)
+	self.text.Twine().Draw(canvas, self.twine, 16, 32)
 }
 
 func main() {
@@ -82,8 +82,8 @@ func main() {
 	renderer.SetAlign(etxt.Baseline | etxt.Left)
 	
 	// register fonts and functions that we will be using
-	bold := renderer.Complex().RegisterFont(etxt.NextFontIndex, boldFont)
-	spoiler := renderer.Complex().RegisterEffectFunc(etxt.NextEffectKey, (&Spoiler{}).Func)
+	bold := renderer.Twine().RegisterFont(etxt.NextFontIndex, boldFont)
+	spoiler := renderer.Twine().RegisterEffectFunc(etxt.NextEffectKey, (&Spoiler{}).Func)
 
 	// prepare some variables for the twine content
 	var glyphs []sfnt.GlyphIndex
@@ -124,7 +124,8 @@ func main() {
 	twine.ShiftSize(-3).Add("certain restrictions").Pop().Add(". In particular, line height remains fixed to\n")
 	twine.Add("the initial value unless you explicitly refresh it.\n\n")
 	twine.Add("Not to spoil your life movie, but the main character ")
-	twine.PushEffect(spoiler).Add("trips\nover twines and sustains a traumatic brain injury").Pop().Add(".")
+	twine.PushEffect(spoiler, etxt.SinglePass).Add("trips\nover twines and sustains a traumatic brain injury")
+	twine.Pop().Add(".")
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/twine")
@@ -142,12 +143,12 @@ func main() {
 // 
 // If you want more effect examples, see etxt/twine_builtin_effects.go.
 type Spoiler struct { uncovered, nextUncovered bool }
-func (self *Spoiler) Func(renderer *etxt.Renderer, target etxt.Target, args etxt.TwineEffectArgs) fract.Unit {
+func (self *Spoiler) Func(renderer *etxt.Renderer, target etxt.Target, args etxt.TwineEffectArgs) {
 	// prevent misuse
-	args.AssertOnPre(false)
+	args.AssertMode(etxt.SinglePass)
 	
 	// bypass if measuring
-	if args.Measuring() { return 0 }
+	if args.Measuring() { return }
 
 	// handle each trigger situation
 	switch args.GetTrigger() {
@@ -155,17 +156,16 @@ func (self *Spoiler) Func(renderer *etxt.Renderer, target etxt.Target, args etxt
 		self.uncovered = self.nextUncovered
 		self.nextUncovered = false
 	case etxt.TwineTriggerPop, etxt.TwineTriggerLineBreak:
+		rect := args.Rect()
 		if !self.uncovered {
-			args.Rect.Clip(target).Fill(color.RGBA{20, 20, 20, 255})
+			rect.Clip(target).Fill(color.RGBA{20, 20, 20, 255})
 		}
 		x, y := ebiten.CursorPosition()
-		inRect := args.Rect.Contains(fract.IntsToPoint(x, y))
+		inRect := rect.Contains(fract.IntsToPoint(x, y))
 		self.nextUncovered = self.nextUncovered || inRect
 	case etxt.TwineTriggerLineStart:
 		// ignored
 	default:
 		panic("unexpected")
 	}
-
-	return 0
 }
