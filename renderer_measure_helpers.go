@@ -5,41 +5,41 @@ import "golang.org/x/image/font/sfnt"
 import "github.com/tinne26/etxt/fract"
 
 // expects a quantized position, returns an unquantized position
-func (self *Renderer) advanceGlyphLTR(target Target, position fract.Point, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
+func (self *Renderer) advanceGlyphLTR(x fract.Unit, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Unit, drawInternalValues) {
 	// apply kerning unless coming from line break
 	if iv.lineBreakNth != 0 {
 		iv.lineBreakNth = 0
 	} else {
-		position.X += self.getOpKernBetween(iv.prevGlyphIndex, currGlyphIndex)
+		x += self.getOpKernBetween(iv.prevGlyphIndex, currGlyphIndex)
 	}
-	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	x = x.QuantizeUp(fract.Unit(self.state.horzQuantization))
 
-	// (here we would draw if we wanted to)
+	// (here we would draw if we had to)
 
 	// advance
-	position.X += self.getOpAdvance(currGlyphIndex)
+	x += self.getOpAdvance(currGlyphIndex)
 
 	iv.prevGlyphIndex = currGlyphIndex
-	return position, iv
+	return x, iv
 }
 
 // expects a quantized position, returns a quantized position
-func (self *Renderer) advanceGlyphRTL(target Target, position fract.Point, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
+func (self *Renderer) advanceGlyphRTL(x fract.Unit, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Unit, drawInternalValues) {
 	// advance
-	position.X -= self.getOpAdvance(currGlyphIndex)
+	x -= self.getOpAdvance(currGlyphIndex)
 
 	// apply kerning unless coming from line break
 	if iv.lineBreakNth != 0 {
 		iv.lineBreakNth = 0
 	} else {
-		position.X -= self.getOpKernBetween(currGlyphIndex, iv.prevGlyphIndex)
+		x -= self.getOpKernBetween(currGlyphIndex, iv.prevGlyphIndex)
 	}
-	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	x = x.QuantizeUp(fract.Unit(self.state.horzQuantization))
 	
-	// (here we would draw if we wanted to)
+	// (here we would draw if we had to)
 
 	iv.prevGlyphIndex = currGlyphIndex
-	return position, iv
+	return x, iv
 }
 
 // Preconditions: font and sizer are not nil

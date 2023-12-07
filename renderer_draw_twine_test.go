@@ -9,9 +9,10 @@ import "image"
 // TODO:
 // - test line size changes
 // - test dynamic payload modification
-// - test more aligns and text directions
-// - test double pass effects encompassing multiple consecutive line breaks
-//   (lineBreakNth sequence breaking test)
+// - test RTL
+// - test double pass effects encompassing multiple consecutive
+//   line breaks (lineBreakNth sequence breaking test)
+// - comparative draws with simple strings against default algorithm
 
 func consistentArgs(a, b TwineEffectArgs) bool {
 	if !eqByteSlices(a.Payload, b.Payload) { return false }
@@ -674,4 +675,356 @@ func TestDrawMixedTwineEffects(t *testing.T) {
 	if tester.HasError() {
 		t.Fatalf("Advanced effect func test #7 failed: %s", tester.ErrMsg())
 	}	
+}
+
+func TestDrawMixedTwineEffectsCounterDir(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
+	renderer := NewRenderer()
+	renderer.SetFont(testFontA)
+	renderer.Utils().SetCache8MiB()
+	renderer.SetAlign(Right)
+
+	// create tester
+	var tester twineEffectTester
+	var twine Twine
+	target := image.NewRGBA(image.Rect(0, 0, 640, 480))
+	
+	// register effect func
+	renderer.Twine().RegisterEffectFunc(0, tester.EffectFunc)
+
+	// (SinglePass wrapping DoublePass, no multiline)
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2 ").Pop().Add("3 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced counter dir effect func test #1 failed: %s", tester.ErrMsg())
+	}
+
+	// (DoublePass wrapping SinglePass, no multiline)
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, DoublePass).Add("1 ").PushEffect(0, SinglePass).Add("2 ").Pop().Add("3 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced counter dir effect func test #2 failed: %s", tester.ErrMsg())
+	}
+	
+	// (SinglePass wrapping DoublePass, multiline)
+	tester.Init([]TwineEffectArgs{
+		// measure first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		// draw first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) },
+		// measure second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		// draw second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2\n3 ").Pop().Add("4 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced counter dir effect func test #3 failed: %s", tester.ErrMsg())
+	}
+
+	// (DoublePass wrapping SinglePass, multiline)
+	tester.Init([]TwineEffectArgs{
+		// measure first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass | twineFlagMeasuring },
+		// draw first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass },
+		// measure second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		// draw second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, DoublePass).Add("1 ").PushEffect(0, SinglePass).Add("2\n3 ").Pop().Add("4 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced counter dir effect func test #4 failed: %s", tester.ErrMsg())
+	}
+
+	// (SinglePass wrapping DoublePass wrapping SinglePass, multiline)
+	tester.Init([]TwineEffectArgs{
+		// measure first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		// draw first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) },
+		// measure second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		// draw second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2 ").PushEffect(0, SinglePass).Add("3\n4 ").Pop().Add("5 ").Pop().Add("6 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced counter dir effect func test #5 failed: %s", tester.ErrMsg())
+	}
+
+	// variant of the previous using PopAll(), which should have the same triggering
+	tester.ResetIndexAndErr()
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2 ").PushEffect(0, SinglePass).Add("3\n4 ").Pop().Add("5 ").PopAll().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced counter dir effect func test #6 failed: %s", tester.ErrMsg())
+	}
+	
+	// yet another variant with bigger scope PopAll()
+	tester.ResetIndexAndErr()
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2 ").PushEffect(0, SinglePass).Add("3\n4 ").PopAll().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced counter dir effect func test #7 failed: %s", tester.ErrMsg())
+	}
+}
+
+func TestDrawMixedTwineEffectsCentered(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
+	renderer := NewRenderer()
+	renderer.SetFont(testFontA)
+	renderer.Utils().SetCache8MiB()
+	renderer.SetAlign(HorzCenter)
+
+	// create tester
+	var tester twineEffectTester
+	var twine Twine
+	target := image.NewRGBA(image.Rect(0, 0, 640, 480))
+	
+	// register effect func
+	renderer.Twine().RegisterEffectFunc(0, tester.EffectFunc)
+
+	// (SinglePass wrapping DoublePass, no multiline)
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2 ").Pop().Add("3 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced centered effect func test #1 failed: %s", tester.ErrMsg())
+	}
+
+	// (DoublePass wrapping SinglePass, no multiline)
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, DoublePass).Add("1 ").PushEffect(0, SinglePass).Add("2 ").Pop().Add("3 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced centered effect func test #2 failed: %s", tester.ErrMsg())
+	}
+	
+	// (SinglePass wrapping DoublePass, multiline)
+	tester.Init([]TwineEffectArgs{
+		// measure first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		// draw first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) },
+		// measure second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		// draw second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2\n3 ").Pop().Add("4 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced centered effect func test #3 failed: %s", tester.ErrMsg())
+	}
+
+	// (DoublePass wrapping SinglePass, multiline)
+	tester.Init([]TwineEffectArgs{
+		// measure first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass | twineFlagMeasuring },
+		// draw first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass },
+		// measure second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		// draw second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, DoublePass).Add("1 ").PushEffect(0, SinglePass).Add("2\n3 ").Pop().Add("4 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced centered effect func test #4 failed: %s", tester.ErrMsg())
+	}
+
+	// (SinglePass wrapping DoublePass wrapping SinglePass, multiline)
+	tester.Init([]TwineEffectArgs{
+		// measure first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		// draw first line
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineBreak) },
+		// measure second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass | twineFlagMeasuring },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		// draw second line
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) | twineFlagDoublePass },
+		TwineEffectArgs{ flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2 ").PushEffect(0, SinglePass).Add("3\n4 ").Pop().Add("5 ").Pop().Add("6 ").Pop().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced centered effect func test #5 failed: %s", tester.ErrMsg())
+	}
+
+	// variant of the previous using PopAll(), which should have the same triggering
+	tester.ResetIndexAndErr()
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2 ").PushEffect(0, SinglePass).Add("3\n4 ").Pop().Add("5 ").PopAll().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced centered effect func test #6 failed: %s", tester.ErrMsg())
+	}
+	
+	// yet another variant with bigger scope PopAll()
+	tester.ResetIndexAndErr()
+	twine.Reset()
+	twine.Add("wrap ").PushEffect(0, SinglePass).Add("1 ").PushEffect(0, DoublePass).Add("2 ").PushEffect(0, SinglePass).Add("3\n4 ").PopAll().Add("done")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Advanced centered effect func test #7 failed: %s", tester.ErrMsg())
+	}
 }

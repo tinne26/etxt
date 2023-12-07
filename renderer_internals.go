@@ -115,3 +115,11 @@ func (self *Renderer) getSlowOpXHeight() fract.Unit {
 	if err != nil { panic("font.Metrics error: " + err.Error()) }
 	return fract.Unit(metrics.XHeight)
 }
+
+// same concept as getSlowOpXHeight() above
+func (self *Renderer) getSlowOpCapHeight() fract.Unit {
+	const hintingNone = 0
+	metrics, err := self.state.activeFont.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
+	if err != nil { panic("font.Metrics error: " + err.Error()) }
+	return fract.Unit(metrics.CapHeight)
+}

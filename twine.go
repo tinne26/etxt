@@ -33,13 +33,11 @@ const (
 	twineCcPushLineRestartMarker twineCode = '\x09'
 	twineCcClearLineRestartMarker twineCode = '\x0A'
 
-	// TODO: text direction, which is another level of trickiness.
-	// Might end up just removing text direction completely, it's such
-	// a pain (and anyone that cares about it will already pass the
-	// glyphs directly encoded in twines).
-	// Also consider space earmarking and stop/resume glyph drawing.
-	// though stopping is possible with the customFunc, even if rather
-	// wasteful.
+	// notes:
+	// - consider space earmarking and stop/resume glyph drawing.
+	//   though stopping is possible with the customFunc, even if 
+	//   rather wasteful.
+	// - won't add changeable text dir mid twine, too annoying
 )
 
 type popSpecialDirective uint8
@@ -572,7 +570,8 @@ func (self *Twine) AddLineMetricsRefresh() *Twine {
 
 // ---- advance and padding tricks ----
 
-// This applies only to the next effect we find.
+// Same as [Twine.PushEffect](), but also applying a [TwineEffectSpacing] for additional
+// pre and post padding, minimum widths, etc.
 func (self *Twine) PushEffectWithSpacing(key TwineEffectKey, effectMode TwineEffectMode, spacing TwineEffectSpacing, payload ...byte) *Twine {
 	cc := effectMode.controlCode()
 	self.assertValidPayloadLen(payload...)

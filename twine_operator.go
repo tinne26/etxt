@@ -46,7 +46,7 @@ type twineOperator struct {
 	performDrawPass bool // whether the operator must draw or only measure
 	onMeasuringPass bool // whether we are on a measuring or drawing pass
 	defaultNewLineX fract.Unit // related to Twine.PushLineRestartMarker
-	fixedNewLineX fract.Unit // related to Twine.PushLineRestartMarker
+	shiftNewLineX fract.Unit // related to Twine.PushLineRestartMarker
 	yCutoff fract.Unit
 	effects twineOperatorEffectsList
 	spacingPendingAdd *TwineEffectSpacing // dirty hack
@@ -74,12 +74,12 @@ type twineOperator struct {
 }
 
 // Must be called before starting to use it. Resets anything left from previous uses, if any.
-func (self *twineOperator) Initialize(renderer *Renderer, twine Twine, mustDraw bool, newLineX, yCutoff fract.Unit) {
+func (self *twineOperator) Initialize(renderer *Renderer, twine Twine, mustDraw bool, yCutoff fract.Unit) {
 	self.twine = twine
 	self.performDrawPass = mustDraw
 	self.onMeasuringPass = !mustDraw
-	self.defaultNewLineX = newLineX
-	self.fixedNewLineX = newLineX
+	self.defaultNewLineX = 0
+	self.shiftNewLineX = 0
 	self.yCutoff  = yCutoff
 	self.effects.Initialize()
 	
@@ -91,6 +91,10 @@ func (self *twineOperator) Initialize(renderer *Renderer, twine Twine, mustDraw 
 	// get initial line metrics
 	self.registerNextLineMetrics(renderer)
 	self.newLineMetricsRefresh()
+}
+
+func (self *twineOperator) SetDefaultNewLineX(x fract.Unit) {
+	self.defaultNewLineX = x
 }
 
 // Get the next code point and glyph index. The code point can be the
@@ -106,20 +110,30 @@ func (self *twineOperator) Next() (rune, sfnt.GlyphIndex) {
 	return codePoint, glyphIndex
 }
 
-func (self *twineOperator) OperateLTR(renderer *Renderer, target Target, position fract.Point, glyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	if self.onMeasuringPass {
-		return renderer.advanceGlyphLTR(target, position, glyphIndex, iv)
-	} else { // drawing
-		return renderer.drawGlyphLTR(target, position, glyphIndex, iv)
+func (self *twineOperator) Operate(renderer *Renderer, target Target, position fract.Point, glyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Point, drawInternalValues) {
+	if renderer.state.textDirection == LeftToRight {
+		if self.onMeasuringPass {
+			position.X, iv = renderer.advanceGlyphLTR(position.X, glyphIndex, iv)
+			return position, iv
+		} else { // drawing
+			return renderer.drawGlyphLTR(target, position, glyphIndex, iv)
+		}
+	} else { // assume right to left
+		if self.onMeasuringPass {
+			position.X, iv = renderer.advanceGlyphRTL(position.X, glyphIndex, iv)
+			return position, iv
+		} else { // drawing
+			return renderer.drawGlyphRTL(target, position, glyphIndex, iv)
+		}
 	}
 }
 
-func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position fract.Point, iv drawInternalValues) (fract.Point, drawInternalValues) {
+func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position fract.Point, iv drawInternalValues) (fract.Point, drawInternalValues, bool) {
 	// notify line end, which could trigger a double pass reset
 	//fmt.Printf("trace: LineBreak() / %s\n", self.effects.debugStr())
 	var dpReset bool
 	position, iv, dpReset = self.notifyLineBreak(renderer, target, position, iv) // *
-	if dpReset { return position, iv }
+	if dpReset { return position, iv, true }
 	// * notifyLineBreaks makes the CallLineBreak invokations, but it may
 	//   also trigger the double reset pass, in which case it will also
 	//   call the CallLineStart or CallPush methods
@@ -129,12 +143,12 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 	
 	// line advance using operating metrics (only updatable through RefreshLineMetrics())
 	if renderer.state.scaledSize == self.lineScaledSize && renderer.state.activeFont == self.lineFont {
-		position = renderer.advanceLine(position, self.fixedNewLineX, iv.lineBreakNth)
+		position = renderer.advanceLine(position, self.defaultNewLineX + self.shiftNewLineX, iv.lineBreakNth)
 	} else { // when scale and/or font differ, we use the stored twineOperator values (temp set, advance, restore)
 		renderer.state.fontSizer.NotifyChange(self.lineFont, &renderer.buffer, self.lineScaledSize)
 		tmpFont, tmpSize := renderer.state.activeFont, renderer.state.scaledSize
 		renderer.state.activeFont, renderer.state.scaledSize = self.lineFont, self.lineScaledSize
-		position = renderer.advanceLine(position, self.fixedNewLineX, iv.lineBreakNth)
+		position = renderer.advanceLine(position, self.defaultNewLineX + self.shiftNewLineX, iv.lineBreakNth)
 		renderer.state.activeFont, renderer.state.scaledSize = tmpFont, tmpSize
 	}
 
@@ -142,7 +156,7 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 	if position.Y > self.yCutoff {
 		//fmt.Print("trace: LineBreak() cutoff\n")
 		position, iv, _ = self.PopAll(renderer, target, position, iv)
-		return position, iv
+		return position, iv, false
 	}
 
 	// update/invoke effects for the new line
@@ -155,7 +169,7 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 		self.effects.AssertAllEffectsActive()
 		self.effects.Each(func(effect *effectOperationData) {
 			effect.origin = position
-			advance := effect.CallLineStart(renderer, target, self, position)
+			advance := effect.CallLineStart(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position)
 			if advance != 0 {
 				iv.interruptKerning()
 				position.X += renderer.withTextDirSign(advance)
@@ -181,7 +195,7 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 
 			// regular loop logic (update effect positions, call them with TwineTriggerStartLine)
 			effect.origin = position
-			advance := effect.CallLineStart(renderer, target, self, position)
+			advance := effect.CallLineStart(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position)
 			if advance != 0 {
 				iv.interruptKerning()
 				position.X += renderer.withTextDirSign(advance)
@@ -190,7 +204,7 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 		if !self.onMeasuringPass { panic("assertion") }
 	}
 	
-	return position, iv
+	return position, iv, false
 }
 
 // Must be called when twineCcBegin is encountered on twineOperator.Next().
@@ -207,11 +221,12 @@ func (self *twineOperator) ProcessCC(renderer *Renderer, target Target, position
 		self.index += 1
 	case twineCcRefreshLineMetrics:
 		self.registerNextLineMetrics(renderer)
+		self.index += 1
 	case twineCcPushLineRestartMarker:
-		self.fixedNewLineX = position.X
+		self.shiftNewLineX = position.X - self.defaultNewLineX
 		self.index += 1
 	case twineCcClearLineRestartMarker:
-		self.fixedNewLineX = self.defaultNewLineX
+		self.shiftNewLineX = 0
 		self.index += 1
 	case twineCcPushEffectWithSpacing:
 		var spacing TwineEffectSpacing
@@ -231,7 +246,8 @@ func (self *twineOperator) ProcessCC(renderer *Renderer, target Target, position
 		if !dpReset { self.index += 1 }
 	case twineCcPushSinglePassEffect:
 		self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, SinglePass)
-		advance := self.effects.Head().CallPush(renderer, target, self, position)
+		asc, desc := self.lineAscent, self.lineDescent
+		advance := self.effects.Head().CallPush(renderer, target, self.onMeasuringPass, &self.twine, asc, desc, position)
 		if advance != 0 {
 			iv.interruptKerning()
 			position.X += renderer.withTextDirSign(advance)
@@ -248,7 +264,8 @@ func (self *twineOperator) ProcessCC(renderer *Renderer, target Target, position
 		}
 
 		// call push
-		advance := self.effects.Head().CallPush(renderer, target, self, position)
+		asc, desc := self.lineAscent, self.lineDescent
+		advance := self.effects.Head().CallPush(renderer, target, self.onMeasuringPass, &self.twine, asc, desc, position)
 		if advance != 0 {
 			iv.interruptKerning()
 			position.X += renderer.withTextDirSign(advance)
@@ -300,14 +317,15 @@ func (self *twineOperator) pop(renderer *Renderer, target Target, position fract
 		// we reset to begin the second pass when we have a double pass reset mode 
 		// configured, we are measuring and the pop the last double pass effect.
 		effect := self.effects.SoftPop()
-		_ = effect.CallPop(renderer, target, self, position.X)
+		_ = effect.CallPop(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position.X)
 		position, iv = self.resetForSecondPass(renderer, target, position, iv)
 		return position, iv, true
 	} else if self.doublePassResetMode == dpResetNone || !self.onMeasuringPass {
 		// we hard pop when we are not in reset mode (e.g. measuring only) or 
 		// when we are drawing effect is no longer necessary
 		//fmt.Printf("trace: hard pop() / %s\n", self.effects.debugStr())
-		advance := self.effects.Head().CallPop(renderer, target, self, position.X)
+		asc, desc := self.lineAscent, self.lineDescent
+		advance := self.effects.Head().CallPop(renderer, target, self.onMeasuringPass, &self.twine, asc, desc, position.X)
 		if advance != 0 {
 			iv.interruptKerning()
 			position.X += renderer.withTextDirSign(advance)
@@ -317,7 +335,7 @@ func (self *twineOperator) pop(renderer *Renderer, target Target, position fract
 		// effect will be needed later
 		//fmt.Printf("trace: soft pop() / %s\n", self.effects.debugStr())
 		effect := self.effects.SoftPop()
-		advance := effect.CallPop(renderer, target, self, position.X)
+		advance := effect.CallPop(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position.X)
 		if advance != 0 {
 			iv.interruptKerning()
 			position.X += renderer.withTextDirSign(advance)
@@ -368,7 +386,7 @@ func (self *twineOperator) notifyLineBreak(renderer *Renderer, target Target, po
 		// (we don't pop any effect, as we need them on the next line)
 		self.effects.EachReverse(func(effect *effectOperationData) {
 			//fmt.Print("trace: notifyLineBreak() / CallLineBreak()\n")
-			advance := effect.CallLineBreak(renderer, target, self, position.X)
+			advance := effect.CallLineBreak(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position.X)
 			if advance != 0 {
 				iv.interruptKerning()
 				position.X += renderer.withTextDirSign(advance)
@@ -385,7 +403,7 @@ func (self *twineOperator) notifyLineBreak(renderer *Renderer, target Target, po
 		for dpCount > 0 {
 			//fmt.Print("trace: notifyLineBreak() / SoftPop + CallLineBreak\n")
 			effect := self.effects.SoftPop()
-			advance := effect.CallLineBreak(renderer, target, self, position.X)
+			advance := effect.CallLineBreak(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position.X)
 			if advance != 0 {
 				iv.interruptKerning()
 				position.X += renderer.withTextDirSign(advance)
@@ -436,7 +454,7 @@ func (self *twineOperator) resetForSecondPass(renderer *Renderer, target Target,
 			if engaged || effect.mode == DoublePass {
 				//fmt.Print("trace: resetForSecondPass() / CallLineStart()\n")
 				engaged = true
-				advance := effect.CallLineStart(renderer, target, self, position)
+				advance := effect.CallLineStart(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position)
 				if advance != 0 {
 					iv.interruptKerning() // this might seem like it can be moved out here, but nope
 					position.X += renderer.withTextDirSign(advance)
@@ -448,7 +466,7 @@ func (self *twineOperator) resetForSecondPass(renderer *Renderer, target Target,
 		// and previous effects can't be anything else than single pass effects
 		// that were already invoked in draw mode
 		//fmt.Print("trace: resetForSecondPass() / Push()\n")
-		advance := effect.CallPush(renderer, target, self, position)
+		advance := effect.CallPush(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position)
 		if advance != 0 {
 			iv.interruptKerning()
 			position.X += advance

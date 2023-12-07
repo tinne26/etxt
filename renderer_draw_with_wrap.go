@@ -34,6 +34,9 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 	switch vertAlign {
 	case Top:
 		y = (y + self.getOpAscent()).QuantizeUp(vertQuant)
+	case CapLine:
+		capHeight := self.getSlowOpCapHeight()
+		y = (y + capHeight).QuantizeUp(vertQuant)
 	case Midline:
 		xheight := self.getSlowOpXHeight()
 		y = (y + xheight).QuantizeUp(vertQuant)
@@ -42,15 +45,11 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 		y = (y + self.getOpAscent() - (height >> 1)).QuantizeUp(vertQuant)
 	case Baseline:
 		y = y.QuantizeUp(vertQuant)
-	case LastBaseline, LastMidline:
+	case LastBaseline:
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
 		qtLineHeight := lineHeight.QuantizeUp(vertQuant)
 		if height >= qtLineHeight { height -= qtLineHeight }
-		y -= height
-		if vertAlign == LastMidline {
-			y += self.getSlowOpXHeight()
-		}
-		y = y.QuantizeUp(vertQuant)
+		y = (y - height).QuantizeUp(vertQuant)
 	case Bottom:
 		height := self.helperMeasureHeight(text)
 		y = (y + self.getOpAscent() - height).QuantizeUp(vertQuant)

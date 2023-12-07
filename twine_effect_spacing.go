@@ -7,6 +7,19 @@ import "github.com/tinne26/etxt/fract"
 // font scaled size is 16, the logical values will match the scaled values. If the
 // renderer's font scaled size is 32, the logical values will be multiplied by 2
 // to obtain the scaled values.
+// 
+// Regarding line wrapping and paddings, the following rules are applied
+// (actually, twine draw with wrap is unimplemented, but...):
+//  - PrePad + LineBreakPad will be preferently applied.
+//  - If there's not enough space, the effect will be moved directly
+//    to the next line, using LineStartPad + PostPad.
+//  - If there's not enough space, LineStartPad + LineBreakPad will
+//    be used, even if this ends up exceeding the maximum line wrap
+//    width. But in this case, no more content will be added after
+//    the line break pad, even if something could fit afterwards.
+//  - MinWidth will always be respected even if ends up leading to
+//    a LineStartPad + LineBreakPad situation that still overflows
+//    the maximum line wrap width.
 type TwineEffectSpacing struct {
 	PrePad       fract.Unit
 	PostPad      fract.Unit
