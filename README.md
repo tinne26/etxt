@@ -1,5 +1,5 @@
 # etxt
-[![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt@v0.0.9-alpha.4.svg)](https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt@v0.0.9-alpha.6.svg)](https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6)
 
 **NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
@@ -105,5 +105,4 @@ Yeah, you can compile it with `-tags gtxt`. Notice that `gtxt` will make text dr
 ## Testing, contributions and others
 - For testing, see the instructions on [`etxt/test`](https://github.com/tinne26/etxt/blob/main/test).
 - If you have any questions or suggestions for improvements feel free to speak, I'm always happy to explain or discuss.
-- If you speak Arabic and want to help improve the situation and make [complex scripts](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) work with Ebitengine, get in touch. This also applies to some other languages, but Arabic is probably the best starting point.
 - Otherwise, I'm not looking for contributors nor general help.

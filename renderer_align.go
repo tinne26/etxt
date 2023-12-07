@@ -17,8 +17,8 @@ type Align uint8
 
 // Returns the vertical component of the align. If the
 // align is valid, the result can only be one of the
-// following: [Top], [Midline], [VertCenter], [Baseline],
-// [LastMidline], [LastBaseline], [Bottom].
+// following: [Top], [CapLine], [Midline], [VertCenter],
+// [Baseline], [LastBaseline], [Bottom].
 func (self Align) Vert() Align { return alignVertBits & self }
 
 // Returns the horizontal component of the align. If the
@@ -69,11 +69,11 @@ func (self Align) String() string {
 func (self Align) vertString() string {
 	switch self.Vert() {
 	case Top: return "Top"
+	case CapLine: return "CapLine"
 	case Midline: return "Midline"
 	case VertCenter: return "VertCenter"
 	case Baseline: return "Baseline"
 	case Bottom: return "Bottom"
-	case LastMidline: return "LastMidline"
 	case LastBaseline: return "LastBaseline"
 	default:
 		return "VertUnknown"
@@ -103,20 +103,12 @@ const (
 
 	// Vertical aligns
 	Top          Align = 0b0000_0001 // top of font's ascent
+	CapLine      Align = 0b0000_0011 // top of font's cap height
 	Midline      Align = 0b0000_0010 // top of xheight (rarely used)
 	VertCenter   Align = 0b0000_1001 // middle of line height
 	Baseline     Align = 0b0000_0100 // aligned to baseline
 	Bottom       Align = 0b0000_1000 // bottom of font's descent
-	LastMidline  Align = 0b0000_1010 // last Midline (if multiple lines) (rarely used)
 	LastBaseline Align = 0b0000_1100 // last Baseline (if multiple lines) (rarely used)
-
-	// TODO: consider CapLine vertical align? I know I'd use 
-	//       it more than midline. It could be Top | Midline.
-	//       But yeah, probably better extend va to 5 bits.
-	//       Regarding LastCapLine... maybe I should leave only
-	//       LastBaseline? It's the only really practical one.
-	//       And it's not tragic because this can be implemented
-	//       easily on the user side too.
 
 	// Full aligns
 	Center Align = HorzCenter | VertCenter

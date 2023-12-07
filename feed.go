@@ -68,7 +68,9 @@ func (self *Feed) At(x, y int) *Feed {
 	switch vertAlign {
 	case Top:	
 		self.Position.Y = (fractY + ascent).QuantizeUp(qtVert)
-	case Midline, LastMidline:
+	case CapLine:
+		self.Position.Y = (fractY + ascent - renderer.getSlowOpCapHeight()).QuantizeUp(qtVert)
+	case Midline:
 		self.Position.Y = (fractY + ascent - renderer.getSlowOpXHeight()).QuantizeUp(qtVert)
 	case VertCenter:
 		height := sizer.LineHeight(font, &renderer.buffer, renderer.state.scaledSize)
