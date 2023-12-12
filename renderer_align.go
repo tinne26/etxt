@@ -52,6 +52,19 @@ func (self Align) Adjusted(align Align) Align {
 	}
 }
 
+// If the align's horizontal component is...
+//  - [Left]: the function returns 'left'.
+//  - [Right]: the function return 'right'.
+//  - Otherwise, the function returns the middle point between 'left' and 'right'.
+func (self Align) GetHorzAnchor(left, right int) int {
+	switch self.Horz() {
+	case Left  : return left
+	case Right : return right
+	default: // assume horz center even when undefined
+		return (left + right) >> 1
+	}
+}
+
 // Returns a textual description of the align. For example:
 //   (Top | Right).String() == "(Top | Right)"
 //   (Right | Top).String() == "(Top | Right)"

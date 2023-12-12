@@ -24,7 +24,7 @@ import "fmt"
 type twineOperatorEffectsList struct {
 	activeHeadIndex uint16 // newest *active* effect index
 	rawHeadIndex uint16 // newest effect index (it can be soft-popped)
-	tailIndex uint16 // oldest active effect index
+	tailIndex uint16 // oldest active effect index (or oldest if none is active)
 	freeIndex uint16 // 65535 if none. necessary due to the pops that happen while drawing
 	                 // double pass effects, where we might have to hard pop some effects
 	                 // while other soft popped effects remain ahead of us
@@ -41,6 +41,15 @@ func (self *twineOperatorEffectsList) debugStr() string {
 		self.activeHeadIndex, self.rawHeadIndex, self.tailIndex, self.freeIndex,
 		self.activeCount, self.activeDoublePassEffectCount, self.totalCount, len(self.list),
 	)
+}
+
+func (self *twineOperatorEffectsList) effectsDebugStr() string {
+	var str string = "twineOperatorEffectsList.list{\n"
+	for i, effect := range self.list {
+		str += fmt.Sprintf("\t%d: %s\n", i, effect.String())
+	}
+	str += "\n}"
+	return str
 }
 
 func (self *twineOperatorEffectsList) Initialize() {
@@ -109,6 +118,10 @@ func (self *twineOperatorEffectsList) EachReverse(fn func(*effectOperationData))
 	}
 }
 
+// TODO: clearly, there's some issue with tail index in soft pops vs recalls.
+//       If tail index refers to active indices, then after soft popping
+//       everything, trying to recall using the last tail index is incorrect.
+
 func (self *twineOperatorEffectsList) Push(effectValue effectOperationData) {
 	// get new index
 	var newHeadIndex uint16
@@ -129,6 +142,9 @@ func (self *twineOperatorEffectsList) Push(effectValue effectOperationData) {
 	effect.softPopped = false
 	if self.rawHeadIndex != 65535 {
 		self.list[self.rawHeadIndex].linkNext = newHeadIndex
+	}
+	if self.activeCount == 0 {
+		self.tailIndex = newHeadIndex
 	}
 	if self.tailIndex == 65535 {
 		self.tailIndex = newHeadIndex
@@ -171,6 +187,18 @@ func (self *twineOperatorEffectsList) SoftPop() *effectOperationData {
 	effect.softPopped = true
 	self.decreaseActiveCount(effect)
 	self.refreshActiveHeadIndexFromPop(effect)
+	
+	// set tail index to last element if active count went to zero
+	auxEffect := effect
+	if self.activeCount == 0 {
+		var index uint16
+		for auxEffect.linkPrev != 65535 {
+			index = auxEffect.linkPrev
+			auxEffect = &self.list[index]
+		}
+		self.tailIndex = index
+	}
+
 	return effect
 }
 

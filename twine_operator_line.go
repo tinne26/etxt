@@ -297,7 +297,7 @@ func (self *twineLineOperator) measureProcessCC(renderer *Renderer, target Targe
 	case twineCcRefreshLineMetrics:
 		if finalPass { self.registerNextLineMetrics(renderer) }
 		self.index += 1
-	case twineCcPushLineRestartMarker:		
+	case twineCcPushLineRestartMarker:
 		if finalPass { self.shiftNewLineX = x - self.defaultNewLineX }
 		self.index += 1
 	case twineCcClearLineRestartMarker:
@@ -320,14 +320,14 @@ func (self *twineLineOperator) measureProcessCC(renderer *Renderer, target Targe
 		x, iv = self.measurePopAll(renderer, target, x, iv)
 		self.index += 1
 	case twineCcPushSinglePassEffect, twineCcPushDoublePassEffect:
+		const measuring = true
 		if controlCode == twineCcPushSinglePassEffect {
-			self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, SinglePass)
+			self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, SinglePass, measuring)
 		} else {
-			self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, DoublePass)
+			self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, DoublePass, measuring)
 		}
 		
 		position := fract.UnitsToPoint(x, y)
-		measuring := true
 		asc, desc := self.lineAscent, self.lineDescent
 		advance := self.effects.Head().CallPush(renderer, target, measuring, &self.twine, asc, desc, position)
 		if advance != 0 {
@@ -412,14 +412,14 @@ func (self *twineLineOperator) drawProcessCC(renderer *Renderer, target Target, 
 		x, iv = self.drawPopAll(renderer, target, x, iv)
 		self.index += 1
 	case twineCcPushSinglePassEffect, twineCcPushDoublePassEffect:
+		const measuring = false
 		if controlCode == twineCcPushSinglePassEffect {
-			self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, SinglePass)
+			self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, SinglePass, measuring)
 		} else {
-			self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, DoublePass)
+			self.index = self.appendNewEffectOpDataWithKeyAt(self.index + 1, DoublePass, measuring)
 		}
 		
 		position := fract.UnitsToPoint(x, y)
-		measuring := false
 		asc, desc := self.lineAscent, self.lineDescent
 		advance := self.effects.Head().CallPush(renderer, target, measuring, &self.twine, asc, desc, position)
 		if advance != 0 {
@@ -468,12 +468,13 @@ func (self *twineLineOperator) newLineMetricsRefresh() {
 	self.lineScaledSize = self.nextLineScaledSize
 }
 
-func (self *twineLineOperator) appendNewEffectOpDataWithKeyAt(index int, effectMode TwineEffectMode) int {
+func (self *twineLineOperator) appendNewEffectOpDataWithKeyAt(index int, effectMode TwineEffectMode, measuring bool) int {
 	// note: the data structure is [twineCcBegin, effectModeCc, key, payloadLen, payload...]
 	key := self.twine.Buffer[index]
 	payloadLen := self.twine.Buffer[index + 1]
 
-	effect := self.effects.TryRecallNext()
+	var effect *effectOperationData
+	if !measuring { effect = self.effects.TryRecallNext() }
 	if effect == nil { // manual push required
 		// create op data
 		var opData effectOperationData

@@ -2,6 +2,7 @@
 
 package etxt
 
+import "fmt"
 import "testing"
 import "strconv"
 import "image"
@@ -29,7 +30,7 @@ func eqByteSlices(a, b []byte) bool {
 }
 
 func twineEffectArgsStr(tea TwineEffectArgs) string {
-	return "TwineEffectArgs{ Payload [" + strconv.Itoa(len(tea.Payload)) + "] ; Rect " + tea.Rect().String() + 
+	return "TwineEffectArgs{ Payload " + fmt.Sprintf("%v", tea.Payload) + " ; Rect " + tea.Rect().String() + 
 		" ; Origin " + tea.Origin.String() + " ; flags " + strconv.FormatUint(uint64(tea.flags), 2) + " }"
 }
 
@@ -53,6 +54,7 @@ func (self *twineEffectTester) ResetIndexAndErr() {
 func (self *twineEffectTester) EffectFunc(renderer *Renderer, target Target, args TwineEffectArgs) {
 	if self.errMsg != "" { return }
 
+	
 	if self.index >= len(self.expected) {
 		self.errMsg = "unexpected call to effect func at invocation#" + strconv.Itoa(self.index) +
 			" with " + twineEffectArgsStr(args) + " (expected less invocations)"
@@ -302,6 +304,105 @@ func TestDrawBasicTwineEffects(t *testing.T) {
 	tester.EndSequence()
 	if tester.HasError() {
 		t.Fatalf("Effect func test #6 failed: %s", tester.ErrMsg())
+	}
+}
+
+func TestDrawTwineWrappedEffects(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
+	renderer := NewRenderer()
+	renderer.SetFont(testFontA)
+	renderer.Utils().SetCache8MiB()
+
+	// create tester
+	var tester twineEffectTester
+	var twine Twine
+	target := image.NewRGBA(image.Rect(0, 0, 640, 480))
+	
+	// register effect func
+	renderer.Twine().RegisterEffectFunc(0, tester.EffectFunc)
+
+	// wrap two effects with different payloads
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("off ").PushEffect(0, SinglePass, 1).PushEffect(0, SinglePass, 2).Add("on ").Pop().Pop().Add("off")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Wrapped effect func test #0 failed: %s", tester.ErrMsg())
+	}
+
+	// wrap two effects with different payloads after a previous effect usage
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: []byte{3}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{3}, flags: uint8(TwineTriggerPop) },
+
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("off ").PushEffect(0, SinglePass, 3).Add("on ").Pop().Add("wait ")
+	twine.PushEffect(0, SinglePass, 1).PushEffect(0, SinglePass, 2).Add("on ").Pop().Pop().Add("off")
+	renderer.Twine().Draw(target, twine, 32, 32)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Wrapped effect func test #1 failed: %s", tester.ErrMsg())
+	}
+
+	// --- repeat with centering ----
+	renderer.SetAlign(HorzCenter | Baseline)
+
+	// wrap two effects with different payloads
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("off ").PushEffect(0, SinglePass, 1).PushEffect(0, SinglePass, 2).Add("on ").Pop().Pop().Add("off")
+	renderer.Twine().Draw(target, twine, 320, 240)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Wrapped effect func test #3 failed: %s", tester.ErrMsg())
+	}
+
+	// wrap two effects with different payloads after a previous effect usage
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: []byte{3}, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: []byte{3}, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		
+		TwineEffectArgs{ Payload: []byte{3}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{3}, flags: uint8(TwineTriggerPop) },
+
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: []byte{2}, flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ Payload: []byte{1}, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("off ").PushEffect(0, SinglePass, 3).Add("on ").Pop().Add("wait ")
+	twine.PushEffect(0, SinglePass, 1).PushEffect(0, SinglePass, 2).Add("on ").Pop().Pop().Add("off")
+	renderer.Twine().Draw(target, twine, 320, 240)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Wrapped effect func test #4 failed: %s", tester.ErrMsg())
 	}
 }
 

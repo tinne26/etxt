@@ -1,5 +1,6 @@
 package etxt
 
+import "fmt"
 import "strconv"
 
 import "github.com/tinne26/etxt/fract"
@@ -26,6 +27,11 @@ type effectOperationData struct {
 	linkPrev uint16 // if prev == 65535, next indicates the next free index
 	linkNext uint16
 	softPopped bool
+}
+
+func (self *effectOperationData) String() string {
+	return fmt.Sprintf("effectOperationData{ payloadIndices: %d-%d, spacing: %t, mode: %s, key: %d, softPopped: %t }",
+		self.payloadStartIndex, self.payloadEndIndex, (self.spacing != nil), self.mode.string(), self.key, self.softPopped)
 }
 
 func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target, measuring bool, twine *Twine, lineAscent, lineDescent fract.Unit, newPosition fract.Point) fract.Unit {
@@ -144,6 +150,9 @@ func (self *effectOperationData) commonCall(renderer *Renderer, target Target, m
 		case EffectPushColor : fn = twineEffectPushColor
 		case EffectPushFont  : fn = twineEffectPushFont
 		case EffectShiftSize : fn = twineEffectShiftSize
+		case EffectSetSize   : fn = twineEffectSetSize
+		case EffectOblique   : fn = twineEffectOblique
+		case EffectFauxBold  : fn = twineEffectFauxBold
 		default:
 			panic("private TwineEffectFunc #" + strconv.Itoa(int(self.key)) + " is not a defined built-in")
 		}

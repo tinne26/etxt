@@ -347,9 +347,9 @@ const (
 	EffectPushColor TwineEffectKey = 193 // PushColor()
 	EffectPushFont TwineEffectKey = 194 // PushFont()
 	EffectShiftSize TwineEffectKey = 195 // ShiftSize()
-	//TwinePad TwineEffectKey = 195 // expose or not?
 
 	// Advanced functions not directly exposed on the Twine API [TODO: IMPLEMENT]
+	EffectSetSize TwineEffectKey = 230 // SinglePass + uint8 size
 	EffectCodeInline TwineEffectKey = 231 // SinglePass + (fontIndex, color) or nil (= []byte{fontIndex, black})
 	EffectBackRect TwineEffectKey = 232 // DoublePass + []byte{r, g, b, a} (alpha is optional)
 	EffectRectOutline TwineEffectKey = 233 // SinglePass + relThickness or nil (= []byte{128})
