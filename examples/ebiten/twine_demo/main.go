@@ -37,16 +37,33 @@ import "github.com/tinne26/etxt/mask"
 const BigNumber = 2_000_000_000 // must fit in int32
 
 var textSamples = []string{
-	"Could it get any worse?",
-	"Sample text 2",
-	"Multi-line sample text\nplease wait while we jump",
+	"Visit ebitengine.org for the best cooking tips!", // pen highlight and oblique
+	"Oblique text is not that bad,\nbut faux bold can't compete\nwith proper bold font faces.\n(Use actual bold fonts!)", // oblique, faux bold, small text
+	"Golang is not bad. Zig is okay-ish.\nCobol is the past, the present and\npleaaase heeeeelp the future.", // color and cross-out
+	"Big, regular, small.\nTake it slow and do not fall.", // sizes
+	"Unformatted twine playground.",
 }
 
 var defaultFormats = [][]EffectAnnotation{
 	[]EffectAnnotation{
-		EffectAnnotation{ effectType: EffectSetColor, effectParams: []any{paletteIndianRed}, startRune: 13, endRune: 15 },
+		EffectAnnotation{ effectType: EffectPenHighlight, effectParams: []any{highlightColor}, startRune: 6, endRune: 19 },
+		EffectAnnotation{ effectType: EffectOblique, startRune: 6, endRune: 19 },
 	},
-	[]EffectAnnotation{},
+	[]EffectAnnotation{
+		EffectAnnotation{ effectType: EffectOblique, effectParams: []any{highlightColor}, startRune: 16, endRune: 27 },
+		EffectAnnotation{ effectType: EffectFauxBold, effectParams: []any{highlightColor}, startRune: 34, endRune: 42 },
+		EffectAnnotation{ effectType: EffectSetSize, effectParams: []any{SizeOptions[0].Size}, startRune: 87, endRune: 110 },
+	},
+	[]EffectAnnotation{
+		EffectAnnotation{ effectType: EffectSetColor, effectParams: []any{paletteDarkCyan}, startRune: 0, endRune: 5 },
+		EffectAnnotation{ effectType: EffectSetColor, effectParams: []any{paletteXanthous}, startRune: 19, endRune: 21 },
+		EffectAnnotation{ effectType: EffectSetColor, effectParams: []any{paletteIndianRed}, startRune: 36, endRune: 40 },
+		EffectAnnotation{ effectType: EffectCrossOut, startRune: 71, endRune: 87 },
+	},
+	[]EffectAnnotation{
+		EffectAnnotation{ effectType: EffectSetSize, effectParams: []any{SizeOptions[2].Size}, startRune: 0, endRune: 2 },
+		EffectAnnotation{ effectType: EffectSetSize, effectParams: []any{SizeOptions[0].Size}, startRune: 14, endRune: 18 },
+	},
 	[]EffectAnnotation{},
 }
 
@@ -57,17 +74,13 @@ var paletteIndianRed  = color.RGBA{229,  98,  94, 255}
 var paletteMantis     = color.RGBA{123, 201,  80, 255}
 var paletteXanthous   = color.RGBA{250, 192,  94, 255}
 var paletteCoyote     = color.RGBA{118,  97,  63, 255}
-//var paletteOldRose    = color.RGBA{203, 133, 137, 255}
-var paletteDarkBrown  = color.RGBA{ 70,  55,  48, 255}
-var paletteOuterSpace = color.RGBA{ 70,  73,  76, 255}
-var paletteCharcoal   = color.RGBA{ 46,  64,  87, 255}
 var paletteEmerald    = color.RGBA{ 35, 224, 136, 255}
-//var palette = color.RGBA{, 255}
 
 var backgroundColor = paletteLicorice
 var mainTextColor   = paletteIsabelline
 var helpTextColor   = rescaleAlpha(paletteIsabelline, 128)
 var cursorColor     = rescaleAlpha(paletteEmerald, 240)
+var highlightColor  = rescaleAlpha(paletteIndianRed, 156)
 
 // ---- game implementation ----
 
@@ -348,7 +361,7 @@ func (self *Game) updateEffectPick() (bool, error) {
 				self.effects[self.textSampleIndex],
 				EffectAnnotation{
 					effectType: EffectPenHighlight,
-					effectParams: []any{ rescaleAlpha(paletteIndianRed, 156) },
+					effectParams: []any{ highlightColor },
 					startRune: self.cursorIndexStart,
 					endRune: self.cursorIndexEnd,
 				})
