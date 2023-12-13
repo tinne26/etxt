@@ -1,4 +1,4 @@
-module github.com/tinne26/etxt/examples/ebiten/twine
+module github.com/tinne26/etxt/examples/ebiten/twine_demo
 
 go 1.18
 

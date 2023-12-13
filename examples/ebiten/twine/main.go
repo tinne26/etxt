@@ -18,12 +18,12 @@ import "github.com/tinne26/etxt/fract"
 // a string in order to apply different formats and styles in
 // a single draw call.
 //
-// The code in this example is very basic and only shows to use the 
-// most basic twine commands. Much more advanced functions are both
-// pre-implemented in etxt and allowed to be implemented through the
-// API. See ebiten/twine_all. Another example, ebiten/bbcode, shows
-// how to create custom types and functions to make twines easier to
-// build when we want to tailor them to some specific usage context.
+// The code in this example is very basic and only shows how to use
+// the most basic twine commands. Much more advanced functions are
+// both pre-implemented in etxt and allowed to be implemented through 
+// the API. See ebiten/twine_demo. Another example, ebiten/bbcode,
+// shows how to create custom types and functions to make twines easier 
+// to build when we want to tailor them to some specific usage context.
 // 
 // You can run the example like this (you need two fonts):
 //   go run github.com/tinne26/etxt/examples/ebiten/text@latest path/to/regular-font.ttf path/to/bold-font.ttf
@@ -113,6 +113,8 @@ func main() {
 	twine.Weave("- Using Weave(), a very dynamic but slightly unsafe function", '.')
 	twine.AddRune('\n')
 	twine.Add("- Chaining ").PushColor(caramel).Add("Twine API").Pop().Add(" methods one after another.")
+	twine.AddLineBreak()
+	twine.Add("- Using ").PushColor(caramel).Add("type embedding").Pop().Add(" and custom twine builders.")
 	twine.AddLineBreak()
 	twine.Buffer = append(twine.Buffer, []byte("- Going low level and touching what you ")...) // *
 	// * This is generally not safe, you would have to know about internal implementation details.
