@@ -236,8 +236,8 @@ func (self *TwineEffectArgs) RectWithPads() fract.Rect {
 // KnownPostPad are fully known.
 //
 // Notice that you can generally know this without calling the method
-// explicitly. The situations in which the width and post pad are available
-// are already described in [TwineEffectArgs]. That being said, sometimes
+// explicitly. The situations in which the metrics are available are
+// already described in [TwineEffectArgs]. That being said, sometimes
 // it's simpler and/or safer to check explicitly.
 func (self *TwineEffectArgs) AreMetricsKnown() bool {
 	return (self.GetTrigger() > TwineTriggerLineStart) ||
@@ -353,18 +353,17 @@ const (
 	EffectCodeInline TwineEffectKey = 231 // SinglePass + (fontIndex, color) or nil (= []byte{fontIndex, black})
 	EffectBackRect TwineEffectKey = 232 // DoublePass + []byte{r, g, b, a} (alpha is optional)
 	EffectRectOutline TwineEffectKey = 233 // SinglePass + relThickness or nil (= []byte{128})
-	EffectUnderline TwineEffectKey = 234 // SinglePass + relThickness or nil (= []byte{128})
+	EffectRawUnderline TwineEffectKey = 234 // SinglePass + relThickness or nil (= []byte{128})
 	EffectCrossOut TwineEffectKey = 235 // SinglePass + relThickness or nil (= []byte{128})
 	EffectSpoiler TwineEffectKey = 236 // SinglePass + color or nil (= []byte{black})
-	EffectHighlightA TwineEffectKey = 237 // ...
-	EffectHighlightB TwineEffectKey = 238 // ...
-	EffectHighlightC TwineEffectKey = 239 // ...
+	EffectHighlightA TwineEffectKey = 237 // DoublePass + []byte{r, g, b, a} (alpha is optional)
+	EffectHighlightB TwineEffectKey = 238 // DoublePass + []byte{r, g, b, a} (alpha is optional)
+	EffectHighlightC TwineEffectKey = 239 // DoublePass + []byte{r, g, b, a} (alpha is optional)
 	EffectHoverA TwineEffectKey = 240 // ...
 	EffectHoverB TwineEffectKey = 241 // ...
 	EffectHoverC TwineEffectKey = 242 // ...
 	EffectFauxBold TwineEffectKey = 243 // SinglePass + relThickness or nil (= []byte{128})
 	EffectOblique TwineEffectKey = 244 // SinglePass + relSkew or nil (= []byte{192})
-	//EffectHighlightLine TwineEffectKey = 245 // yay or nay?
 	EffectListItem TwineEffectKey = 246 // SinglePass + ¿spacing? or nil (= []byte{128}) [uses '-' glyph]
 	EffectEbi13 TwineEffectKey = 247 // SinglePass, expects immediate Pop()
 	EffectAbbr TwineEffectKey = 248 // PushEffect(key, []byte(tipString))

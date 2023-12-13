@@ -118,7 +118,6 @@ func twineEffectOblique(renderer *Renderer, target Target, args TwineEffectArgs)
 		)
 	}
 
-	
 	// bypass if measuring
 	if args.Measuring() { return }
 

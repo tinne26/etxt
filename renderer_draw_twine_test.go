@@ -406,6 +406,105 @@ func TestDrawTwineWrappedEffects(t *testing.T) {
 	}
 }
 
+func TestDrawTwineCenterTrickyCases(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
+	renderer := NewRenderer()
+	renderer.SetFont(testFontA)
+	renderer.Utils().SetCache8MiB()
+
+	// create tester
+	var tester twineEffectTester
+	var twine Twine
+	target := image.NewRGBA(image.Rect(0, 0, 640, 480))
+
+	// register effect func
+	renderer.Twine().RegisterEffectFunc(0, tester.EffectFunc)
+
+	// test with centering algorithm
+	renderer.SetAlign(HorzCenter | Baseline)
+
+	// wrap two effects with different payloads
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("off ").PushEffect(0, SinglePass).Add("on")
+	renderer.Twine().Draw(target, twine, 320, 240)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Center tricky twine effect func test #0 failed: %s", tester.ErrMsg())
+	}
+
+	// wrap two effects with different payloads
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineBreak) },
+
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.PushEffect(0, SinglePass).Add("\neffect starting before line break and no pop")
+	renderer.Twine().Draw(target, twine, 320, 240)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Center tricky twine effect func test #1 failed: %s", tester.ErrMsg())
+	}
+
+	// effect push right after effect pop
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("off ").PushEffect(0, SinglePass).Add("on ").Pop().PushEffect(0, SinglePass).Add("still on")
+	renderer.Twine().Draw(target, twine, 320, 240)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Center tricky twine effect func test #2 failed: %s", tester.ErrMsg())
+	}
+
+	// effect push right after effect pop, alongside line break
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineBreak) },
+
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("off ").PushEffect(0, SinglePass).Add("on").Pop().PushEffect(0, SinglePass).Add("\nbreak")
+	renderer.Twine().Draw(target, twine, 320, 240)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Center tricky twine effect func test #3 failed: %s", tester.ErrMsg())
+	}
+}
+
 func TestDrawTwineEffectsWithSpacing(t *testing.T) {
 	// notice: I'd need a new effect tester for this, to check 
 	//         the actual advances and so on, but I'm too lazy

@@ -8,7 +8,6 @@ import "golang.org/x/image/font/sfnt"
 import "github.com/tinne26/etxt/fract"
 
 // TODO: while measuring, line advances shouldn't notify glyphs cache.
-//       In fact, while measuring we don't need to cache so many fields.
 
 // --- twine line operator acquisition ---
 // please see twine_operator.go
@@ -145,7 +144,7 @@ func (self *twineLineOperator) MeasureAndDrawLine(renderer *Renderer, target Tar
 	memoLineBreakNth := iv.lineBreakNth
 
 	// measuring time!
-	finalPass := false
+	const finalPass = false
 	var width fract.Unit
 	width, iv = self.measureProc(renderer, target, y, iv, finalPass)
 	iv.lineBreakNth = memoLineBreakNth
@@ -157,13 +156,13 @@ func (self *twineLineOperator) MeasureAndDrawLine(renderer *Renderer, target Tar
 	
 	// fix-everything time!
 
-	// first we recover previously active effects that may have 
+	// recover previously active effects that may have 
 	// been popped due to a PopAll()
 	for self.effects.ActiveCount() < memoEffectCount {
 		effect := self.effects.TryRecallNext()
 		if effect == nil { panic("broken code") }
 	}
-	// next we pop excedent effects that weren't initially
+	// pop excedent effects that weren't initially
 	// active at the start of the line
 	for self.effects.ActiveCount() > memoEffectCount {
 		effect := self.effects.SoftPop()
@@ -231,7 +230,7 @@ loop:
 			x, iv = self.measurePopAll(renderer, target, x, iv)
 			break loop
 		case '\n':
-			x, iv = self.measureProcessLineBreak(renderer, target, x, iv)
+			x, iv = self.measureProcessLineBreak(renderer, target, x, iv, finalPass)
 			break loop
 		case rune(twineCcBegin):
 			x, iv = self.measureProcessCC(renderer, target, x, y, iv, finalPass)
@@ -273,7 +272,7 @@ func (self *twineLineOperator) measurePop(renderer *Renderer, target Target, x f
 	return x, iv
 }
 
-func (self *twineLineOperator) measureProcessLineBreak(renderer *Renderer, target Target, x fract.Unit, iv drawInternalValues) (fract.Unit, drawInternalValues) {
+func (self *twineLineOperator) measureProcessLineBreak(renderer *Renderer, target Target, x fract.Unit, iv drawInternalValues, finalPass bool) (fract.Unit, drawInternalValues) {
 	const measuring = true
 	self.effects.EachReverse(func(effect *effectOperationData) {
 		advance := effect.CallLineBreak(renderer, target, measuring, &self.twine, self.lineAscent, self.lineDescent, x)
@@ -282,6 +281,12 @@ func (self *twineLineOperator) measureProcessLineBreak(renderer *Renderer, targe
 			x += renderer.withTextDirSign(advance)
 		}
 	})
+	if !finalPass {
+		for i := self.effects.ActiveCount(); i > 0; i-- {
+			effect := self.effects.SoftPop()
+			if effect == nil { panic("broken code") }
+		} 
+	}
 	return x, iv
 }
 

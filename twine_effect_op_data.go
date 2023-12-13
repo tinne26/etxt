@@ -26,12 +26,12 @@ type effectOperationData struct {
 	// only through that struct
 	linkPrev uint16 // if prev == 65535, next indicates the next free index
 	linkNext uint16
-	softPopped bool
+	status twineEffectListEntryStatus
 }
 
 func (self *effectOperationData) String() string {
-	return fmt.Sprintf("effectOperationData{ payloadIndices: %d-%d, spacing: %t, mode: %s, key: %d, softPopped: %t }",
-		self.payloadStartIndex, self.payloadEndIndex, (self.spacing != nil), self.mode.string(), self.key, self.softPopped)
+	return fmt.Sprintf("effectOperationData{ payloadIndices: %d-%d, spacing: %t, key: %d, %s, %s, prev/next: %d/%d }",
+		self.payloadStartIndex, self.payloadEndIndex, (self.spacing != nil), self.key, self.mode.string(), self.status, self.linkPrev, self.linkNext)
 }
 
 func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target, measuring bool, twine *Twine, lineAscent, lineDescent fract.Unit, newPosition fract.Point) fract.Unit {
@@ -41,7 +41,6 @@ func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target
 	flags := uint8(TwineTriggerLineStart)
 	if measuring {
 		self.forceLineBreakPostPad = false
-		self.knownWidth = 0
 		// NOTE: we don't consider min width spacing here because that's always used on
 		//       push. The only thing is that push may use LineStart pre pad due to not
 		//       fitting on the initial space.
@@ -70,10 +69,10 @@ func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target
 func (self *effectOperationData) CallPush(renderer *Renderer, target Target, measuring bool, twine *Twine, lineAscent, lineDescent fract.Unit, origin fract.Point) fract.Unit {
 	//fmt.Printf("CallPush(%s) | %s\n", self.mode.string(), operator.passTypeStr())
 	self.origin = origin
-	self.knownWidth = 0
 
 	flags := uint8(TwineTriggerPush)
 	if measuring {
+		self.knownWidth = 0
 		self.forceLineBreakPostPad = false
 	}
 	
@@ -147,12 +146,14 @@ func (self *effectOperationData) commonCall(renderer *Renderer, target Target, m
 	var fn TwineEffectFunc
 	if self.key > 192 { // built-in functions
 		switch TwineEffectKey(self.key) {
-		case EffectPushColor : fn = twineEffectPushColor
-		case EffectPushFont  : fn = twineEffectPushFont
-		case EffectShiftSize : fn = twineEffectShiftSize
-		case EffectSetSize   : fn = twineEffectSetSize
-		case EffectOblique   : fn = twineEffectOblique
-		case EffectFauxBold  : fn = twineEffectFauxBold
+		case EffectPushColor  : fn = twineEffectPushColor
+		case EffectPushFont   : fn = twineEffectPushFont
+		case EffectShiftSize  : fn = twineEffectShiftSize
+		case EffectSetSize    : fn = twineEffectSetSize
+		case EffectOblique    : fn = twineEffectOblique
+		case EffectFauxBold   : fn = twineEffectFauxBold
+		case EffectHighlightA : fn = twineEffectHighlightA
+		case EffectCrossOut   : fn = twineEffectCrossOut
 		default:
 			panic("private TwineEffectFunc #" + strconv.Itoa(int(self.key)) + " is not a defined built-in")
 		}

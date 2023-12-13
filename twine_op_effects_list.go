@@ -2,6 +2,22 @@ package etxt
 
 import "fmt"
 
+type twineEffectListEntryStatus uint8
+const (
+	entryStatusActive twineEffectListEntryStatus = iota
+	entryStatusFree
+	entryStatusSoftPopped
+)
+func (self twineEffectListEntryStatus) String() string {
+	switch self {
+	case entryStatusActive: return "active"
+	case entryStatusFree: return "free"
+	case entryStatusSoftPopped: return "soft-popped"
+	default:
+		panic("invalid twineEffectListEntryStatus")
+	}
+}
+
 // Tricky cases:
 // - During a double pass effect first measuring pass, we can find effects
 //   that are closed before reaching a line break or a final pop. We soft
@@ -100,7 +116,7 @@ func (self *twineOperatorEffectsList) Each(fn func(*effectOperationData)) {
 	for remainingActiveEffects > 0 {
 		effect := &self.list[index]
 		index = effect.linkNext
-		if effect.softPopped { continue }
+		if effect.status == entryStatusSoftPopped { continue }
 		remainingActiveEffects -= 1
 		fn(effect)
 	}
@@ -112,15 +128,11 @@ func (self *twineOperatorEffectsList) EachReverse(fn func(*effectOperationData))
 	for remainingActiveEffects > 0 {
 		effect := &self.list[index]
 		index = effect.linkPrev
-		if effect.softPopped { continue }
+		if effect.status == entryStatusSoftPopped { continue }
 		remainingActiveEffects -= 1
 		fn(effect)
 	}
 }
-
-// TODO: clearly, there's some issue with tail index in soft pops vs recalls.
-//       If tail index refers to active indices, then after soft popping
-//       everything, trying to recall using the last tail index is incorrect.
 
 func (self *twineOperatorEffectsList) Push(effectValue effectOperationData) {
 	// get new index
@@ -139,7 +151,7 @@ func (self *twineOperatorEffectsList) Push(effectValue effectOperationData) {
 	effect := &self.list[newHeadIndex]
 	effect.linkPrev = self.rawHeadIndex
 	effect.linkNext = 65535 // mark "no next"
-	effect.softPopped = false
+	effect.status = entryStatusActive
 	if self.rawHeadIndex != 65535 {
 		self.list[self.rawHeadIndex].linkNext = newHeadIndex
 	}
@@ -153,6 +165,9 @@ func (self *twineOperatorEffectsList) Push(effectValue effectOperationData) {
 	self.activeHeadIndex = newHeadIndex
 	self.totalCount += 1
 	self.increaseActiveCount(effect)
+
+	// debug
+	//fmt.Printf("twineOperatorEffectsList.Push() => %s\n%s\npost state: %s\n", effect, self.debugStr(), self.effectsDebugStr())
 }
 
 // On double passes, we don't need to Push() effects that we previously hit
@@ -172,10 +187,14 @@ func (self *twineOperatorEffectsList) TryRecallNext() *effectOperationData {
 	}
 
 	effect := &self.list[recallIndex]
-	if !effect.softPopped { panic("broken code") } // TODO: delete later
-	effect.softPopped = false
+	if effect.status != entryStatusSoftPopped { panic("broken code") } // TODO: delete later
+	effect.status = entryStatusActive
 	self.increaseActiveCount(effect)
 	self.activeHeadIndex = recallIndex
+
+	// debug
+	//fmt.Printf("twineOperatorEffectsList.TryRecall() => %s\n%s\npost state: %s\n", effect, self.debugStr(), self.effectsDebugStr())
+
 	return effect
 }
 
@@ -183,21 +202,24 @@ func (self *twineOperatorEffectsList) SoftPop() *effectOperationData {
 	if self.activeHeadIndex == 65535 { panic("no effect left to pop") }
 	effectIndex := self.activeHeadIndex
 	effect := &self.list[effectIndex]
-	if effect.softPopped { panic("broken code") } // TODO: delete later
-	effect.softPopped = true
+	if effect.status != entryStatusActive { panic("broken code") } // TODO: delete later
+	effect.status = entryStatusSoftPopped
 	self.decreaseActiveCount(effect)
 	self.refreshActiveHeadIndexFromPop(effect)
 	
 	// set tail index to last element if active count went to zero
 	auxEffect := effect
 	if self.activeCount == 0 {
-		var index uint16
+		var index uint16 = effectIndex
 		for auxEffect.linkPrev != 65535 {
 			index = auxEffect.linkPrev
 			auxEffect = &self.list[index]
 		}
 		self.tailIndex = index
 	}
+
+	// debug
+	//fmt.Printf("twineOperatorEffectsList.SoftPop() => %s\n%s\npost state: %s\n", effect, self.debugStr(), self.effectsDebugStr())
 
 	return effect
 }
@@ -208,7 +230,7 @@ func (self *twineOperatorEffectsList) HardPop() {
 	if self.activeHeadIndex == 65535 { panic("no effect left to pop") }
 	effectIndex := self.activeHeadIndex
 	effect := &self.list[effectIndex]
-	if effect.softPopped { panic("broken code") } // TODO: delete later
+	if effect.status != entryStatusActive { panic("broken code") } // TODO: delete later
 	if self.totalCount == 0 { panic("broken code") }
 	self.totalCount -= 1
 	self.decreaseActiveCount(effect)
@@ -216,13 +238,15 @@ func (self *twineOperatorEffectsList) HardPop() {
 
 	// readjust linking to head, tail and between effect nodes
 	if effect.linkPrev == 65535 {
+		if effectIndex != self.tailIndex { panic("broken code") }
 		self.tailIndex = effect.linkNext
 	} else {
 		self.list[effect.linkPrev].linkNext = effect.linkNext
 	}
 	if effect.linkNext == 65535 {
-		self.rawHeadIndex = self.activeHeadIndex
+		self.rawHeadIndex = effect.linkPrev
 	} else {
+		self.rawHeadIndex = effect.linkNext
 		self.list[effect.linkNext].linkPrev = effect.linkPrev
 	}
 
@@ -233,12 +257,14 @@ func (self *twineOperatorEffectsList) HardPop() {
 		effect.spacing = nil // cleanup
 		self.freeIndex = effectIndex
 		effect.linkPrev = 65535
+		effect.status = entryStatusFree
 	} else {
 		// readjust linking for free indices. the first conditional branch
 		// could be actually applied unconditionally and it would work, but
 		// I think adding the branches leads to better ordering?
 		if effectIndex == self.freeIndex { panic("broken code") } // TODO: delete later
 		effect.spacing = nil // cleanup
+		effect.status = entryStatusFree
 		if effectIndex < self.freeIndex {
 			effect.linkPrev = self.freeIndex
 			self.freeIndex = effectIndex
@@ -247,6 +273,9 @@ func (self *twineOperatorEffectsList) HardPop() {
 			self.list[self.freeIndex].linkPrev = effectIndex
 		}
 	}
+
+	// debug
+	//fmt.Printf("twineOperatorEffectsList.HardPop() => %s\n%s\npost state: %s\n", effect, self.debugStr(), self.effectsDebugStr())
 }
 
 // --- helper methods ---
@@ -279,7 +308,7 @@ func (self *twineOperatorEffectsList) refreshActiveHeadIndexFromPop(effect *effe
 		}
 		
 		effect = &self.list[index]
-		if !effect.softPopped {
+		if effect.status == entryStatusActive {
 			self.activeHeadIndex = index
 			return
 		}
