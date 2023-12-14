@@ -69,8 +69,14 @@ func twineEffectCrossOut(renderer *Renderer, target Target, args TwineEffectArgs
 		halfLineWidth := renderer.state.scaledSize.ToFloat32()*thicknessPercent*0.12
 		if halfLineWidth < 0.3 { halfLineWidth = 0.3 } // arbitrary safety value
 
-		minX := (args.Origin.X - args.PrePad).ToFloat32()
-		maxX := (args.Origin.X + args.KnownWidth + args.KnownPostPad).ToFloat32()
+		var minX, maxX float32
+		if args.IsLeftToRight() {
+			minX = (args.Origin.X - args.PrePad).ToFloat32()
+			maxX = (args.Origin.X + args.KnownWidth + args.KnownPostPad).ToFloat32()
+		} else {
+			minX = (args.Origin.X - args.KnownWidth - args.KnownPostPad).ToFloat32()
+			maxX = (args.Origin.X + args.PrePad).ToFloat32()
+		}
 		minY := crossOutLineCenter - halfLineWidth
 		maxY := crossOutLineCenter + halfLineWidth
 		drawSmoothRect(target, minX, minY, maxX, maxY, renderer.GetColor())

@@ -24,6 +24,8 @@ func releaseTwineHeightSizer(twineSizer *twineHeightSizer) {
 	}
 }
 
+// TODO: line start not called anywhere, jeez
+
 // note: maybe it would be clever to try to measure without line height
 //       changes first, and only if that fails fall back to full measuring.
 //       to me, it feels like most of the time we won't be using line
@@ -167,6 +169,20 @@ func (self *twineHeightSizer) lineBreak(renderer *Renderer, target Target, heigh
 	// advance line
 	height = (height + self.getLineAdvanceUnits(renderer)).QuantizeUp(vertQuant)
 	self.lineBreakNth += 1
+
+	// call line starts
+	y := height
+	self.effects.Each(func(effect *effectOperationData) {
+		const measuring = true
+		asc, desc := self.lineAscent, self.lineDescent
+		advance := effect.CallLineStart(renderer, target, measuring, &self.twine, asc, desc, fract.Point{0, y})
+		// note: using 0 here ^ is, again, debatable.
+		if lineBreaksOnly && advance != 0 {
+			lineBreaksOnly = false
+			height += self.lineHeight
+		}
+	})
+
 	return height, lineBreaksOnly
 }
 

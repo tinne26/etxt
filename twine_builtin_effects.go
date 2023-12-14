@@ -40,14 +40,12 @@ func twineEffectPushFont(renderer *Renderer, target Target, args TwineEffectArgs
 
 	// handle each trigger situation
 	switch args.GetTrigger() {
-	case TwineTriggerPush:
+	case TwineTriggerPush, TwineTriggerLineStart:
 		renderer.twineStoragePush(renderer.state.fontIndex)
 		renderer.Twine().SetFontIndex(FontIndex(args.Payload[0]))
-	case TwineTriggerPop:
+	case TwineTriggerPop, TwineTriggerLineBreak:
 		index := renderer.twineStoragePop().(FontIndex)
 		renderer.Twine().SetFontIndex(index)
-	case TwineTriggerLineBreak, TwineTriggerLineStart:
-		// unused, not necessary
 	default:
 		panic("unexpected")
 	}
@@ -61,15 +59,13 @@ func twineEffectShiftSize(renderer *Renderer, target Target, args TwineEffectArg
 
 	// handle each trigger situation
 	switch args.GetTrigger() {
-	case TwineTriggerPush:
+	case TwineTriggerPush, TwineTriggerLineStart:
 		renderer.twineStoragePush(renderer.state.logicalSize)
 		sizeShift := fract.FromInt(int(int8(args.Payload[0])))
 		renderer.Fract().SetSize(renderer.state.logicalSize + sizeShift)
-	case TwineTriggerPop:
+	case TwineTriggerPop, TwineTriggerLineBreak:
 		size := renderer.twineStoragePop().(fract.Unit)
 		renderer.Fract().SetSize(size)
-	case TwineTriggerLineBreak, TwineTriggerLineStart:
-		// unused, not necessary
 	default:
 		panic("unexpected")
 	}
@@ -83,15 +79,13 @@ func twineEffectSetSize(renderer *Renderer, target Target, args TwineEffectArgs)
 
 	// handle each trigger situation
 	switch args.GetTrigger() {
-	case TwineTriggerPush:
+	case TwineTriggerPush, TwineTriggerLineStart:
 		renderer.twineStoragePush(renderer.state.logicalSize)
 		newSize := fract.FromInt(int(args.Payload[0]))
 		renderer.Fract().SetSize(newSize)
-	case TwineTriggerPop:
+	case TwineTriggerPop, TwineTriggerLineBreak:
 		size := renderer.twineStoragePop().(fract.Unit)
 		renderer.Fract().SetSize(size)
-	case TwineTriggerLineBreak, TwineTriggerLineStart:
-		// unused, not necessary
 	default:
 		panic("unexpected")
 	}
@@ -169,7 +163,7 @@ func twineEffectFauxBold(renderer *Renderer, target Target, args TwineEffectArgs
 	switch args.GetTrigger() {
 	case TwineTriggerPush:
 		renderer.twineStoragePush(fauxRast.GetExtraWidth())
-		const thicknessBasePercent = 0.08
+		const thicknessBasePercent = 0.14
 		factor := (float32(thicknessReference) + 1.0)/256.0
 		factor *= thicknessBasePercent
 		extraWidth := renderer.state.scaledSize.ToFloat32()*factor

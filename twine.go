@@ -181,7 +181,7 @@ type TwineEffectArgs struct {
 	Origin fract.Point // unreliable while measuring
 	LineAscent fract.Unit // remains constant throughout the whole line, ...
 	LineDescent fract.Unit // ... might not match the *current* font size
-	KnownWidth fract.Unit // see documentation for details on behavior
+	KnownWidth fract.Unit // as an absolute value. see documentation for details
 	PrePad fract.Unit // as an absolute value. see Twine.PushEffectWithSpacing()
 	KnownPostPad fract.Unit // as an absolute value. see Twine.PushEffectWithSpacing()
 	flags uint8
@@ -207,29 +207,54 @@ func (self *TwineEffectArgs) Mode() TwineEffectMode {
 	return TwineEffectMode((self.flags & twineFlagDoublePass) == 0)
 }
 
+// Many effects need to take into account whether the Origin field
+// starts on the left side of the word ([LeftToRight]) or on the right
+// ([RightToLeft]) before drawing.
+func (self *TwineEffectArgs) IsLeftToRight() bool {
+	return (self.flags & twineFlagRightToLeft) == 0
+}
+
 // Utility method to return the fract.Rect of the text within the scope
 // of the effect. The rect only considers the current line, and the
 // width is derived from KnownWidth. If KnownWidth is not known at the
 // time of using this method, the return value is fundamentally useless. 
 // For more details, see [TwineEffectArgs.AreMetricsKnown]().
 func (self *TwineEffectArgs) Rect() fract.Rect {
-	return fract.UnitsToRect(
-		self.Origin.X                    , // x min
-		self.Origin.Y - self.LineAscent  , // y min
-		self.Origin.X + self.KnownWidth  , // x max
-		self.Origin.Y + self.LineDescent , // y max
-	)
+	if self.IsLeftToRight() {
+		return fract.UnitsToRect(
+			self.Origin.X                    , // x min
+			self.Origin.Y - self.LineAscent  , // y min
+			self.Origin.X + self.KnownWidth  , // x max
+			self.Origin.Y + self.LineDescent , // y max
+		)
+	} else { // RightToLeft
+		return fract.UnitsToRect(
+			self.Origin.X - self.KnownWidth  , // x min
+			self.Origin.Y - self.LineAscent  , // y min
+			self.Origin.X                    , // x max
+			self.Origin.Y + self.LineDescent , // y max
+		)
+	}
 }
 
 // Utility method similar to [TwineEffectArgs.Rect](), but also
 // taking pre and post padding into consideration.
 func (self *TwineEffectArgs) RectWithPads() fract.Rect {
-	return fract.UnitsToRect(
-		self.Origin.X - self.PrePad                         , // x min
-		self.Origin.Y - self.LineAscent                     , // y min
-		self.Origin.X + self.KnownWidth + self.KnownPostPad , // x max
-		self.Origin.Y + self.LineDescent                    , // y max
-	)
+	if self.IsLeftToRight() {
+		return fract.UnitsToRect(
+			self.Origin.X - self.PrePad                         , // x min
+			self.Origin.Y - self.LineAscent                     , // y min
+			self.Origin.X + self.KnownWidth + self.KnownPostPad , // x max
+			self.Origin.Y + self.LineDescent                    , // y max
+		)
+	} else {
+		return fract.UnitsToRect(
+			self.Origin.X - self.KnownWidth - self.KnownPostPad , // x min
+			self.Origin.Y - self.LineAscent                     , // y min
+			self.Origin.X + self.PrePad                         , // x max
+			self.Origin.Y + self.LineDescent                    , // y max
+		)
+	}
 }
 
 // Returns whether we are in a context in which the KnownWidth and
@@ -305,8 +330,9 @@ const (
 )
 
 const (
-	twineFlagMeasuring  uint8 = 0b0100_0000
-	twineFlagDoublePass uint8 = 0b1000_0000
+	twineFlagMeasuring   uint8 = 0b0100_0000
+	twineFlagDoublePass  uint8 = 0b1000_0000
+	twineFlagRightToLeft uint8 = 0b0010_0000
 )
 
 // TODO: I made so many changes on other parts of the twine pipeline that

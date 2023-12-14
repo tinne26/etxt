@@ -50,7 +50,7 @@ func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target
 	var postPad fract.Unit
 	if self.spacing != nil {
 		lineStartPad = self.spacing.getLineStartPad(renderer.state.scaledSize)
-		self.origin.X += lineStartPad
+		self.origin.X += renderer.withTextDirSign(lineStartPad)
 
 		if !measuring {
 			if self.forceLineBreakPostPad {
@@ -104,6 +104,8 @@ func (self *effectOperationData) CallPush(renderer *Renderer, target Target, mea
 
 func (self *effectOperationData) CallPop(renderer *Renderer, target Target, measuring bool, twine *Twine, lineAscent, lineDescent, x fract.Unit) fract.Unit {
 	//fmt.Printf("CallPop(%s) | %s\n", self.mode.string(), operator.passTypeStr())
+	if !measuring { self.knownWidth = 0 }
+
 	var prePad fract.Unit
 	var postPad fract.Unit
 	if self.spacing != nil {
@@ -123,7 +125,9 @@ func (self *effectOperationData) CallPop(renderer *Renderer, target Target, meas
 
 func (self *effectOperationData) CallLineBreak(renderer *Renderer, target Target, measuring bool, twine *Twine, lineAscent, lineDescent, x fract.Unit) fract.Unit {
 	//fmt.Printf("CallLineBreak(%s) | %s\n", self.mode.string(), operator.passTypeStr())
+	if !measuring { self.knownWidth = 0 }
 	self.forceLineBreakPostPad = true
+
 	var prePad fract.Unit
 	var postPad fract.Unit
 	if self.spacing != nil {
@@ -134,6 +138,7 @@ func (self *effectOperationData) CallLineBreak(renderer *Renderer, target Target
 			prePad = self.spacing.getPrePad(renderer.state.scaledSize)
 		}
 	}
+
 
 	// invoke function and return new x position
 	flags := uint8(TwineTriggerLineBreak)
@@ -162,8 +167,15 @@ func (self *effectOperationData) commonCall(renderer *Renderer, target Target, m
 	}
 	
 	// misc. calculations
-	if x - self.origin.X > self.knownWidth {
-		self.knownWidth = x - self.origin.X
+	if renderer.state.textDirection == LeftToRight { // LTR
+		if x - self.origin.X > self.knownWidth {
+			self.knownWidth = x - self.origin.X
+		}
+	} else { // RTL
+		flags |= twineFlagRightToLeft
+		if self.origin.X - x > self.knownWidth {
+			self.knownWidth = self.origin.X - x
+		}
 	}
 
 	var payload []byte

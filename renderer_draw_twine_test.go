@@ -424,7 +424,7 @@ func TestDrawTwineCenterTrickyCases(t *testing.T) {
 	// test with centering algorithm
 	renderer.SetAlign(HorzCenter | Baseline)
 
-	// wrap two effects with different payloads
+	// unclosed effect (auto-pop)
 	tester.Init([]TwineEffectArgs{
 		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
 		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) | twineFlagMeasuring },
@@ -439,7 +439,7 @@ func TestDrawTwineCenterTrickyCases(t *testing.T) {
 		t.Fatalf("Center tricky twine effect func test #0 failed: %s", tester.ErrMsg())
 	}
 
-	// wrap two effects with different payloads
+	// effect starting before line break and no pop
 	tester.Init([]TwineEffectArgs{
 		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
 		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
@@ -502,6 +502,26 @@ func TestDrawTwineCenterTrickyCases(t *testing.T) {
 	tester.EndSequence()
 	if tester.HasError() {
 		t.Fatalf("Center tricky twine effect func test #3 failed: %s", tester.ErrMsg())
+	}
+
+	// effect push right before line break, but not at line start
+	tester.Init([]TwineEffectArgs{
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineBreak) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPush) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineBreak) },
+
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineStart) | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop)  | twineFlagMeasuring },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerLineStart) },
+		TwineEffectArgs{ Payload: nil, flags: uint8(TwineTriggerPop) },
+	})
+	twine.Reset()
+	twine.Add("off ").PushEffect(0, SinglePass).Add("\non").Pop().Add(" off")
+	renderer.Twine().Draw(target, twine, 320, 240)
+	tester.EndSequence()
+	if tester.HasError() {
+		t.Fatalf("Center tricky twine effect func test #4 failed: %s", tester.ErrMsg())
 	}
 }
 
