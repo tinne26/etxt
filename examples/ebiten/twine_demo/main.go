@@ -4,6 +4,7 @@ import "os"
 import "log"
 import "fmt"
 import "math"
+import "sort"
 import "image"
 import "image/color"
 
@@ -17,15 +18,10 @@ import "github.com/tinne26/etxt/font"
 import "github.com/tinne26/etxt/fract"
 import "github.com/tinne26/etxt/mask"
 
-// TODO: fix addition / effect wrapping order. also, with
-//       some combinations the effects can sometimes go wonky,
-//       I don't know if it's double pass + single pass or
-//       if it's the effect wrapping order
-// TODO: RTL double pass width is incorrect
-
 // This example is mostly meant to be an interactive demo on what
-// Twines can do. For a more contained code example check out
-// ebiten/examples/twine instead.
+// Twines can do. For a more contained code example, check out
+// ebiten/examples/twine. The code on this example is long and
+// tedious and not very educative.
 // 
 // You can run the example like this:
 //   go run github.com/tinne26/etxt/examples/ebiten/text@latest path/to/font-1.ttf ...
@@ -38,7 +34,7 @@ const BigNumber = 2_000_000_000 // must fit in int32
 
 var textSamples = []string{
 	"Visit ebitengine.org for the best cooking tips!", // pen highlight and oblique
-	"Oblique text is not that bad,\nbut faux bold can't compete\nwith proper bold font faces.\n(Use actual bold fonts!)", // oblique, faux bold, small text
+	"Oblique text is not that bad,\nbut faux bold can't compete\nagainst actual bold font faces.\n(Use actual bold fonts!)", // oblique, faux bold, small text
 	"Golang is not bad. Zig is okay-ish.\nCobol is the past, the present and\npleaaase heeeeelp the future.", // color and cross-out
 	"Big, regular, small.\nTake it slow and do not fall.", // sizes
 	"Unformatted twine playground.",
@@ -51,14 +47,14 @@ var defaultFormats = [][]EffectAnnotation{
 	},
 	[]EffectAnnotation{
 		EffectAnnotation{ effectType: EffectOblique, effectParams: []any{highlightColor}, startRune: 16, endRune: 27 },
-		EffectAnnotation{ effectType: EffectFauxBold, effectParams: []any{highlightColor}, startRune: 34, endRune: 42 },
+		EffectAnnotation{ effectType: EffectFauxBold, effectParams: []any{highlightColor}, startRune: 33, endRune: 41 },
 		EffectAnnotation{ effectType: EffectSetSize, effectParams: []any{SizeOptions[0].Size}, startRune: 87, endRune: 110 },
 	},
 	[]EffectAnnotation{
 		EffectAnnotation{ effectType: EffectSetColor, effectParams: []any{paletteDarkCyan}, startRune: 0, endRune: 5 },
 		EffectAnnotation{ effectType: EffectSetColor, effectParams: []any{paletteXanthous}, startRune: 19, endRune: 21 },
-		EffectAnnotation{ effectType: EffectSetColor, effectParams: []any{paletteIndianRed}, startRune: 36, endRune: 40 },
-		EffectAnnotation{ effectType: EffectCrossOut, startRune: 71, endRune: 87 },
+		EffectAnnotation{ effectType: EffectSetColor, effectParams: []any{paletteIndianRed}, startRune: 35, endRune: 39 },
+		EffectAnnotation{ effectType: EffectCrossOut, startRune: 69, endRune: 85 },
 	},
 	[]EffectAnnotation{
 		EffectAnnotation{ effectType: EffectSetSize, effectParams: []any{SizeOptions[2].Size}, startRune: 0, endRune: 2 },
@@ -87,13 +83,14 @@ var highlightColor  = rescaleAlpha(paletteIndianRed, 156)
 type Game struct {
 	text *etxt.Renderer
 	cursorVisible bool
-	cursorIndexStart int // line breaks don't count
-	cursorIndexEnd int // line breaks don't count
+	cursorIndexStart int // line breaks not counted
+	cursorIndexEnd int // line breaks not counted
 	drawRuneIndex int
 	maxDrawRuneIndex int
 	textSampleIndex int
 	fonts []FontInfo
 	effects [][]EffectAnnotation
+	effectRecency uint32
 	mode InteractionMode
 	selectionDir SelDirection
 	twine etxt.Twine
@@ -333,23 +330,19 @@ func (self *Game) updateEffectPick() (bool, error) {
 			self.mode = SizePickMode
 			self.refreshSizePickTwine()
 		case EffectOblique:
-			self.effects[self.textSampleIndex] = append(
-				self.effects[self.textSampleIndex],
-				EffectAnnotation{
-					effectType: EffectOblique,
-					startRune: self.cursorIndexStart,
-					endRune: self.cursorIndexEnd,
-				})
+			self.insertEffectAnnotation(EffectAnnotation{
+				effectType: EffectOblique,
+				startRune: self.cursorIndexStart,
+				endRune: self.cursorIndexEnd,
+			})
 			self.mode = NavigationMode
 			return true, nil
 		case EffectFauxBold:
-			self.effects[self.textSampleIndex] = append(
-				self.effects[self.textSampleIndex],
-				EffectAnnotation{
-					effectType: EffectFauxBold,
-					startRune: self.cursorIndexStart,
-					endRune: self.cursorIndexEnd,
-				})
+			self.insertEffectAnnotation(EffectAnnotation{
+				effectType: EffectFauxBold,
+				startRune: self.cursorIndexStart,
+				endRune: self.cursorIndexEnd,
+			})
 			self.mode = NavigationMode
 			return true, nil
 		case EffectSetFont:
@@ -357,24 +350,20 @@ func (self *Game) updateEffectPick() (bool, error) {
 			self.refreshFontPickTwine()
 		case EffectPenHighlight:
 			// this could have its own color picker, but that indian red is ok
-			self.effects[self.textSampleIndex] = append(
-				self.effects[self.textSampleIndex],
-				EffectAnnotation{
-					effectType: EffectPenHighlight,
-					effectParams: []any{ highlightColor },
-					startRune: self.cursorIndexStart,
-					endRune: self.cursorIndexEnd,
-				})
+			self.insertEffectAnnotation(EffectAnnotation{
+				effectType: EffectPenHighlight,
+				effectParams: []any{ highlightColor },
+				startRune: self.cursorIndexStart,
+				endRune: self.cursorIndexEnd,
+			})
 			self.mode = NavigationMode
 			return true, nil
 		case EffectCrossOut:
-			self.effects[self.textSampleIndex] = append(
-				self.effects[self.textSampleIndex],
-				EffectAnnotation{
-					effectType: EffectCrossOut,
-					startRune: self.cursorIndexStart,
-					endRune: self.cursorIndexEnd,
-				})
+			self.insertEffectAnnotation(EffectAnnotation{
+				effectType: EffectCrossOut,
+				startRune: self.cursorIndexStart,
+				endRune: self.cursorIndexEnd,
+			})
 			self.mode = NavigationMode
 			return true, nil
 		default:
@@ -407,7 +396,6 @@ var EffectOptions = []EffectOption{
 	EffectOption{"Change Font", EffectSetFont},
 	EffectOption{"Pen Highlight", EffectPenHighlight},
 	EffectOption{"Cross-out", EffectCrossOut},
-	// "RoundedBackRect",
 }
 func (self *Game) refreshEffectPickTwine() {
 	self.auxTwine.Reset()
@@ -437,14 +425,12 @@ func (self *Game) updateColorPick() (bool, error) {
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		self.effects[self.textSampleIndex] = append(
-			self.effects[self.textSampleIndex],
-			EffectAnnotation{
-				effectType: EffectSetColor,
-				effectParams: []any{ColorOptions[self.auxMenuIndex].Color},
-				startRune: self.cursorIndexStart,
-				endRune: self.cursorIndexEnd,
-			})
+		self.insertEffectAnnotation(EffectAnnotation{
+			effectType: EffectSetColor,
+			effectParams: []any{ColorOptions[self.auxMenuIndex].Color},
+			startRune: self.cursorIndexStart,
+			endRune: self.cursorIndexEnd,
+		})
 		self.mode = NavigationMode
 		self.auxMenuIndex = 0 // reset
 		return true, nil
@@ -505,14 +491,12 @@ func (self *Game) updateSizePick() (bool, error) {
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		self.effects[self.textSampleIndex] = append(
-			self.effects[self.textSampleIndex],
-			EffectAnnotation{
-				effectType: EffectSetSize,
-				effectParams: []any{SizeOptions[self.auxMenuIndex].Size},
-				startRune: self.cursorIndexStart,
-				endRune: self.cursorIndexEnd,
-			})
+		self.insertEffectAnnotation(EffectAnnotation{
+			effectType: EffectSetSize,
+			effectParams: []any{SizeOptions[self.auxMenuIndex].Size},
+			startRune: self.cursorIndexStart,
+			endRune: self.cursorIndexEnd,
+		})
 		self.mode = NavigationMode
 		self.auxMenuIndex = 0 // reset
 		return true, nil
@@ -568,14 +552,12 @@ func (self *Game) updateFontPick() (bool, error) {
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		self.effects[self.textSampleIndex] = append(
-			self.effects[self.textSampleIndex],
-			EffectAnnotation{
-				effectType: EffectSetFont,
-				effectParams: []any{self.fonts[self.auxMenuIndex].Index},
-				startRune: self.cursorIndexStart,
-				endRune: self.cursorIndexEnd,
-			})
+		self.insertEffectAnnotation(EffectAnnotation{
+			effectType: EffectSetFont,
+			effectParams: []any{self.fonts[self.auxMenuIndex].Index},
+			startRune: self.cursorIndexStart,
+			endRune: self.cursorIndexEnd,
+		})
 		self.mode = NavigationMode
 		self.auxMenuIndex = 0 // reset
 		return true, nil
@@ -746,7 +728,6 @@ func (self *Game) drawFontPick(canvas *ebiten.Image, w, h int) {
 func (self *Game) RefreshTwine() {
 	// reset twine and push/pop states
 	self.twine.Reset()
-	self.maxDrawRuneIndex = -1
 	effectList := self.effects[self.textSampleIndex]
 	for i, _ := range effectList {
 		effectList[i].pushed = false
@@ -754,11 +735,18 @@ func (self *Game) RefreshTwine() {
 	}
 
 	// iterate text sample to build the twine
-	runeCount := 0
+	runeCount := 0 
 	pushIndex, effect := self.takeNextEffectPush()
 	popIndex := self.takeNextEffectPop()
 	text := textSamples[self.textSampleIndex]
 	for _, codePoint := range text {
+		// treat line breaks separately, as we don't
+		// want to push/pop effects on them and so on
+		if codePoint == '\n' {
+			self.twine.AddLineBreak()
+			continue
+		}
+
 		// push any effects that appear at this point
 		for runeCount == pushIndex {
 			self.insertEffect(effect)
@@ -767,9 +755,6 @@ func (self *Game) RefreshTwine() {
 
 		// add the text rune
 		self.twine.AddRune(codePoint)
-		if codePoint != '\n' {
-			self.maxDrawRuneIndex += 1
-		}
 
 		// pop any effects that stop at this point
 		for runeCount == popIndex {
@@ -780,29 +765,23 @@ func (self *Game) RefreshTwine() {
 		// increase rune count
 		runeCount += 1
 	}
+
+	self.maxDrawRuneIndex = runeCount - 1
 }
 
 // Helper for Game.RefreshTwine(), returns the push rune 
 // index and the effect type.
 func (self *Game) takeNextEffectPush() (int, EffectAnnotation) {
 	effectList := self.effects[self.textSampleIndex]
-	selectedEffectIndex  := int(BigNumber)
-	earliestPushPosition := int(BigNumber)
-	for i := len(effectList) - 1; i >= 0; i-- {
+	for i := 0; i < len(effectList); i++ {
 		if !effectList[i].pushed {
-			if effectList[i].startRune < earliestPushPosition {
-				selectedEffectIndex  = i
-				earliestPushPosition = effectList[i].startRune
-			}
+			effectList[i].pushed = true
+			return effectList[i].startRune, effectList[i]
 		}
 	}
-
-	var effect EffectAnnotation
-	if selectedEffectIndex != BigNumber {
-		effectList[selectedEffectIndex].pushed = true
-		effect = effectList[selectedEffectIndex]
-	}
-	return earliestPushPosition, effect
+	
+	var zeroEffect EffectAnnotation
+	return BigNumber, zeroEffect
 }
 
 // Helper for Game.RefreshTwine(), returns the pop rune index.
@@ -847,19 +826,33 @@ func (self *Game) insertEffect(effect EffectAnnotation) {
 	}
 }
 
+func (self *Game) insertEffectAnnotation(effect EffectAnnotation) {
+	// this could be done more efficiently, but this is clearer, not
+	// called frequently anyway and the number of effects is contained
+	self.effectRecency += 1
+	effect.recency = self.effectRecency
+	self.effects[self.textSampleIndex] = append(
+		self.effects[self.textSampleIndex],
+		effect,
+	)
+	slice := self.effects[self.textSampleIndex]
+	sort.SliceStable(slice, func(i, j int) bool {
+		if slice[i].startRune < slice[j].startRune { return true }
+		if slice[i].startRune > slice[j].startRune { return false }
+		// slice[i].startRune == slice[j].startRune
+		if slice[i].endRune < slice[j].endRune { return false }
+		if slice[i].endRune > slice[j].endRune { return true }
+		return slice[i].recency > slice[j].recency
+	})
+}
+
 func (self *Game) getAreaEffectIndex() int {
 	effectList := self.effects[self.textSampleIndex]
-	cursorRuneIndex := self.cursorIndexStart
-	for i, codePoint := range textSamples[self.textSampleIndex] {
-		if i > cursorRuneIndex { break }
-		if codePoint == '\n' { cursorRuneIndex += 1 }
-	}
-
 	areaEffectIndex := -1
 	areaEffectStart := -1
 	areaEffectEnd   := BigNumber
 	for i, _ := range effectList {
-		if cursorRuneIndex >= effectList[i].startRune && cursorRuneIndex <= effectList[i].endRune {
+		if effectList[i].OverlapsIndex(self.cursorIndexStart) {
 			if effectList[i].startRune > areaEffectStart || effectList[i].endRune < areaEffectEnd {
 				areaEffectIndex = i
 				areaEffectStart = effectList[i].startRune
@@ -886,7 +879,6 @@ func (self *Game) resetFormatAt(n int) {
 
 // Custom glyph drawing function that underlines the selected
 // glyph if the cursor is visible and in the correct position.
-// TODO: conflict with line breaks and glyph index and so on.
 func (self *Game) GlyphDrawFunc(target etxt.Target, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
 	var between = func(x, a, b int) bool { return x >= a && x <= b } // inclusive
 
@@ -907,8 +899,7 @@ func (self *Game) GlyphDrawFunc(target etxt.Target, glyphIndex sfnt.GlyphIndex, 
 		fillOver(target.SubImage(rect).(*ebiten.Image), cursorColor)
 	}
 
-	self.drawRuneIndex += 1 // TODO: I could use rune decoding and a stringByteIndex to decide
-	// if I increase the draw glyph index by one or two or what?
+	self.drawRuneIndex += 1
 }
 
 // ---- helper types ----
@@ -923,10 +914,14 @@ const (
 type EffectAnnotation struct {
 	effectType EffectType
 	effectParams []any
-	startRune int
-	endRune int
+	startRune int // included
+	endRune int // included
+	recency uint32
 	pushed bool
 	popped bool
+}
+func (self *EffectAnnotation) OverlapsIndex(i int) bool {
+	return self.startRune <= i && self.endRune >= i
 }
 
 type EffectType uint8
@@ -1049,9 +1044,6 @@ func main() {
 		fontInfos = append(fontInfos, FontInfo{ Name: extraName, Index: index })
 		fmt.Printf("Loaded additional font: %s\n", extraName)
 	}
-
-	// register additional functions
-	// ...
 
 	// create game interface and initialize
 	game := &Game{
