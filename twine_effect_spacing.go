@@ -3,22 +3,23 @@ package etxt
 import "github.com/tinne26/etxt/fract"
 
 // Related to [Twine.PushEffectWithSpacing](). When logical sizes are used, the 
-// values will be considered to use a base size of 16 pixels. So, if the renderer's
-// font scaled size is 16, the logical values will match the scaled values. If the
-// renderer's font scaled size is 32, the logical values will be multiplied by 2
-// to obtain the scaled values.
+// values will be considered to use a base size of 16 pixels. In other words:
+//  - If the renderer's font scaled size is 16, the logical values will match
+//    the scaled values.
+//  - If the renderer's font scaled size is 32, the logical values will be
+//    multiplied by 2 to obtain the scaled values.
 // 
 // Regarding line wrapping and paddings, the following rules are applied
-// (actually, twine draw with wrap is unimplemented, but...):
+// (note: twine draw with wrap is still unimplemented):
 //  - PrePad + LineBreakPad will be preferently applied.
 //  - If there's not enough space, the effect will be moved directly
 //    to the next line, using LineStartPad + PostPad.
 //  - If there's not enough space, LineStartPad + LineBreakPad will
 //    be used, even if this ends up exceeding the maximum line wrap
-//    width. But in this case, no more content will be added after
-//    the line break pad, even if something could fit afterwards.
-//  - MinWidth will always be respected even if ends up leading to
-//    a LineStartPad + LineBreakPad situation that still overflows
+//    width. In that case, no more content would be added after the
+//    line break pad, even if something could fit afterwards.
+//  - MinWidth will always be respected even if it ends up leading
+//    to a LineStartPad + LineBreakPad situation that still overflows
 //    the maximum line wrap width.
 type TwineEffectSpacing struct {
 	PrePad       fract.Unit
@@ -26,8 +27,8 @@ type TwineEffectSpacing struct {
 	MinWidth     fract.Unit // can't be disconnected from PrePad or LineStartPad
 	LineStartPad fract.Unit // should be <= PrePad
 	LineBreakPad fract.Unit // should be <= PostPad
-	ArePadsLogical    bool // if true, all units are considered as if they were on size 16
-	IsMinWidthLogical bool // if true, all units are considered as if they were on size 16
+	ArePadsLogical    bool  // if true, units are considered as if defined for size 16
+	IsMinWidthLogical bool  // if true, units are considered as if defined for size 16
 }
 
 func (self *TwineEffectSpacing) parseFromData(data []byte) int {

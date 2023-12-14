@@ -13,8 +13,10 @@ import "github.com/tinne26/etxt/fract"
 // are possible, but in general you shouldn't be worrying about it. Barring
 // extreme cases and bad fonts, you should use small margins for your text
 // and just trust that typographers know what they are doing with overshoot.
-// That being said, italics, fancy display fonts and script fonts are more
-// likely to spill and may require bigger margins than other types of fonts.
+//
+// That being said, it's still true that italics, fancy display typefaces and
+// script fonts are more prone to spill and may be safer to use with more generous
+// margins than other types of fonts.
 func (self *Renderer) Measure(text string) fract.Rect {
 	return self.fractMeasure(text)
 }
@@ -22,15 +24,15 @@ func (self *Renderer) Measure(text string) fract.Rect {
 // Same as [Renderer.Measure](), but using a width limit for line wrapping.
 // Typically used in conjunction with [Renderer.DrawWithWrap]().
 //
-// The widthLimit must be given in real units, not logical ones.
+// The widthLimit must be given in real pixels, not logical units.
 // This means that unlike text sizes, the widthLimit won't be internally
 // multiplied by the renderer's scale factor.
 //
 // The returned rect dimensions are always quantized, but the width
 // doesn't take into account final spaces in the wrapped lines. Notice
 // that the returned rect's minimum width may exceed widthLimit if
-// the widthLimit is very low and there's some character in the text
-// that exceeds it (a single character can't be split into multiple lines).
+// the widthLimit is very low and there's some glyph in the text
+// that exceeds it (a single glyph can't be split into multiple lines).
 func (self *Renderer) MeasureWithWrap(text string, widthLimit int) fract.Rect {
 	// TODO: the behavior for spaces at the end of the line without any word
 	//       afterwards (EOT or line break) is not properly defined. we may

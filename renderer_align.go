@@ -1,35 +1,33 @@
 package etxt
 
 // Aligns tell a [Renderer] how to interpret the coordinates
-// that [Renderer.Draw]() and other methods receive.
+// that [Renderer.Draw]() and other operations receive.
 //
 // More concretely: given some text, we have a text box or bounding
 // rectangle that contains it. The text align specifies which part of
-// that bounding box has to be aligned to the given coordinates.
-// 
-// For example: drawing "POOP" at (0, 0) with a centered align
-// means that the center of the text box will be aligned to the
-// (0, 0) coordinate. We should see the bottom half of "OP" on
-// the top-left corner of our screen.
+// that bounding box has to be aligned to the given coordinates. For
+// example: drawing "POOP" at (0, 0) with a centered align means that
+// the center of the text box will be aligned to the (0, 0) coordinate.
+// We should see the bottom half of "OP" on the top-left corner of our
+// rendering [Target].
 //
-// See [Renderer.SetAlign]() for more details.
+// See [Renderer.SetAlign]() for further explanations.
 type Align uint8
 
-// Returns the vertical component of the align. If the
-// align is valid, the result can only be one of the
-// following: [Top], [CapLine], [Midline], [VertCenter],
-// [Baseline], [LastBaseline], [Bottom].
+// Returns the vertical component of the align. If the align
+// is valid, the result can only be [Top], [CapLine], [Midline],
+// [VertCenter], [Baseline], [LastBaseline] or [Bottom].
 func (self Align) Vert() Align { return alignVertBits & self }
 
 // Returns the horizontal component of the align. If the
-// align is valid, the result can only be one of the
-// following: [Left], [HorzCenter], [Right].
+// align is valid, the result can only be [Left], [HorzCenter]
+// or [Right].
 func (self Align) Horz() Align { return alignHorzBits & self }
 
-// Returns whether the align has the vertical component defined.
+// Returns whether the align has a vertical component.
 func (self Align) HasVertComponent() bool { return alignVertBits & self != 0 }
 
-// Returns whether the align has the horizontal component defined.
+// Returns whether the align has a horizontal component.
 func (self Align) HasHorzComponent() bool { return alignHorzBits & self != 0 }
 
 // Returns the result of overriding the current align with
@@ -52,10 +50,10 @@ func (self Align) Adjusted(align Align) Align {
 	}
 }
 
-// If the align's horizontal component is...
+// Returns a value between 'left' and 'right' based on the current horizontal align:
 //  - [Left]: the function returns 'left'.
-//  - [Right]: the function return 'right'.
-//  - Otherwise, the function returns the middle point between 'left' and 'right'.
+//  - [Right]: the function returns 'right'.
+//  - Otherwise: the function returns the middle point between 'left' and 'right'.
 func (self Align) GetHorzAnchor(left, right int) int {
 	switch self.Horz() {
 	case Left  : return left
@@ -65,7 +63,7 @@ func (self Align) GetHorzAnchor(left, right int) int {
 	}
 }
 
-// Returns a textual description of the align. For example:
+// Returns a textual description of the align. Some examples:
 //   (Top | Right).String() == "(Top | Right)"
 //   (Right | Top).String() == "(Top | Right)"
 //   Center.String() == "(VertCenter | HorzCenter)"
@@ -104,8 +102,8 @@ func (self Align) horzString() string {
 }
 
 // Aligns have a vertical and a horizontal component. To set
-// both components at once, you may use a bitwise OR, as in
-// [Renderer.SetAlign](etxt.Left | etxt.Bottom). To retrieve or
+// both components at once you can use a bitwise OR (e.g. 
+// [Renderer.SetAlign](etxt.Left | etxt.Bottom)). To retrieve or
 // compare the individual components, avoid bitwise operations
 // and use [Align.Vert]() and [Align.Horz]() instead.
 const (
@@ -116,12 +114,12 @@ const (
 
 	// Vertical aligns
 	Top          Align = 0b0000_0001 // top of font's ascent
-	CapLine      Align = 0b0000_0011 // top of font's cap height
+	CapLine      Align = 0b0000_0011 // top of font's cap height (rarely used)
 	Midline      Align = 0b0000_0010 // top of xheight (rarely used)
 	VertCenter   Align = 0b0000_1001 // middle of line height
 	Baseline     Align = 0b0000_0100 // aligned to baseline
 	Bottom       Align = 0b0000_1000 // bottom of font's descent
-	LastBaseline Align = 0b0000_1100 // last Baseline (if multiple lines) (rarely used)
+	LastBaseline Align = 0b0000_1100 // last Baseline (for multiline text)
 
 	// Full aligns
 	Center Align = HorzCenter | VertCenter
@@ -150,15 +148,15 @@ const (
 // you can use [Renderer.SetAlign](etxt.[Right]) and similar to change only
 // one of the components at a time. See [Align.Adjusted]() for more details.
 //
-// By default, the renderer's align is (etxt.[Baseline] | etxt.[Left]).
+// By default, [NewRenderer]() initializes the align to (etxt.[Baseline] | etxt.[Left]).
 //
-// [this image]: https://github.com/tinne26/etxt/blob/main/docs/img/gtxt_aligns.png
+// [this image]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/docs/img/gtxt_aligns.png
 func (self *Renderer) SetAlign(align Align) {
 	self.state.align = self.state.align.Adjusted(align)
 }
 
 // Returns the current align. See [Renderer.SetAlign]() documentation
-// for more details on renderer aligns.
+// for further details.
 func (self *Renderer) GetAlign() Align {
 	return self.state.align
 }

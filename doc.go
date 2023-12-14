@@ -4,7 +4,7 @@
 // To get started, you should create a [Renderer] and set up
 // a font and a cache:
 //   text := etxt.NewRenderer()
-//   text.SetFont(font) // see also Utils().SetFontBytes()
+//   text.SetFont(font)
 //   text.Utils().SetCache8MiB()
 //
 // Then, you can further adjust the renderer properties with functions

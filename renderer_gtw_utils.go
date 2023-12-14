@@ -12,7 +12,7 @@ import "github.com/tinne26/etxt/sizer"
 
 // [Gateway] to [RendererUtils] functionality.
 //
-// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
 func (self *Renderer) Utils() *RendererUtils {
 	return (*RendererUtils)(self)
 }
@@ -28,8 +28,8 @@ func (self *Renderer) Utils() *RendererUtils {
 // perform certain operations. Most programs on [etxt/examples/ebiten]
 // make use of this.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
-// [examples/ebiten]: https://github.com/tinne26/etxt/tree/main/examples/ebiten
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
+// [etxt/examples/ebiten]: https://github.com/tinne26/etxt/tree/v0.0.9-alpha.6/examples/ebiten
 type RendererUtils Renderer
 
 // ---- wrapper methods ----
@@ -44,7 +44,7 @@ func (self *RendererUtils) SetCache8MiB() {
 	(*Renderer)(self).utilsSetCache8MiB()
 }
 
-// Utility method to get the current line height. Equivalent to:
+// Utility method to get the current line height. Functionally equivalent to:
 //   font   := renderer.GetFont()
 //   buffer := renderer.GetBuffer()
 //   size   := renderer.Fract().GetScaledSize()
@@ -54,12 +54,12 @@ func (self *RendererUtils) GetLineHeight() float64 {
 	return (*Renderer)(self).utilsGetLineHeight()
 }
 
-// This function only exists to soothe troubled souls.
-// Good reasons to use it in practice may not exist.
-//
 // Sets default values for any uninitialized properties that are
 // required to make the renderer produce visible results, except
-// for the font. Notice that the cache handler isn't included.
+// for the font. Notice that this also excludes the cache handler.
+//
+// This function exists solely to soothe troubled souls; solid
+// reasons to use it in practice might never be found.
 func (self *RendererUtils) FillMissingProperties() {
 	(*Renderer)(self).utilsFillMissingProperties()
 }
@@ -71,7 +71,9 @@ func (self *RendererUtils) FillMissingProperties() {
 // [Renderer.SetFont]() is the way to go.
 //
 // For more advanced font management functionality, see
-// [github.com/tinne26/etxt/font.Library].
+// [etxt/font.Library].
+//
+// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.9-alpha.6#Library
 func (self *RendererUtils) SetFontBytes(data []byte) error {
 	return (*Renderer)(self).utilsSetFontBytes(data)
 }
@@ -87,8 +89,8 @@ func (self *RendererUtils) SetFontBytes(data []byte) error {
 // Notably, custom rendering functions, inactive fonts
 // and the cache handler are not stored.
 //
-// For improved safety when storing states, consider looking
-// into [RendererUtils.AssertMaxStoredStates]().
+// For improved safety when managing states, consider also
+// [RendererUtils.AssertMaxStoredStates]().
 func (self *RendererUtils) StoreState() {
 	(*Renderer)(self).utilsStoreState()
 }
@@ -97,8 +99,8 @@ func (self *RendererUtils) StoreState() {
 // most recently stored renderer state and removes it from the
 // internal stack.
 //
-// If the states stack is empty and no state restoration is
-// possible, this function returns false.
+// Iff the states stack is empty and no state restoration is
+// possible, the function returns false.
 func (self *RendererUtils) RestoreState() bool {
 	return (*Renderer)(self).utilsRestoreState()
 }

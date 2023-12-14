@@ -29,20 +29,18 @@ import "github.com/tinne26/etxt/fract"
 //  - [Renderer.Fract](), to access specialized fractional positioning functionality.
 //  - [Renderer.Glyph](), to access low level functions for glyphs and
 //    glyph masks.
-//  - [Renderer.Twine](), to access rich text and [Twine] functionality.
+//  - [Renderer.Twine](), to access text formatting and [Twine] functionality.
 //
-// To create a renderer, using [NewRenderer]() is recommended. Otherwise,
-// you will need to set lots of properties manually or depend on
-// [RendererUtils.FillMissingProperties]() before you can start using it.
-// In all cases, you still need to set a font before drawing or measuring
-// text, and in most practical scenarios you will also want to set a cache,
-// the text size, the text color and the align.
+// To create a renderer, using [NewRenderer]() is recommended. Before you
+// can start using it, though, you have to set a font. In most practical
+// scenarios you will also want to set a cache, the text size, the text
+// color and the align explicitly.
 //
-// If you need further help or guidance, I recommend reading ["advice on 
-// renderers"] or going through the code on the [examples] folder.
+// If you need further help or guidance, consider reading ["advice on 
+// renderers"] and going through the code in the [examples] folder.
 //
-// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/main/docs/renderer.md
-// [examples]: https://github.com/tinne26/etxt/blob/main/examples
+// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/docs/renderer.md
+// [examples]: https://github.com/tinne26/etxt/tree/v0.0.9-alpha.6/examples
 type Renderer struct {
 	state restorableState
 	restorableStates []restorableState
@@ -56,12 +54,12 @@ type Renderer struct {
 	buffer sfnt.Buffer
 }
 
-// Creates a new [Renderer], intialized with default values.
+// Creates a new [Renderer], initialized with reasonable default values.
 //
-// Setting a font through [Renderer.SetFont]() or [RendererUtils.SetFontBytes]()
-// is required before being able to operate with it. It's also heavily
-// recommended to set a cache (none by default) right from the start, for
-// example using [RendererUtils.SetCache8MiB]().
+// Setting a font through [Renderer.SetFont]() or similar is required
+// before being able to operate with it. You almost always want to
+// set a cache right from the start too, with [RendererUtils.SetCache8MiB]()
+// being the simplest solution.
 func NewRenderer() *Renderer {
 	// No font sizer change notification required (there's no font yet)
 	return &Renderer{
@@ -82,9 +80,8 @@ func NewRenderer() *Renderer {
 
 // Sets the logical font size to be used on subsequent operations.
 // Sizes are given in pixels and can't be negative. Maximum size
-// is limited around ~16K.
-//
-// By default, the renderer will draw text at a logical size of 16px.
+// is limited around ~16K. By default, [NewRenderer]() initializes
+// the size to 16px.
 //
 // The relationship between font size and the size of its glyphs
 // is complicated and can vary a lot between fonts, but to
@@ -97,7 +94,7 @@ func NewRenderer() *Renderer {
 // See also [Renderer.SetScale]() for proper handling of high
 // resolution text and display scaling.
 //
-// [general reference]: https://github.com/tinne26/etxt/blob/main/docs/px-size.md
+// [general reference]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/docs/px-size.md
 func (self *Renderer) SetSize(size float64) {
 	// TODO: test with size zero for draws and measures and all that,
 	//       as well as fractional but almost zero sizes. the rounding
@@ -105,7 +102,9 @@ func (self *Renderer) SetSize(size float64) {
 	self.fractSetSize(fract.FromFloat64Up(size))
 }
 
-// Returns the current logical font size. The default value is 16.
+// Returns the current logical font size. By default, [NewRenderer]()
+// sets the value to 16, but you are encouraged to always initialize
+// your font size explicitly.
 //
 // Notice that the returned value doesn't take scaling into
 // account (see [Renderer.SetScale]()).
@@ -116,30 +115,41 @@ func (self *Renderer) GetSize() float64 {
 // Sets the display scaling factor to be used for the text size
 // on subsequent operations.
 //
-// If you don't know much about display scaling, read [this guide].
-// Understanding display scaling is critical to be able to render
-// non-crappy text across different devices.
+// If you need more context on display scaling, please read
+// [this guide]. Understanding scaling in general is critical
+// if you want to be able to render sharp text across different
+// devices.
 //
-// The scale must be non-negative. Its default value is 1.0.
+// The scale must be non-negative. By default, [NewRenderer]()
+// initializes it to 1.0.
 //
-// [this guide]: https://github.com/tinne26/etxt/blob/main/docs/display-scaling.md
+// [this guide]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/docs/display-scaling.md
 func (self *Renderer) SetScale(scale float64) {
 	self.fractSetScale(fract.FromFloat64Up(scale))
 }
 
 // Returns the current display scaling factor used for the
-// text as a float64. See [Renderer.SetScale]() for more details.
+// text as a float64. See [Renderer.SetScale]() for further
+// context and details.
 func (self *Renderer) GetScale() float64 {
 	return self.fractGetScale().ToFloat64()
 }
 
 // Sets the text direction to be used on subsequent operations.
+// By default, the direction is [LeftToRight].
 //
 // Do not confuse text direction with horizontal align. Text
 // direction is typically only changed for right-to-left languages
 // like Arabic, Hebrew or Persian.
 //
-// By default, the direction is [LeftToRight].
+// Notice that etxt is not really at a point where it can handle
+// complex scripts properly; if that's an important feature for you,
+// consider [ebiten/v2/text/v2] instead. In particular, even if
+// you were to externalize the text shaping process and draw the
+// glyphs with a [Twine], etxt still can't mirror glyphs nor handle
+// bidirectional text automatically.
+//
+// [ebiten/v2/text/v2]: https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2
 func (self *Renderer) SetDirection(dir Direction) {
 	// basically, this can change the text iteration order,
 	// from first \n to next, to next \n to first.
@@ -151,19 +161,21 @@ func (self *Renderer) SetDirection(dir Direction) {
 	}
 }
 
-// Returns the current main text direction. See [Renderer.SetDirection]()
+// Returns the current text direction. See [Renderer.SetDirection]()
 // for more details.
 func (self *Renderer) GetDirection() Direction {
 	return self.state.textDirection
 }
 
 // Sets the font to be used on subsequent operations. Without a
-// font, a renderer is fundamentally useless, so don't forget to
-// set this up.
+// font, a renderer is fundamentally useless, so do not forget to
+// set one!
 //
-// Further pointers and advice:
+// Miscellaneous tips and advice:
 //  - If you only have the unparsed font file data, consider [RendererUtils.SetFontBytes]().
-//  - If you need more robust font management, see [github.com/tinne26/etxt/font.Library].
+//  - If you need more robust font management, take a look at [etxt/font.Library].
+//
+// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.9-alpha.6#Library
 func (self *Renderer) SetFont(font *sfnt.Font) {
 	// ensure there's enough space in the fonts slice
 	fontIndex := int(self.state.fontIndex)
@@ -207,7 +219,7 @@ func (self *Renderer) GetBlendMode() BlendMode {
 }
 
 // Sets the color to be used on subsequent draw operations.
-// The default color is white.
+// By default, [NewRenderer]() initializes the color to white.
 func (self *Renderer) SetColor(fontColor color.Color) {
 	self.state.fontColor = fontColor
 }
@@ -219,22 +231,22 @@ func (self *Renderer) GetColor() color.Color {
 
 // Returns the current [sizer.Sizer].
 //
-// The most common use of sizers is adjusting line height or glyph
+// The most common use for sizers is adjusting line height or glyph
 // interspacing. Outside of that, sizers can also be relevant when
 // trying to obtain information about font metrics or when making
-// custom glyph mask rasterizers, but it's fairly uncommon for the
-// average user to have to worry about all these things.
+// custom glyph mask rasterizers; all fairly uncommon things for the
+// average user to have to worry about.
 func (self *Renderer) GetSizer() sizer.Sizer {
 	return self.state.fontSizer
 }
 
 // Sets the sizer to be used on subsequent operations.
 //
-// The most common use of sizers is adjusting line height or glyph
+// The most common use for sizers is adjusting line height or glyph
 // interspacing. Outside of that, sizers can also be relevant when
 // trying to obtain information about font metrics or when making
-// custom glyph mask rasterizers, but it's fairly uncommon for the
-// average user to have to worry about all these things.
+// custom glyph mask rasterizers; all fairly uncommon things for the
+// average user to have to worry about.
 func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
 	if self.state.fontSizer == fontSizer { return }
 	self.state.fontSizer = fontSizer
@@ -251,8 +263,8 @@ func (self *Renderer) GetCacheHandler() cache.GlyphCacheHandler {
 // Sets the glyph cache handler used by the renderer. By default,
 // no cache is used, but you almost always want to set one.
 //
-// The easiest way is to use [RendererUtils.SetCache8MiB](), but that's
-// not suitable for all use-cases. The general approach is to create
+// The easiest way is to use [RendererUtils.SetCache8MiB](). If that's
+// not suitable for your use-case, the general approach is to create
 // a cache manually, obtain a cache handler from it and set it:
 //   glyphsCache := cache.NewDefaultCache(16*1024*1024) // 16MiB cache
 //   renderer.SetCacheHandler(glyphsCache.NewHandler())
@@ -260,7 +272,7 @@ func (self *Renderer) GetCacheHandler() cache.GlyphCacheHandler {
 //
 // A cache handler can only be used with a single renderer, but you
 // may create multiple handlers from the same underlying cache and
-// use them with multiple renderers.
+// use them with different renderers.
 func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 	self.cacheHandler = cacheHandler
 	if cacheHandler == nil {
@@ -281,8 +293,8 @@ func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 }
 
 // Exposes the renderer's internal [*sfnt.Buffer].
-// Only exposed for advanced interaction with the sfnt package
-// or the [sizer.Sizer] interface.
+// This is unfortunately necessary for advanced interaction with
+// the [sfnt] package and the [sizer.Sizer] interface.
 func (self *Renderer) GetBuffer() *sfnt.Buffer {
 	return &self.buffer
 }

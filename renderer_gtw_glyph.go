@@ -16,12 +16,12 @@ import "github.com/tinne26/etxt/mask"
 // advisable to be familiar with [RendererFract] and the [etxt/fract]
 // subpackage before diving in.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
 type RendererGlyph Renderer
 
 // [Gateway] to [RendererGlyph] functionality.
 //
-// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
 func (self *Renderer) Glyph() *RendererGlyph {
 	return (*RendererGlyph)(self)
 }
@@ -51,15 +51,15 @@ func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 // The default implementation is a streamlined equivalent of:
 //   mask := renderer.Glyph().LoadMask(glyphIndex, origin)
 //   renderer.Glyph().DrawMask(target, mask, origin)
-// See [examples/ebiten/colorful] and [examples/ebiten/shaking]
-// for further customization examples.
+// (Check out [examples/ebiten/colorful] and [examples/ebiten/shaking]
+// if you need practical usage examples)
 //
 // Changing renderer properties dynamically on the glyph drawing
 // function is generally unsafe and many behaviors are undefined.
 // Only the text color can be safely changed at the moment.
 //
-// [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/main/examples/ebiten/colorful/main.go
-// [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/main/examples/ebiten/shaking/main.go
+// [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/examples/ebiten/colorful/main.go
+// [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/examples/ebiten/shaking/main.go
 func (self *RendererGlyph) SetDrawFunc(drawFn func(Target, sfnt.GlyphIndex, fract.Point)) {
 	// Note: we could actually allow the font and the sizer to be changed, but this
 	//       has implications on measuring. We wouldn't be able to measure properly,
@@ -106,10 +106,11 @@ func (self *RendererGlyph) SetRasterizer(rasterizer mask.Rasterizer) {
 // Returns the current glyph mask rasterizer.
 //
 // This function is only useful when working with configurable rasterizers;
-// ignore it if you are using the default glyph mask rasterizer.
+// if you are only using the default glyph mask rasterizer you can probably
+// ignore it.
 //
 // Mask rasterizers are not concurrent-safe, so be careful with
-// what you do and where you put them.
+// what you do after retrieving them.
 func (self *RendererGlyph) GetRasterizer() mask.Rasterizer {
 	return (*Renderer)(self).glyphGetRasterizer()
 }

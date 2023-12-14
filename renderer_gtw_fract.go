@@ -6,27 +6,27 @@ import "github.com/tinne26/etxt/fract"
 
 // [Gateway] to [RendererFract] functionality.
 //
-// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
 func (self *Renderer) Fract() *RendererFract {
 	return (*RendererFract)(self)
 }
 
 // This type exists only for documentation and structuring purposes,
-// acting as a [gateway] to operate a [Renderer] with fractional units.
+// acting as a [gateway] to perform operations with fractional units.
 //
-// Fractional units give us an increased level of precision when
-// drawing or measuring text. The use-cases for this are rather
-// limited; as a rule of thumb, ignore these advanced features
+// Fractional units allow us to operate with a higher level of precision
+// when drawing or measuring text. The use-cases for this are rather
+// limited, though; as a rule of thumb, ignore these advanced features 
 // unless you find yourself really needing them.
 //
 // In general, this type is used through method chaining:
 //   renderer.Fract().Draw(canvas, text, x, y)
 //
-// All the fractional operations depend on the [fract.Unit] type, so make
-// sure to check out the [etxt/fract] subpackage if you need more context
+// All the fractional operations depend on the [fract.Unit] type, so
+// make sure to check out the [fract] subpackage if you need more context
 // to understand how everything ties together.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
 type RendererFract Renderer
 
 // ---- wrapper methods ----
@@ -53,8 +53,9 @@ func (self *RendererFract) GetScale() fract.Unit {
 
 // Returns the scaled text size (logicalSize*scale).
 // 
-// This method is exposed mainly for when you want to
-// access specific metrics through the renderer's sizer.
+// Having access to the renderer's scaled font size
+// is useful when working with sizers and trying to
+// obtain specific metrics for advanced use-cases.
 func (self *RendererFract) GetScaledSize() fract.Unit {
 	return self.state.scaledSize
 }
@@ -63,8 +64,12 @@ func (self *RendererFract) GetScaledSize() fract.Unit {
 // operations. Valid values are limited to the existing Qt constants
 // (e.g. [QtNone], [QtFull], [QtHalf]).
 //
-// By default, the horizontal quantization is [Qt4th]. See also
-// [RendererFract.SetVertQuantization]().
+// By default, [NewRenderer]() initializes the horizontal quantization
+// to [Qt4th]. This is generally a reasonable compromise between quality
+// and performance... unless you are using pixel-art-like fonts; in that
+// case, setting the quantization to [QtFull] is much preferable.
+//
+// See also [RendererFract.SetVertQuantization]().
 func (self *RendererFract) SetHorzQuantization(horz fract.Unit) {
 	(*Renderer)(self).fractSetHorzQuantization(horz)
 }
@@ -73,8 +78,11 @@ func (self *RendererFract) SetHorzQuantization(horz fract.Unit) {
 // operations. Valid values are limited to the existing Qt constants
 // (e.g. [Qt4th], [Qt8th], [Qt16th]).
 //
-// By default, the vertical quantization is [QtFull]. See also
-// [RendererFract.SetHorzQuantization]().
+// By default, [NewRenderer]() initializes the vertical quantization
+// to [QtFull]. Most languages are written horizontally, so you almost
+// never want to pay the price for high vertical positioning resolution.
+//
+// See also [RendererFract.SetHorzQuantization]().
 func (self *RendererFract) SetVertQuantization(horz fract.Unit) {
 	(*Renderer)(self).fractSetVertQuantization(horz)
 }
@@ -88,10 +96,12 @@ func (self *RendererFract) GetQuantization() (horz, vert fract.Unit) {
 // 	return (*Renderer)(self).fractMeasureHeight(text)
 // }
 
+// Fractional and lower level version of [Renderer.Draw]().
 func (self *RendererFract) Draw(target Target, text string, x, y fract.Unit) {
 	(*Renderer)(self).fractDraw(target, text, x, y)
 }
 
+// Fractional and lower level version of [Renderer.DrawWithWrap]().
 func (self *RendererFract) DrawWithWrap(target Target, text string, x, y fract.Unit, widthLimit int) {
 	(*Renderer)(self).fractDrawWithWrap(target, text, x, y, fract.FromInt(widthLimit))
 }

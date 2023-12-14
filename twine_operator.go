@@ -45,8 +45,8 @@ type twineOperator struct {
 	inGlyphMode bool // twines can mix glyphs and utf8, so we need to keep track of this
 	performDrawPass bool // whether the operator must draw or only measure
 	onMeasuringPass bool // whether we are on a measuring or drawing pass
+	nestedNewLineShifts []fract.Unit // related to Twine.PushLineRestartMarker
 	defaultNewLineX fract.Unit // related to Twine.PushLineRestartMarker
-	shiftNewLineX fract.Unit // related to Twine.PushLineRestartMarker
 	yCutoff fract.Unit
 	effects twineOperatorEffectsList
 	spacingPendingAdd *TwineEffectSpacing // dirty hack
@@ -79,7 +79,7 @@ func (self *twineOperator) Initialize(renderer *Renderer, twine Twine, mustDraw 
 	self.performDrawPass = mustDraw
 	self.onMeasuringPass = !mustDraw
 	self.defaultNewLineX = 0
-	self.shiftNewLineX = 0
+	self.nestedNewLineShifts = self.nestedNewLineShifts[ : 0]
 	self.yCutoff  = yCutoff
 	self.effects.Initialize()
 	
@@ -142,13 +142,17 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 	iv.increaseLineBreakNth()
 	
 	// line advance using operating metrics (only updatable through RefreshLineMetrics())
+	var newLineShift fract.Unit
+	if len(self.nestedNewLineShifts) > 0 {
+		newLineShift = self.nestedNewLineShifts[len(self.nestedNewLineShifts) - 1]
+	}
 	if renderer.state.scaledSize == self.lineScaledSize && renderer.state.activeFont == self.lineFont {
-		position = renderer.advanceLine(position, self.defaultNewLineX + self.shiftNewLineX, iv.lineBreakNth)
+		position = renderer.advanceLine(position, self.defaultNewLineX + newLineShift, iv.lineBreakNth)
 	} else { // when scale and/or font differ, we use the stored twineOperator values (temp set, advance, restore)
 		renderer.state.fontSizer.NotifyChange(self.lineFont, &renderer.buffer, self.lineScaledSize)
 		tmpFont, tmpSize := renderer.state.activeFont, renderer.state.scaledSize
 		renderer.state.activeFont, renderer.state.scaledSize = self.lineFont, self.lineScaledSize
-		position = renderer.advanceLine(position, self.defaultNewLineX + self.shiftNewLineX, iv.lineBreakNth)
+		position = renderer.advanceLine(position, self.defaultNewLineX + newLineShift, iv.lineBreakNth)
 		renderer.state.activeFont, renderer.state.scaledSize = tmpFont, tmpSize
 	}
 
@@ -223,10 +227,15 @@ func (self *twineOperator) ProcessCC(renderer *Renderer, target Target, position
 		self.registerNextLineMetrics(renderer)
 		self.index += 1
 	case twineCcPushLineRestartMarker:
-		self.shiftNewLineX = position.X - self.defaultNewLineX
+		shift := position.X - self.defaultNewLineX
+		self.nestedNewLineShifts = append(self.nestedNewLineShifts, shift)
 		self.index += 1
-	case twineCcClearLineRestartMarker:
-		self.shiftNewLineX = 0
+	case twineCcPopLineRestartMarker:
+		size := len(self.nestedNewLineShifts)
+		if size == 0 {
+			panic("attempted to pop line restart marker when none were left")
+		}
+		self.nestedNewLineShifts = self.nestedNewLineShifts[ : size - 1]
 		self.index += 1
 	case twineCcPushEffectWithSpacing:
 		var spacing TwineEffectSpacing

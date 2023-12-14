@@ -24,8 +24,6 @@ func releaseTwineHeightSizer(twineSizer *twineHeightSizer) {
 	}
 }
 
-// TODO: line start not called anywhere, jeez
-
 // note: maybe it would be clever to try to measure without line height
 //       changes first, and only if that fails fall back to full measuring.
 //       to me, it feels like most of the time we won't be using line
@@ -108,7 +106,7 @@ func (self *twineHeightSizer) processCC(renderer *Renderer, target Target) fract
 	case twineCcRefreshLineMetrics:
 		self.registerNextLineMetrics(renderer)
 		self.index += 1
-	case twineCcPushLineRestartMarker, twineCcClearLineRestartMarker:
+	case twineCcPushLineRestartMarker, twineCcPopLineRestartMarker:
 		// these are irrelevant for height
 		self.index += 1
 	case twineCcPushEffectWithSpacing:

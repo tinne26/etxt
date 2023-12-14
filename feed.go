@@ -10,10 +10,9 @@ import "github.com/tinne26/etxt/fract"
 // and modifying positions or configurations in between.
 //
 // As a rule of thumb, you should only resort to feeds if
-// neither [Renderer.Draw](), [RendererTwine.Draw](), nor
+// neither [Renderer.Draw](), [RendererTwine.Draw]() nor
 // [RendererGlyph.SetDrawFunc]() give you enough control to do
-// what you want. Make sure you are well acquainted with the
-// basic methods first.
+// what you want.
 type Feed struct {
 	Renderer *Renderer             // associated renderer
 	Position fract.Point           // the feed's working pen position or origin
@@ -46,7 +45,7 @@ func NewFeed(renderer *Renderer) *Feed {
 // field to its baseline value.
 //
 // For more precise positioning, you can always manipulate the Position
-// field directly. This method also sets the LineBreakX field.
+// field directly.
 func (self *Feed) At(x, y int) *Feed {
 	renderer := self.Renderer
 	vertAlign := renderer.GetAlign().Vert()
@@ -85,8 +84,8 @@ func (self *Feed) At(x, y int) *Feed {
 }
 
 // Utility method for setting all the feed fields to their zero values.
-// After a reset, you will need to set the feed's [Renderer] again manually
-// if you want to use it again.
+// After a reset, you will need to set the feed's [Renderer] field 
+// manually if you want to use it again.
 func (self *Feed) Reset() {
 	self.Renderer = nil
 	self.Position = fract.Point{}
@@ -95,9 +94,8 @@ func (self *Feed) Reset() {
 	self.PrevGlyphIndex = 0
 }
 
-// Draws the given rune and advances the feed's Position.
-//
-// The drawing configuration is taken from the feed's associated renderer.
+// Draws the given rune and advances the feed's Position. The drawing
+// configuration is taken from the feed's associated renderer.
 //
 // Quantization will be checked before every drawing operation and adjusted
 // if necessary (even vertical quantization).

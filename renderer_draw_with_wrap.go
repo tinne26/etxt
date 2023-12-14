@@ -6,7 +6,7 @@ import "github.com/tinne26/etxt/fract"
 // The algorithm is a trivial greedy algorithm that only considers spaces
 // as line wrapping candidates.
 //
-// The widthLimit must be given in real units, not logical ones.
+// The widthLimit must be given in real pixels, not logical units.
 // This means that unlike text sizes, the widthLimit won't be internally
 // multiplied by the renderer's scale factor.
 func (self *Renderer) DrawWithWrap(target Target, text string, x, y, widthLimit int) {
