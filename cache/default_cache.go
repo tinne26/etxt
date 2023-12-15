@@ -121,7 +121,7 @@ func (self *DefaultCache) remainingCapacity() uint64 {
 }
 
 // Returns an approximation of the maximum amount of bytes that 
-// the cache has been filled with at any point of its life.
+// the cache has been filled with throughout its life.
 //
 // This method can be useful to determine the actual usage of a cache
 // within your application and set its capacity to a reasonable value.

@@ -13,7 +13,7 @@ This is a complex process that can vary significantly for each script, requiring
 Sadly, there's a hole in Go's landscape when it comes to text shaping: the most official package for font manipulation in Golang, [**sfnt**](https://pkg.go.dev/golang.org/x/image/font/sfnt), does not expose the GSUB and GPOS font tables required to implement text shaping on your own. This forces Golang programmers to either:
 - Fork or reimplement **sfnt** functionality before being able to work on text shaping (or directly contribute to move https://github.com/golang/go/issues/45325 forward).
 - Use CGO bindings to bigger libraries like HarfBuzz. See https://pkg.go.dev/github.com/npillmayer/gotype/engine/text/textshaping.
-- Reimplement bigger libraries like HarfBuzz in pure Go. See https://github.com/go-text/typesetting. This is what Hajime started using in [`ebiten/text/v2`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2), so this is your best choice if you need to support complex scripts at the moment.
+- Reimplement bigger libraries like HarfBuzz in pure Go. See https://github.com/go-text/typesetting. This is what Hajime started using in [`ebiten/v2/text/v2`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2), so this is your best choice if you need to support complex scripts at the moment.
 
 This is a sad situation because while universal text shaping is a gigantic ~~mess~~ problem and it would be quite insane to attempt to roll your own solution when HarfBuzz already exists, the truth is that in some contexts like indie game development, doing text shaping for a single language (e.g, your own) and a controlled set of fonts would be perfectly reasonable. Instead, right now you are forced to either go big or go home.
 

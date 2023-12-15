@@ -4,7 +4,7 @@ package cache
 
 import "image"
 
-// Same as etxt.GlyphMask.
+// Alias for etxt.GlyphMask.
 type GlyphMask = *image.Alpha
 
 const constMaskSizeFactor = 56

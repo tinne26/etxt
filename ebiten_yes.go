@@ -16,7 +16,7 @@ type Target = *ebiten.Image
 
 // A GlyphMask is the image that results from rasterizing a glyph.
 // You rarely need to use glyph masks directly unless you are working
-// with advanced functions.
+// with advanced functions or custom caches.
 //
 // Without Ebitengine, GlyphMask defaults to [*image.Alpha]. The
 // image bounds are adjusted to allow drawing the glyph at its

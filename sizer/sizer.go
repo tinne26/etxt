@@ -27,21 +27,21 @@ type Sizer interface {
 	// as an absolute value.
 	//
 	// The given font and sizes must be consistent with the
-	// latest [Sizer.NotifyChange]() call.
+	// latest Sizer.NotifyChange() call.
 	Ascent(*Font, *Buffer, fract.Unit) fract.Unit
 
 	// Returns the descent of the given font, at the given size,
 	// as an absolute value.
 	//
 	// The given font and sizes must be consistent with the
-	// latest [Sizer.NotifyChange]() call.
+	// latest Sizer.NotifyChange() call.
 	Descent(*Font, *Buffer, fract.Unit) fract.Unit
 
 	// Returns the line gap of the given font, at the given size,
 	// as an absolute value.
 	//
 	// The given font and sizes must be consistent with the
-	// latest [Sizer.NotifyChange]() call.
+	// latest Sizer.NotifyChange() call.
 	LineGap(*Font, *Buffer, fract.Unit) fract.Unit
 
 	// Utility method equivalent to Ascent() + Descent() + LineGap().
@@ -50,7 +50,7 @@ type Sizer interface {
 	// Returns the line advance of the given font at the given size.
 	//
 	// The given font and the size must be consistent with the
-	// latest [Sizer.NotifyChange]() call.
+	// latest Sizer.NotifyChange() call.
 	//
 	// The given int indicates that this is the nth consecutive
 	// call to the method (consecutive line breaks). In most cases,
@@ -62,14 +62,14 @@ type Sizer interface {
 	// and size.
 	//
 	// The given font and the size must be consistent with the
-	// latest [Sizer.NotifyChange]() call.
+	// latest Sizer.NotifyChange() call.
 	GlyphAdvance(*Font, *Buffer, fract.Unit, GlyphIndex) fract.Unit
 
 	// Returns the kerning value between two glyphs of the given font
 	// and size.
 	//
 	// The given font and the size must be consistent with the
-	// latest [Sizer.NotifyChange]() call.
+	// latest Sizer.NotifyChange() call.
 	Kern(*Font, *Buffer, fract.Unit, GlyphIndex, GlyphIndex) fract.Unit
 
 	// Must be called to sync the state of the sizer and allow it

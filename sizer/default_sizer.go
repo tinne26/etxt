@@ -16,39 +16,39 @@ type DefaultSizer struct {
 	unused fract.Unit
 }
 
-// Implements [Sizer.Ascent]().
+// Satisfies the [Sizer] interface.
 func (self *DefaultSizer) Ascent(*Font, *Buffer, fract.Unit) fract.Unit {
 	return self.cachedAscent
 }
 
-// Implements [Sizer.Descent]().
+// Satisfies the [Sizer] interface.
 func (self *DefaultSizer) Descent(*Font, *Buffer, fract.Unit) fract.Unit {
 	return self.cachedDescent
 }
 
-// Implements [Sizer.LineGap]().
+// Satisfies the [Sizer] interface.
 func (self *DefaultSizer) LineGap(*Font, *Buffer, fract.Unit) fract.Unit {
 	return self.cachedLineHeight - self.cachedAscent - self.cachedDescent
 }
 
-// Implements [Sizer.LineHeight]().
+// Satisfies the [Sizer] interface.
 func (self *DefaultSizer) LineHeight(*Font, *Buffer, fract.Unit) fract.Unit {
 	return self.cachedLineHeight
 }
 
-// Implements [Sizer.LineAdvance]().
+// Satisfies the [Sizer] interface.
 func (self *DefaultSizer) LineAdvance(*Font, *Buffer, fract.Unit, int) fract.Unit {
 	return self.cachedLineHeight
 }
 
-// Implements [Sizer.GlyphAdvance]().
+// Satisfies the [Sizer] interface.
 func (self *DefaultSizer) GlyphAdvance(font *Font, buffer *Buffer, size fract.Unit, g GlyphIndex) fract.Unit {
 	advance, err := font.GlyphAdvance(buffer, g, fixed.Int26_6(size), hintingNone)
 	if err == nil { return fract.Unit(advance) }
 	panic("font.GlyphAdvance(index = " + strconv.Itoa(int(g)) + ") error: " + err.Error())
 }
 
-// Implements [Sizer.Kern]().
+// Satisfies the [Sizer] interface.
 func (self *DefaultSizer) Kern(font *Font, buffer *Buffer, size fract.Unit, g1, g2 GlyphIndex) fract.Unit {
 	kern, err := font.Kern(buffer, g1, g2, fixed.Int26_6(size), hintingNone)
 	if err == nil { return fract.Unit(kern) }
@@ -60,7 +60,7 @@ func (self *DefaultSizer) Kern(font *Font, buffer *Buffer, size fract.Unit, g1, 
 	panic(msg)
 }
 
-// Implements [Sizer.NotifyChange]().
+// Satisfies the [Sizer] interface.
 func (self *DefaultSizer) NotifyChange(font *Font, buffer *Buffer, size fract.Unit) {
 	if font == nil || size == 0 {
 		self.cachedAscent     = 0

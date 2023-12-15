@@ -21,11 +21,12 @@ func (self *PaddedAdvanceSizer) SetPadding(value fract.Unit) {
 	self.defaultSizer.unused = value
 }
 
+// Returns the configurable horizontal padding value.
 func (self *PaddedAdvanceSizer) GetPadding() fract.Unit {
 	return self.defaultSizer.unused
 }
 
-// Implements [Sizer.GlyphAdvance]().
+// Satisfies the [Sizer] interface.
 func (self *PaddedAdvanceSizer) GlyphAdvance(font *Font, buffer *Buffer, size fract.Unit, g GlyphIndex) fract.Unit {
 	return self.defaultSizer.GlyphAdvance(font, buffer, size, g) + self.defaultSizer.unused
 }

@@ -5,13 +5,15 @@ import "github.com/tinne26/etxt/fract"
 import "github.com/tinne26/etxt/mask"
 
 // A [GlyphCacheHandler] acts as an intermediator between a glyph cache
-// and another object, typically a Renderer, to give the later a clear
+// and another object, typically a [Renderer], to give the later a clear
 // target interface to conform to while abstracting the details of an
 // underlying cache, which might be finickier to deal with directly
 // in a performant way.
 //
 // Glyph cache handlers can't be used concurrently unless the concrete
 // implementation explicitly says otherwise.
+//
+// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
 type GlyphCacheHandler interface {
 
 	// --- configuration notification methods ---
@@ -28,8 +30,9 @@ type GlyphCacheHandler interface {
 	// rasterizer's CacheSignature() will be used to tell them apart.
 	NotifyRasterizerChange(mask.Rasterizer) // called on config changes too
 
-	// Notifies that the fractional drawing position has changed.
-	// Only the 6 decimal bits must be considered.
+	// Notifies that the fractional drawing position has changed. 
+	// Only the 6 bits corresponding to the non-integer part of each 
+	// coordinate are considered.
 	NotifyFractChange(fract.Point)
 
 	//NotifyOtherChange(any) // more methods like this could be added

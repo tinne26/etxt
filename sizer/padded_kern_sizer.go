@@ -11,16 +11,17 @@ type PaddedKernSizer struct {
 	defaultSizer
 }
 
-// Sets the configurable horizontal padding value.
+// Sets the configurable horizontal kern padding value.
 func (self *PaddedKernSizer) SetPadding(value fract.Unit) {
 	self.defaultSizer.unused = value
 }
 
+// Returns the configurable horizontal kern padding value.
 func (self *PaddedKernSizer) GetPadding() fract.Unit {
 	return self.defaultSizer.unused
 }
 
-// Implements [Sizer.Kern]().
+// Satisfies the [Sizer] interface.
 func (self *PaddedKernSizer) Kern(font *Font, buffer *Buffer, size fract.Unit, g1, g2 GlyphIndex) fract.Unit {
 	return self.defaultSizer.Kern(font, buffer, size, g1, g2) + self.defaultSizer.unused
 }

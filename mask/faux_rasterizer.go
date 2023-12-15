@@ -11,6 +11,9 @@ import "github.com/tinne26/etxt/fract"
 
 var _ Rasterizer = (*FauxRasterizer)(nil)
 
+// TODO: there's an index out of bounds error when we set
+//       high values for SetExtraWidth, take a look at that
+
 // A rasterizer to draw oblique and faux-bold text. For high quality
 // results, please use the font's italic and bold versions directly
 // instead of these fake effects.
@@ -44,9 +47,15 @@ type FauxRasterizer struct {
 	xwidthTail []uint8 // internal implementation detail
 }
 
-// Sets the oblique skewing factor. Values outside the [-1, 1] range will
-// be clamped. 
-// 
+// Sets the oblique skewing factor, which is expected to be in [-1, 1].
+// Values outside this range will be silently clamped.
+//
+// This factor is internally defined to represent skews ranging from 45 to -45
+// degrees. Some practical examples:
+//  - A skew factor of -1 will rasterize glyphs tilted 45 degrees left (backwards leaning).
+//  - A skew factor of 1 will rasterize glyphs tilted 45 degrees right (forwards leaning).
+//  - A skew factor of 0 will rasterize glyphs without any tilt.
+//  - A skew factor of 0.5 will rasterize glyphs tilted 22.5 degrees right (forwards leaning).
 // Most italic fonts have an angle between 6 and 9 degrees, which correspond
 // to skew factors in the [0.13, 0.2] range.
 func (self *FauxRasterizer) SetSkewFactor(factor float32) {
@@ -76,6 +85,8 @@ func (self *FauxRasterizer) SetSkewFactor(factor float32) {
 }
 
 // Gets the skewing factor [-1.0, 1.0] used for the oblique style.
+// See [FauxRasterizer.SetSkewFactor]() if you need details on how
+// to interpret skew values.
 func (self *FauxRasterizer) GetSkewFactor() float32 {
 	return self.skewing
 }
@@ -86,10 +97,12 @@ func (self *FauxRasterizer) GetSkewFactor() float32 {
 //
 // Important: when extra width is used for faux-bold, the glyphs will
 // become wider. If you want to adapt the positioning of the glyphs to
-// account for this widening, you can use an esizer.AdvancePadSizer,
-// link the rasterizer to it through SetAuxOnChangeFunc and update
-// the padding with the value of [FauxRasterizer.GetExtraWidth](), for
-// example.
+// account for this widening, you can use a [sizer.PaddedAdvanceSizer],
+// link the rasterizer to it through [FauxRasterizer.SetAuxOnChangeFunc]()
+// and update the padding with the value of [FauxRasterizer.GetExtraWidth](),
+// for example.
+//
+// [sizer.PaddedAdvanceSizer]: https://pkg.go.dev/github.com/tinne26/etxt/sizer@v0.0.9-alpha.6#PaddedAdvanceSizer
 func (self *FauxRasterizer) SetExtraWidth(extraWidth float32) {
 	// normalize and store new skewing factor
 	if extraWidth <= 0 {
@@ -149,11 +162,11 @@ func (self *FauxRasterizer) GetExtraWidth() float32 {
 //  - 0x0000F00000000000 bits being 0x1 if italics are enabled.
 //  - 0x00000F0000000000 bits being 0xB if bold is enabled.
 //  - 0x000000FF00000000 bits being zero, currently undefined.
-//  - 0x00000000FFFF0000 bits encoding the skewing [-1, 1] as [0, 65535],
-//    with the zero skewing not having a representation here (signatures
+//  - 0x00000000FFFF0000 bits encoding the skew [-1, 1] in the [0, 65535]
+//    range, with the "zero skew" not having a representation (signatures
 //    are still different due to the "italics-enabled" flag).
 //  - 0x000000000000FFFF bits encoding the extra bold width in 64ths of
-//    a pixel and encoded as a uint16.
+//    a pixel and encoded in a uint16.
 func (self *FauxRasterizer) Signature() uint64 {
 	return 0x00FA0000_00000000 | self.signature
 }
@@ -181,8 +194,11 @@ func (self *FauxRasterizer) Rasterize(outline sfnt.Segments, origin fract.Point)
 }
 
 // Like [FauxRasterizer.SetOnChangeFunc], but not reserved for internal
-// Renderer use. This is provided so you can link a custom sizer.Sizer to
+// [Renderer] use. This is provided so you can link a custom [sizer.Sizer] to
 // the rasterizer and get notified when its configuration changes.
+//
+// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
+// [sizer.Sizer]: https://pkg.go.dev/github.com/tinne26/etxt/sizer@v0.0.9-alpha.6#Sizer
 func (self *FauxRasterizer) SetAuxOnChangeFunc(onChange func(*FauxRasterizer)) {
 	self.auxOnChange = onChange
 }

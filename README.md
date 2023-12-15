@@ -7,7 +7,7 @@
 
 [^1]: If you are using pixel-art-like vectorial fonts, read [these tips](https://github.com/tinne26/etxt/blob/main/docs/pixel-tips.md).
 
-While Ebitengine already includes the [**ebiten/text/v2**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2) package, **etxt** offers some advantages over it:
+While Ebitengine already includes the [**ebiten/v2/text/v2**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2) package, **etxt** offers some advantages over it:
 - Makes text size easy to change.
 - Puts emphasis on getting [display scaling](https://github.com/tinne26/etxt/blob/main/docs/display-scaling.md) right.
 - Gets rid of `font.Face` for good.
@@ -17,7 +17,7 @@ While Ebitengine already includes the [**ebiten/text/v2**](https://pkg.go.dev/gi
 
 What **etxt** doesn't do:
 - No general [text layout](https://raphlinus.github.io/text/2020/10/26/text-layout.html). Features like bidi, itemization, shaping, general hit testing, justification and others are not covered and in most cases aren't a primary goal for this package.
-- Poor or no support for [complex scripts](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) (e.g. Arabic) nor vertical text layouts (e.g. Japanese). Notice that [**ebiten/text/v2**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2) fares much better in this regard.
+- Poor or no support for [complex scripts](https://github.com/tinne26/etxt/blob/main/docs/shaping.md) (e.g. Arabic) nor vertical text layouts (e.g. Japanese). Notice that [**ebiten/v2/text/v2**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2) fares much better in this regard.
 - None of the things people actually want: shadows and outlines, gamma correction, subpixel antialiasing, Knuth-Plass line breaking, better support for shaders, etc. Some can already be crudely faked, some will be added in the future... but this is the situation right now.
 
 *If you are unfamiliar with typography terms and concepts, I highly recommend reading the first chapters of [FreeType Glyph Conventions](https://freetype.org/freetype2/docs/glyphs/index.html); one the best references on the topic you can find on the internet.*

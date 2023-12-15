@@ -60,7 +60,7 @@ type vectorTracer interface {
 // origin (0, 0) + the given fractional position by default. To draw it at
 // a specific origin with a matching fractional position, translate the mask by
 // origin.X.Floor() and origin.Y.Floor(). If you don't want to adjust the fractional
-// pixel position, you can call Rasterize with a zero-value fract.Point{}.
+// pixel position, you can call this method with a zero-value [fract.Point]{}.
 //
 // The given drawing coordinate can be your current drawing origin, but as
 // indicated above, only its fractional part will be considered.

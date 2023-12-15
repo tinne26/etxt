@@ -10,7 +10,7 @@ To make it easier to interpret:
 - If you have a fixed point `int26.6`, your `int32` represents 1/64th parts (remember that 64 comes from 2^6) of whatever you are measuring. Pixels in our case.
 
 ## So, why do we have to work with fixed precision numbers?
-I don't know and I didn't bother to figure out, but the thing is that since font outlines are scalable, sometimes we need to work with coordinates that do not exactly match the pixel grid, and fixed point numbers have been traditionally chosen to take care of this. Both 16.16 and 26.6 fixed point types are common when working with fonts, but only 26.6 is used within **etxt**.
+Since font outlines are scalable, sometimes we need to work with coordinates that do not exactly match the pixel grid, and fixed point numbers have been traditionally chosen to take care of this. Modern processors fare much better with floating point operations, but historically, the speedup of using fixed point vs floating point was critical in getting the whole process to be fast. Both 16.16 and 26.6 fixed point types are common when working with fonts, but only 26.6 is used within **etxt**.
 
 ## In which situations do we need fixed precision numbers?
 - After drawing a glyph, the amount of space we need to advance to prepare for drawing the next glyph may leave us at a fractional pixel coordinate.
@@ -31,17 +31,17 @@ Most of the time, to operate with fixed precision numbers you only need to do on
 	- To convert from `float64` to `fixed.Int26_6` you use [`efixed.FromFloat64()`](https://pkg.go.dev/github.com/tinne26/etxt/efixed#FromFloat64) and its variants.
 	- To convert from `fixed.Int26_6` to `float64` you use [`efixed.ToFloat64()`](https://pkg.go.dev/github.com/tinne26/etxt/efixed#ToFloat64).
 
-Quick sample snipet:
+Quick sample snippet:
 ```Golang
 // convert from int to fixed26.6
 myInt := 100
-fixedValue := efixed.FromInt(myInt) // == fixed.Int26_6(myInt << 6)
+fixedValue := fract.FromInt(myInt) // == fixed.Int26_6(myInt << 6)
 
 // add 0.5 to the fixed value
 fixedValue += 32 // 64 would add "1", so 32 is half that, 0.5
 
 // convert to float64 and display
-floatValue  := efixed.ToFloat64(fixedValue) // == float64(fixedValue)/64.0
+floatValue  := fixedValue.ToFloat64() // == float64(fixedValue)/64.0
 fmt.Printf("value = %f\n", floatValue) // prints "value = 100.50000"
 ```
 

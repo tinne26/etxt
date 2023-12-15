@@ -27,7 +27,7 @@ func (self *DefaultRasterizer) SetOnChangeFunc(onChange func(Rasterizer)) {
 }
 
 // Satisfies the [Rasterizer] interface. The signature for the
-// default rasterizer is always zero, and may be customized as
+// default rasterizer is always zero, but may be customized as
 // you want through type embedding and method overriding.
 func (self *DefaultRasterizer) Signature() uint64 { return 0 }
 

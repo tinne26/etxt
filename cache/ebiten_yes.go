@@ -4,7 +4,11 @@ package cache
 
 import "github.com/hajimehoshi/ebiten/v2"
 
-// Refer to etxt.GlyphMask.
+// Same as [etxt.GlyphMask], redefined locally for improved clarity
+// and consistency with the etxt parent package when defining caches
+// and the [GlyphCacheHandler] interface.
+//
+// [etxt.GlyphMask]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#GlyphMask
 type GlyphMask = *ebiten.Image
 
 // Based on Ebitengine internals.

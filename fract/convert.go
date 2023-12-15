@@ -5,7 +5,7 @@ package fract
 // want to account for overflows, check [MinInt] <= value <= [MaxInt].
 func FromInt(value int) Unit { return Unit(value << 6) }
 
-// Converts a float64 to the closest Unit, rounding away from
+// Converts a float64 to the closest [Unit], rounding away from
 // zero in case of ties. Doesn't account for NaNs, infinites
 // nor overflows. See also [FromFloat64Up]() and [FromFloat64Down]().
 func FromFloat64(value float64) Unit {
@@ -13,7 +13,7 @@ func FromFloat64(value float64) Unit {
 	return FromFloat64Down(value)
 }
 
-// Converts a float64 to the closest Unit, rounding up in case
+// Converts a float64 to the closest [Unit], rounding up in case
 // of ties. Doesn't account for NaNs, infinites nor overflows.
 func FromFloat64Up(value float64) Unit {
 	unitApprox := Unit(value*64)
@@ -28,7 +28,7 @@ func FromFloat64Up(value float64) Unit {
 	return unitApprox
 }
 
-// Converts a float64 to the closest Unit, rounding down in case
+// Converts a float64 to the closest [Unit], rounding down in case
 // of ties. Doesn't account for NaNs, infinites nor overflows.
 func FromFloat64Down(value float64) Unit {
 	unitApprox := Unit(value*64)
