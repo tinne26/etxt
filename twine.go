@@ -134,7 +134,7 @@ const (
 	EffectCrossOut TwineEffectKey = 235 // SinglePass + relThickness or nil (= []byte{128})
 	EffectSpoiler TwineEffectKey = 236 // [UNIMPLEMENTED] SinglePass + color or nil (= []byte{black})
 	EffectHighlightA TwineEffectKey = 237 // DoublePass + []byte{r, g, b, a} (alpha is optional)
-	EffectHighlightB TwineEffectKey = 238 // [UNIMPLEMENTED] DoublePass + []byte{r, g, b, a} (alpha is optional)
+	EffectHighlightB TwineEffectKey = 238 // DoublePass + []byte{r, g, b, a} (alpha is optional)
 	EffectHighlightC TwineEffectKey = 239 // [UNIMPLEMENTED] DoublePass + []byte{r, g, b, a} (alpha is optional)
 	EffectHoverA TwineEffectKey = 240 // [UNIMPLEMENTED] DoublePass + []byte{r, g, b, a} (alpha is optional)
 	EffectHoverB TwineEffectKey = 241 // [UNIMPLEMENTED] DoublePass + []byte{r, g, b, a} (alpha is optional)

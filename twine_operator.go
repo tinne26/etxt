@@ -172,7 +172,6 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 		// we can just call line start on everyone anyway.
 		self.effects.AssertAllEffectsActive()
 		self.effects.Each(func(effect *effectOperationData) {
-			effect.origin = position
 			advance := effect.CallLineStart(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position)
 			if advance != 0 {
 				iv.interruptKerning()
@@ -198,7 +197,6 @@ func (self *twineOperator) LineBreak(renderer *Renderer, target Target, position
 			}
 
 			// regular loop logic (update effect positions, call them with TwineTriggerStartLine)
-			effect.origin = position
 			advance := effect.CallLineStart(renderer, target, self.onMeasuringPass, &self.twine, self.lineAscent, self.lineDescent, position)
 			if advance != 0 {
 				iv.interruptKerning()

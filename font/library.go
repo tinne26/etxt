@@ -7,16 +7,16 @@ import "golang.org/x/image/font/sfnt"
 
 // A collection of fonts accessible by name.
 //
-// The goal of a Library is to make it easy to parse fonts in bulk
+// The goal of a library is to make it easy to parse fonts in bulk
 // and keep them all in a single place.
 //
-// A Library doesn't know about system fonts, but there are other
-// packages out there that can find those for you if you need that.
+// A library doesn't know about system fonts, but there are other
+// packages out there that help you with that if you need it.
 type Library struct {
 	fonts map[string]*sfnt.Font
 }
 
-// Creates a new, empty font library.
+// Creates a new, empty font [Library].
 func NewLibrary() *Library {
 	return &Library {
 		fonts: make(map[string]*sfnt.Font),
@@ -76,8 +76,8 @@ func (self *Library) AddFont(font *sfnt.Font) (string, error) {
 
 // Returns false if the font can't be removed due to not being found.
 //
-// This function is rarely necessary unless your program also has some
-// mechanism to keep adding fonts without limit.
+// This function is rarely necessary unless your program exposes font
+// management directly to the user.
 //
 // The given font name must match the name returned by the original font
 // parsing function. Font names can also be recovered through
@@ -109,23 +109,29 @@ func (self *Library) ParseFromBytes(fontBytes []byte) (string, error) {
 	return name, self.addNewFont(font, name)
 }
 
+// A common error that can be returned by [Library.AddFont](), 
+// [Library.ParseFromPath]() and [Library.ParseFromBytes]() indicating
+// that a font hasn't been added due to a font of the same name already
+// being present in the [Library].
 var ErrAlreadyPresent = errors.New("font already present in the library")
+
 func (self *Library) addNewFont(font *sfnt.Font, name string) error {
 	if self.HasFont(name) { return ErrAlreadyPresent }
 	self.fonts[name] = font
 	return nil
 }
 
-// Special error that can be used with EachFont() to break early
-// without causing the function to actually return an error.
+// Special error that can be used with [Library.EachFont]() to
+// break early. When used, the function will return early but still
+// return a nil error.
 var ErrBreakEach = errors.New("EachFont() early break")
 
 // Calls the given function for each font in the library, passing their
 // names and content as arguments, in pseudo-random order.
 //
 // If the given function returns a non-nil error, the method will immediately
-// stop and return that error. Otherwise, [Library.EachFont]() will always
-// return nil.
+// stop and return that error, with the only exception of [ErrBreakEach].
+// Otherwise, [Library.EachFont]() will always return nil.
 //
 // Example code to print the names of all the fonts in the library:
 //   library.EachFont(func(name string, _ *etxt.Font) error {
@@ -147,11 +153,10 @@ func (self *Library) EachFont(fontFunc func(string, *sfnt.Font) error) error {
 // fonts in it. Returns the number of fonts added, the number of fonts skipped
 // (when a font with the same name already exists in the Library) and any error
 // that might happen during the process.
-func (self *Library) ParseAllFromPath(dirName string) (int, int, error) {
+func (self *Library) ParseAllFromPath(dirName string) (added, skipped int, err error) {
 	absDirPath, err := filepath.Abs(dirName)
 	if err != nil { return 0, 0, err }
 
-	parsed, skipped := 0, 0
 	err = filepath.WalkDir(absDirPath,
 		func(path string, info fs.DirEntry, err error) error {
 			if err != nil { return err }
@@ -167,10 +172,10 @@ func (self *Library) ParseAllFromPath(dirName string) (int, int, error) {
 				skipped += 1
 				return nil
 			}
-			if err == nil { parsed += 1 }
+			if err == nil { added += 1 }
 			return err
 		})
-	return parsed, skipped, err
+	return added, skipped, err
 }
 
 // The equivalent of [Library.ParseFromPath]() for filesystems.
@@ -183,7 +188,7 @@ func (self *Library) ParseFromFS(filesys fs.FS, path string) (string, error) {
 
 // The equivalent of [Library.ParseAllFromPath]() for filesystems.
 // This is mainly provided to support [embed.FS] and embedded fonts.
-func (self *Library) ParseAllFromFS(filesys fs.FS, dirName string) (int, int, error) {
+func (self *Library) ParseAllFromFS(filesys fs.FS, dirName string) (added, skipped int, err error) {
 	entries, err := fs.ReadDir(filesys, dirName)
 	if err != nil { return 0, 0, err }
 
@@ -193,7 +198,6 @@ func (self *Library) ParseAllFromFS(filesys fs.FS, dirName string) (int, int, er
 		dirName += "/"
 	}
 
-	parsed, skipped := 0, 0
 	for _, entry := range entries {
 		if entry.IsDir() { continue }
 		valid := hasValidFontExtension(entry.Name())
@@ -204,8 +208,8 @@ func (self *Library) ParseAllFromFS(filesys fs.FS, dirName string) (int, int, er
 			skipped += 1
 			continue
 		}
-		if err != nil { return parsed, skipped, err }
-		parsed += 1
+		if err != nil { return added, skipped, err }
+		added += 1
 	}
-	return parsed, skipped, nil
+	return added, skipped, nil
 }

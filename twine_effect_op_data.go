@@ -60,6 +60,9 @@ func (self *effectOperationData) CallLineStart(renderer *Renderer, target Target
 			}
 		}
 	}
+
+	// compensate origin with start pad
+	self.origin.X += renderer.withTextDirSign(lineStartPad)
 	
 	// invoke function and return advance
 	self.commonCall(renderer, target, measuring, twine, lineAscent, lineDescent, self.origin.X, lineStartPad, postPad, flags)
@@ -96,6 +99,9 @@ func (self *effectOperationData) CallPush(renderer *Renderer, target Target, mea
 			}
 		}
 	}
+
+	// compensate origin with pre pad
+	self.origin.X += renderer.withTextDirSign(prePad)
 
 	// invoke function and return new x position
 	self.commonCall(renderer, target, measuring, twine, lineAscent, lineDescent, self.origin.X, prePad, postPad, flags)
@@ -158,6 +164,7 @@ func (self *effectOperationData) commonCall(renderer *Renderer, target Target, m
 		case EffectOblique    : fn = twineEffectOblique
 		case EffectFauxBold   : fn = twineEffectFauxBold
 		case EffectHighlightA : fn = twineEffectHighlightA
+		case EffectHighlightB : fn = twineEffectHighlightB
 		case EffectCrossOut   : fn = twineEffectCrossOut
 		default:
 			panic("private TwineEffectFunc #" + strconv.Itoa(int(self.key)) + " is not a defined built-in")

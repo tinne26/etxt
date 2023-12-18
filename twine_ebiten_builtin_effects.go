@@ -5,6 +5,8 @@ package etxt
 import "strconv"
 import "image/color"
 
+import "github.com/hajimehoshi/ebiten/v2"
+
 // implements EffectHighlightA (crisp filled rect slightly shifted down)
 func twineEffectHighlightA(renderer *Renderer, target Target, args TwineEffectArgs) {
 	// usage asserts
@@ -34,6 +36,41 @@ func twineEffectHighlightA(renderer *Renderer, target Target, args TwineEffectAr
 		rect.Min.Y = args.Origin.Y - (xheightApprox >> 1) + (xheightApprox >> 4)
 		rect.Max.Y = args.Origin.Y + args.LineDescent + (xheightApprox >> 3)
 		fillOver(rect.Clip(target), clr)
+	case TwineTriggerPop, TwineTriggerLineBreak:
+		// nothing to do here
+	default:
+		panic("unexpected")
+	}
+}
+
+// implements EffectHighlightB (rounded filled rect over the content)
+func twineEffectHighlightB(renderer *Renderer, target Target, args TwineEffectArgs) {
+	// usage asserts
+	args.AssertMode(DoublePass)
+	var clr color.RGBA
+	switch len(args.Payload) {
+	case 3: // RGB
+		clr.R, clr.G, clr.B, clr.A = args.Payload[0], args.Payload[1], args.Payload[2], 255
+	case 4: // RGBA
+		clr.R, clr.G, clr.B, clr.A = args.Payload[0], args.Payload[1], args.Payload[2], args.Payload[3]
+	default:
+		payloadLenStr := strconv.Itoa(len(args.Payload))
+		panic(
+			"EffectHighlightB expects 3 or 4 bytes as the payload (RGB or RGBA bytes), " +
+			"but got " + payloadLenStr + " bytes instead.",
+		)
+	}
+	
+	// bypass if measuring
+	if args.Measuring() { return }
+
+	// handle each trigger situation
+	switch args.GetTrigger() {
+	case TwineTriggerPush, TwineTriggerLineStart:
+		rect := args.RectWithPads()
+		minX, minY, maxX, maxY := rect.ToFloat32s()
+		radius := float32(4.0*ebiten.DeviceScaleFactor())
+		drawRoundedRect(rect.Clip(target), minX, minY, maxX, maxY, radius, clr)
 	case TwineTriggerPop, TwineTriggerLineBreak:
 		// nothing to do here
 	default:

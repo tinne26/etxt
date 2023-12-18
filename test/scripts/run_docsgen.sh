@@ -8,7 +8,7 @@
 
 pkgname="etxt"
 pkgurl="github.com/tinne26/$pkgname"
-subpkgs="mask fract sizer cache"
+subpkgs="mask fract sizer cache font"
 docsfolder="docs/"
 docsprefix="reference_"
 

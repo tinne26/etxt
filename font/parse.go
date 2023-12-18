@@ -22,8 +22,9 @@ func ParseFromBytes(fontBytes []byte) (*sfnt.Font, string, error) {
 	return newFont, fontName, err
 }
 
-// Parses a font and returns it along its name and any
-// possible error. Supported formats are .ttf and .otf.
+// Attempts to parse a font located the given filepath and returns it
+// along its name and any possible error. Supported formats are .ttf
+// and .otf.
 //
 // This is a low level function; you may prefer to use a
 // [Library] instead.

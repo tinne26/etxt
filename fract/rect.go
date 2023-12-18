@@ -59,6 +59,11 @@ func (self Rect) ToFloat64s() (minX, minY, maxX, maxY float64) {
 	return self.Min.X.ToFloat64(), self.Min.Y.ToFloat64(), self.Max.X.ToFloat64(), self.Max.Y.ToFloat64()
 }
 
+// Returns the rect coordinates as a set of four float32s.
+func (self Rect) ToFloat32s() (minX, minY, maxX, maxY float32) {
+	return self.Min.X.ToFloat32(), self.Min.Y.ToFloat32(), self.Max.X.ToFloat32(), self.Max.Y.ToFloat32()
+}
+
 // Returns the width of the rect.
 func (self Rect) Width() Unit {
 	return self.Max.X - self.Min.X

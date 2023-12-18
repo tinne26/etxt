@@ -4,6 +4,7 @@ import "golang.org/x/image/font/sfnt"
 import "sync/atomic"
 import "errors"
 
+// A common error returned by font property getter functions.
 var ErrNotFound = errors.New("font property not found or empty")
 
 // We allocate one sfnt.Buffer so it can be used in FontProperty() calls.
@@ -53,7 +54,7 @@ func GetFamily(font *sfnt.Font) (string, error) {
 // possible (e.g., if the font naming table is invalid).
 //
 // In most cases, the subfamily value will be one of:
-//  - Regular, Italic, Bold, Bold Italic
+//  - "Regular", "Italic", "Bold", "Bold Italic"
 func GetSubfamily(font *sfnt.Font) (string, error) {
 	return GetProperty(font, sfnt.NameIDSubfamily)
 }
@@ -92,7 +93,8 @@ func GetMissingRunes(font *sfnt.Font, text string) ([]rune, error) {
 	return missing, nil
 }
 
-// Simpler alternative to [GetMissingRunes]().
+// Returns true iff the font is missing any of the glyphs required to
+// render the given text. More casual version of [GetMissingRunes]().
 func IsMissingRunes(font *sfnt.Font, text string) (bool, error) {
 	buffer := getSfntBuffer()
 	defer releaseSfntBuffer(buffer)
