@@ -38,7 +38,7 @@ const (
 	BlendSub        BlendMode = 3 // subtract colors (black removes nothing) (alpha = target)
 	BlendMultiply   BlendMode = 4 // multiply % of glyph and target colors and MixOver
 	BlendCut        BlendMode = 5 // cut glyph shape hole based on alpha (cutout text)
-	BlendFiftyFifty BlendMode = 6 // mix glyph and target hues 50%-50% and BlendOver
+	BlendHue        BlendMode = 6 // keep highest alpha, blend hues proportionally
 
 	// TODO: many of the modes above will have some trouble with
 	//       semi-transparency, I should look more into it.
@@ -122,26 +122,27 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 					A: uint16(ca),
 				}
 			})
-	case BlendFiftyFifty: // ---- 50%-50% hue blending ----
+	case BlendHue: // ---- max alpha, proportional hue blending ----
 		self.mixImageInto(mask, target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
-				var nr, ng, nb, na uint32
-				nrgba, isNrgba := new.(color.NRGBA64)
-				if isNrgba {
-					nr, ng, nb, na = uint32(nrgba.R), uint32(nrgba.G), uint32(nrgba.B), uint32(nrgba.A)
-				} else {
-					nr, ng, nb, na = new.RGBA()
-				}
+				var nr, ng, nb, na uint32 = new.RGBA()
 				if na == 0 { return curr }
-				if !isNrgba && na != 65535 { panic("broken assumptions") }
 				cr, cg, cb, ca := curr.RGBA()
-				alphaSum := na + ca
-				if alphaSum > 65535 { alphaSum  = 65535 }
-				partial := color.NRGBA64 {
-					R: uint16((nr + cr)/2),
-					G: uint16((ng + cg)/2),
-					B: uint16((nb + cb)/2),
-					A: uint16(na),
+				if ca == 0 { return new }
+
+				// hue contribution is proportional to alpha.
+				// if both alphas are equal, hue contributions are 50/50
+				ta := ca + na // alpha sum (total)
+				ma := ca      // max alpha
+				if na > ca { ma = na }
+				r := (((nr + cr) >> 1)*ma)/(ta >> 1) // shifts prevent overflows
+				g := (((ng + cg) >> 1)*ma)/(ta >> 1)
+				b := (((nb + cb) >> 1)*ma)/(ta >> 1)
+				partial := color.RGBA64 {
+					R: uint16(r),
+					G: uint16(g),
+					B: uint16(b),
+					A: uint16(ma),
 				}
 				return blendOverFunc(partial, curr)
 			})

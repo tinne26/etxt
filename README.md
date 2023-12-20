@@ -3,11 +3,11 @@
 
 **NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
-**etxt** is a package for [vectorial](https://github.com/tinne26/etxt/blob/main/docs/panorama.md)[^1] text rendering in Golang designed to be used with [**Ebitengine**](https://github.com/hajimehoshi/ebiten), the 2D game engine made by [Hajime Hoshi](https://github.com/hajimehoshi) for Golang.
+**etxt** is a package for [vectorial](https://github.com/tinne26/etxt/blob/main/docs/panorama.md)[^1] text rendering in Golang designed to be used with [**Ebitengine**](https://github.com/hajimehoshi/ebiten), the 2D game engine made by [Hajime Hoshi](https://github.com/hajimehoshi).
 
 [^1]: If you are using pixel-art-like vectorial fonts, read [these tips](https://github.com/tinne26/etxt/blob/main/docs/pixel-tips.md).
 
-While Ebitengine already includes the [**ebiten/v2/text/v2**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2) package, **etxt** offers some advantages over it:
+While Ebitengine already includes the [**ebiten/v2/text/v2**](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2) package, **etxt** has some advantages over it:
 - Makes text size easy to change.
 - Puts emphasis on getting [display scaling](https://github.com/tinne26/etxt/blob/main/docs/display-scaling.md) right.
 - Gets rid of `font.Face` for good.

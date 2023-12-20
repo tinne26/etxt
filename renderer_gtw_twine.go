@@ -72,8 +72,8 @@ func (self *RendererTwine) GetFontIndex() FontIndex {
 }
 
 // Same as [Renderer.Measure](), but expecting a [Twine] instead of a string.
-func (self *RendererTwine) Measure(twine Twine, x, y int) fract.Rect {
-	panic("unimplemented")
+func (self *RendererTwine) Measure(twine Twine) fract.Rect {
+	return (*Renderer)(self).twineMeasure(twine)
 }
 
 // Same as [Renderer.Draw](), but expecting a [Twine] instead of a string.

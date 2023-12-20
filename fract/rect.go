@@ -115,6 +115,22 @@ func (self Rect) Empty() bool {
 	return self.Min.X >= self.Max.X || self.Min.Y >= self.Max.Y
 }
 
+// Returns the result of applying the given paddings to each
+// side of the rect. In other words, the rect's width after the
+// padding is increased by horzPad*2 (likewise for the height
+// with vertPad*2).
+func (self Rect) PadUnits(horzPad, vertPad Unit) Rect {
+	return UnitsToRect(
+		self.Min.X - horzPad, self.Min.Y - vertPad,
+		self.Max.X + horzPad, self.Max.Y + vertPad,
+	)
+}
+
+// Same as [Rect.PadUnits]() but with ints.
+func (self Rect) PadInts(horzMargin, vertMargin int) Rect {
+	return self.PadUnits(FromInt(horzMargin), FromInt(vertMargin))
+}
+
 // Returns the result of translating the rect by the given values.
 func (self Rect) AddUnits(x, y Unit) Rect {
 	self.Min.X += x

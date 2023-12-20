@@ -117,7 +117,7 @@ func (self *twineLineOperator) lineBreakAdvance(renderer *Renderer, position fra
 	return position, iv
 }
 
-func (self *twineLineOperator) MeasureAndAdvanceLine(renderer *Renderer, target Target, iv drawInternalValues, y fract.Unit) (fract.Unit, drawInternalValues) {
+func (self *twineLineOperator) MeasureAndAdvanceLine(renderer *Renderer, target Target, iv drawInternalValues, y fract.Unit) (fract.Unit, drawInternalValues, rune) {
 	// safety assertions
 	self.effects.AssertAllEffectsActive()
 	if self.spacingPendingAdd != nil {
@@ -127,8 +127,9 @@ func (self *twineLineOperator) MeasureAndAdvanceLine(renderer *Renderer, target 
 	// measuring time!
 	finalPass := true
 	var width fract.Unit
-	width, iv = self.measureProc(renderer, target, y, iv, finalPass)
-	return width, iv
+	var breakRune rune
+	width, iv, breakRune = self.measureProc(renderer, target, y, iv, finalPass)
+	return width, iv, breakRune
 }
 
 // Note: on centered draws, the defaultNewLineX should be manually 
@@ -150,7 +151,7 @@ func (self *twineLineOperator) MeasureAndDrawLine(renderer *Renderer, target Tar
 	// measuring time!
 	const finalPass = false
 	var width fract.Unit
-	width, iv = self.measureProc(renderer, target, y, iv, finalPass)
+	width, iv, _ = self.measureProc(renderer, target, y, iv, finalPass)
 	iv.lineBreakNth = memoLineBreakNth
 
 	// prepare for drawing by restoring memorized vars and getting the new position
@@ -207,7 +208,7 @@ loop:
 	return self.drawLineBreak(renderer, target, position, iv)
 }
 
-func (self *twineLineOperator) measureProc(renderer *Renderer, target Target, y fract.Unit, iv drawInternalValues, finalPass bool) (fract.Unit, drawInternalValues) {
+func (self *twineLineOperator) measureProc(renderer *Renderer, target Target, y fract.Unit, iv drawInternalValues, finalPass bool) (fract.Unit, drawInternalValues, rune) {
 	// basically: while measuring, all pops are soft pops. while drawing, all pops are hard pops.
 	// and we probably need some count of something for the "line start effects" (memoEffectCount
 	// may suffice)
@@ -225,6 +226,7 @@ func (self *twineLineOperator) measureProc(renderer *Renderer, target Target, y 
 	})
 
 	// measuring loop
+	var breakRune rune
 	x := position.X
 loop:
 	for {
@@ -232,9 +234,11 @@ loop:
 		switch codePoint {
 		case twineRuneEndOfText:
 			x, iv = self.measurePopAll(renderer, target, x, iv)
+			breakRune = twineRuneEndOfText
 			break loop
 		case '\n':
 			x, iv = self.measureProcessLineBreak(renderer, target, x, iv, finalPass)
+			breakRune = '\n'
 			break loop
 		case rune(twineCcBegin):
 			x, iv = self.measureProcessCC(renderer, target, x, y, iv, finalPass)
@@ -250,7 +254,7 @@ loop:
 	if len(self.nestedNewLineShifts) > 0 {
 		newLineShift = self.nestedNewLineShifts[len(self.nestedNewLineShifts) - 1]
 	}
-	return renderer.withTextDirSign(x - newLineShift), iv
+	return renderer.withTextDirSign(x - newLineShift), iv, breakRune
 }
 
 func (self *twineLineOperator) measureOp(renderer *Renderer, x fract.Unit, glyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Unit, drawInternalValues) {

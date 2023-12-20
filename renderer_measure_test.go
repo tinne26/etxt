@@ -16,6 +16,46 @@ func TestMeasure(t *testing.T) {
 	})
 }
 
+func TestMeasureTwine(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
+	renderer := NewRenderer()
+	renderer.SetFont(testFontA)
+	renderer.Utils().SetCache8MiB()
+
+	var twine Twine
+	testMeasureBasics(t, renderer, func(r *Renderer, str string) fract.Rect {
+		twine.Reset()
+		twine.Add(str)
+		return r.Twine().Measure(twine)
+	})
+}
+
+func TestMeasureComparison(t *testing.T) {
+	if testFontA == nil { t.SkipNow() }
+
+	renderer := NewRenderer()
+	renderer.SetFont(testFontA)
+	renderer.Utils().SetCache8MiB()
+
+	var twine Twine
+	var n int
+	testMeasureBasics(t, renderer, func(r *Renderer, str string) fract.Rect {
+		twine.Reset()
+		twine.Add(str)
+		stdRect   := r.Measure(str)
+		twineRect := r.Twine().Measure(twine)
+		if stdRect != twineRect {
+			t.Fatalf(
+				"On measure comparison #%d: string and twine measurements differ (%s vs %s)",
+				n, stdRect.String(), twineRect.String(),
+			)
+		}
+		n += 1
+		return stdRect
+	})
+}
+
 func TestMeasureWithWrap(t *testing.T) {
 	if testFontA == nil { t.SkipNow() }
 
@@ -71,6 +111,7 @@ func TestMeasureWithWrap(t *testing.T) {
 }
 
 func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, string) fract.Rect) {
+	vertQuant := fract.Unit(renderer.state.vertQuantization)
 	for _, qt := range []fract.Unit{ QtFull, QtHalf, Qt4th, QtNone } {
 		for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {
 			for _, dir := range []Direction{ LeftToRight, RightToLeft } {
@@ -94,6 +135,13 @@ func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, stri
 				w2, h2 := fn(renderer, "hey ho").Size()
 				w3, h3 := fn(renderer, "hey hoo").Size()
 				w4,  _ := fn(renderer, "hey ho.hey ho").Size()
+				fractLineHeight := fract.FromFloat64(renderer.Utils().GetLineHeight())
+				if h1 != fractLineHeight.QuantizeUp(vertQuant) {
+					t.Fatalf( // notice: this could not always be true if there's formatting
+						"expected single line height (%f) to match quantized line height (%f)",
+						h1.ToFloat64(), fractLineHeight.QuantizeUp(vertQuant).ToFloat64(),
+					)
+				}
 				if w3 >= w1*2 {
 					t.Fatalf("expected w3 < w1*2, but got w3 = %d, w1 = %d", w3, w1)
 				}
@@ -113,7 +161,10 @@ func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, stri
 				// line break and spacing tests
 				h5 := fn(renderer, "\n").Height()
 				if h5 != h1 {
-					t.Fatal("expected line break height to match regular line")
+					t.Fatalf(
+						"expected single line break height (%f) to match regular line height (%f)",
+						h5.ToFloat64(), h1.ToFloat64(),
+					)
 				}
 				h6 := fn(renderer, "\n ").Height()
 				if h6 <= h5 {

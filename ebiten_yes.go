@@ -29,7 +29,7 @@ type GlyphMask = *ebiten.Image
 
 // The blend mode specifies how to compose colors when drawing glyphs:
 //  - Without Ebitengine, the blend mode can be BlendOver, BlendReplace,
-//    BlendAdd, BlendSub, BlendMultiply, BlendCut and BlendFiftyFifty.
+//    BlendAdd, BlendSub, BlendMultiply, BlendCut and BlendHue.
 //  - With Ebitengine, the blend mode is Ebitengine's [Blend].
 //
 // I only ever change blend modes to make cutout text, but there's a

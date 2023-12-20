@@ -109,9 +109,8 @@ func (self *Library) ParseFromBytes(fontBytes []byte) (string, error) {
 	return name, self.addNewFont(font, name)
 }
 
-// A common error that can be returned by [Library.AddFont](), 
-// [Library.ParseFromPath]() and [Library.ParseFromBytes]() indicating
-// that a font hasn't been added due to a font of the same name already
+// An error that can be returned by [Library.AddFont](), [Library.ParseFromPath]()
+// and [Library.ParseFromBytes]() when a font is not added due to its name already
 // being present in the [Library].
 var ErrAlreadyPresent = errors.New("font already present in the library")
 
