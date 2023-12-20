@@ -3,7 +3,7 @@ module github.com/tinne26/etxt/examples/gtxt/draw_glyphs
 go 1.18
 
 require (
-	github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220152558-19c2fd4ecb01
+	github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220162842-a6e6b2dda706
 	golang.org/x/image v0.9.0
 )
 

@@ -1,5 +1,5 @@
-github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220152558-19c2fd4ecb01 h1:G25sEWhCFbkjBKb0qyvDK6N6sDo04i0jnAP/R0n0qZA=
-github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220152558-19c2fd4ecb01/go.mod h1:Icbd4bDjrXag1oYIhB51CrkMYqRb7YMv0AsrOSfNKfU=
+github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220162842-a6e6b2dda706 h1:DrwihksLQo+szRYxopsj9tZ/VHpykIAKjBxSZo1X590=
+github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220162842-a6e6b2dda706/go.mod h1:Icbd4bDjrXag1oYIhB51CrkMYqRb7YMv0AsrOSfNKfU=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
