@@ -1,11 +1,8 @@
-module github.com/tinne26/etxt/examples/gtxt/direction_bidi
+module github.com/tinne26/etxt/examples/gtxt/blend_modes
 
 go 1.18
 
-require (
-	github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220152558-19c2fd4ecb01
-	golang.org/x/text v0.11.0
-)
+require github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220152558-19c2fd4ecb01
 
 require (
 	github.com/ebitengine/purego v0.3.0 // indirect
@@ -17,4 +14,5 @@ require (
 	golang.org/x/mobile v0.0.0-20230301163155-e0f57694e12c // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 )

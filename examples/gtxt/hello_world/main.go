@@ -11,13 +11,14 @@ import "log"
 import "fmt"
 
 import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
 
 // Must be compiled with '-tags gtxt'
 
 func main() {
 	const OutImgWidth  = 256
 	const OutImgHeight = 64
-	const TextSizePx   = 32
+	const TextSize     = 32
 
 	// get font path
 	if len(os.Args) != 2 {
@@ -27,19 +28,16 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
-
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(TextSizePx)
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
+	renderer.SetSize(TextSize)
+	renderer.SetFont(sfntFont)
+	renderer.SetAlign(etxt.Center)
 	renderer.SetColor(color.RGBA{0, 0, 0, 255}) // black
 
 	// create target image and fill it with white
@@ -48,9 +46,8 @@ func main() {
 		outImage.Pix[i] = 255
 	}
 
-	// set target and draw
-	renderer.SetTarget(outImage)
-	renderer.Draw("Hello World!", OutImgWidth/2, OutImgHeight/2)
+	// draw the text
+	renderer.Draw(outImage, "Hello World!", OutImgWidth/2, OutImgHeight/2)
 
 	// store image as png
 	filename, err := filepath.Abs("gtxt_hello_world.png")

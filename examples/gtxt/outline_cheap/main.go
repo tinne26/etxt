@@ -10,9 +10,11 @@ import "path/filepath"
 import "log"
 import "fmt"
 
-import "golang.org/x/image/math/fixed"
+import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
+import "github.com/tinne26/etxt/fract"
 
 // Must be compiled with '-tags gtxt'
 
@@ -34,62 +36,52 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
-
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(36)
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
+	renderer.SetSize(36)
+	renderer.SetFont(sfntFont)
+	renderer.SetAlign(etxt.Center)
 	renderer.SetColor(color.RGBA{0, 0, 0, 255}) // black
 
 	// create target image and fill it with white
-	outImage := image.NewRGBA(image.Rect(0, 0, 312, 64))
-	for i := 0; i < 312*64*4; i++ { outImage.Pix[i] = 255 }
-
-	// set target and start drawing each character...
-	renderer.SetTarget(outImage)
+	w, h := 312, 64
+	outImage := image.NewRGBA(image.Rect(0, 0, w, h))
+	for i := 0; i < w*h*4; i++ { outImage.Pix[i] = 255 }
 
 	// The key idea is to draw text repeatedly, slightly shifted
 	// to the left, right, up, down... and finally draw the middle.
-	// We could also do this with separate Draw() calls, but Traverse
-	// should be more efficient here.
+	// We could also do this with separate Draw() calls, but using
+	// a custom function is a more general and tweakable approach.
 	//
 	// We will still draw the main text on a separate call afterwards
 	// in order to avoid the background of a letter being overlayed
 	// on top of a previously drawn letter (won't happen on most fonts
    // or sizes or glyph sequences, but it's possible in some cases).
-	renderer.Traverse("Cheap Outline!", fixed.P(156, 32),
-		func(dot fixed.Point26_6, _ rune, glyphIndex etxt.GlyphIndex) {
-			const DotShift = 1 << 6 // we want to shift the letters 1 pixel
-			                        // to create an outline, but since we are
-											// using fixed precision numbers with 6
-											// bits for the decimal part, we need to
-											// apply this shift for the number to be
-											// correct in fixed.Int26_6 format.
-
-			mask := renderer.LoadGlyphMask(glyphIndex, dot)
-			dot.X -= DotShift // shift left
-			renderer.DefaultDrawFunc(dot, mask, glyphIndex)
-			dot.X += DotShift*2 // shift right
-			renderer.DefaultDrawFunc(dot, mask, glyphIndex)
-			dot.X -= DotShift // restore X to center
-			dot.Y -= DotShift // shift up
-			renderer.DefaultDrawFunc(dot, mask, glyphIndex)
-			dot.Y += DotShift*2 // shift down
-			renderer.DefaultDrawFunc(dot, mask, glyphIndex)
+	renderer.Glyph().SetDrawFunc(
+		func(target etxt.Target, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
+			mask := renderer.Glyph().LoadMask(glyphIndex, origin)
+			origin.X -= fract.One // shift left
+			renderer.Glyph().DrawMask(target, mask, origin)
+			origin.X += fract.One*2 // shift right
+			renderer.Glyph().DrawMask(target, mask, origin)
+			origin.X -= fract.One // restore X to center
+			origin.Y -= fract.One // shift up
+			renderer.Glyph().DrawMask(target, mask, origin)
+			origin.Y += fract.One*2 // shift down
+			renderer.Glyph().DrawMask(target, mask, origin)
 		})
+	renderer.Draw(outImage, "Cheap Outline!", w/2, h/2)
 
 	// finally draw the main text. you can try different colors, but
 	// white makes it look like there's only outline, so that's cool.
 	renderer.SetColor(color.RGBA{255, 255, 255, 255})
-	renderer.Draw("Cheap Outline!", 156, 32)
+	renderer.Glyph().SetDrawFunc(nil) // restore default draw function
+	renderer.Draw(outImage, "Cheap Outline!", 156, 32)
 
 	// store result as png
 	filename, err := filepath.Abs("gtxt_outline_cheap.png")

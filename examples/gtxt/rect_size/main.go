@@ -14,6 +14,7 @@ import "time"
 import "strings"
 
 import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
 
 // Must be compiled with '-tags gtxt'
 
@@ -51,19 +52,16 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
-
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(16)
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
+	renderer.SetSize(16)
+	renderer.SetFont(sfntFont)
+	renderer.SetAlign(etxt.Center)
 	renderer.SetColor(color.RGBA{0, 0, 0, 255}) // black
 
 	// generate the random sentences
@@ -78,18 +76,16 @@ func main() {
 	}
 	fullText := strings.Join(sentences, "\n")
 
-	// determine how much space should it take to draw the sentences,
-	// plus a bit of vertical and horizontal padding
-	rect := renderer.SelectionRect(fullText)
-	w, h := rect.Width.Ceil() + 8, rect.Height.Ceil() + 8
+	// determine how much space should it take to draw the
+	// sentences, plus a bit of vertical and horizontal padding
+	w, h := renderer.Measure(fullText).PadInts(8, 6).IntSize()
 
 	// create target image and fill it with white
 	outImage := image.NewRGBA(image.Rect(0, 0, w, h))
 	for i := 0; i < w*h*4; i++ { outImage.Pix[i] = 255 }
 
-	// set target and draw
-	renderer.SetTarget(outImage)
-	renderer.Draw(fullText, w/2, h/2)
+	// draw the sentences
+	renderer.Draw(outImage, fullText, w/2, h/2)
 
 	// store image as png
 	filename, err := filepath.Abs("gtxt_rect_size.png")

@@ -11,9 +11,11 @@ import "log"
 import "fmt"
 import "strings"
 
-import "github.com/tinne26/etxt"
 import "golang.org/x/text/unicode/bidi"
-import "golang.org/x/image/math/fixed"
+
+import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
+import "github.com/tinne26/etxt/fract"
 
 // Must be compiled with '-tags gtxt'
 
@@ -21,13 +23,6 @@ import "golang.org/x/image/math/fixed"
 // used "El Messiri" (Mohamed Gaber / Jovanny Lemonad, really nice
 // font!) to test, which should be available on google fonts if you
 // want to try it.
-
-// Notice also that this example has its own go.mod to add the bidi
-// dependency. This means that if you cloned the repo you won't be
-// able to run this example from the etxt folder directly, unlike
-// most other examples. You must either use go run from the specific
-// program folder or create a go.work file that uses this location:
-// >> go work use ./examples/gtxt/direction_bidi
 
 // Please understand that this example is only a proof of concept, not
 // a role model if you want to get bidi *right*. Among the limitations:
@@ -49,7 +44,7 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
@@ -58,22 +53,20 @@ func main() {
 	bidiText := `العاشر ليونيكود (Unicode Conference)، الذي سيعقد في 10-12 آذار 1997 مبدينة`
 
 	// verify that the font has both arabic and latin glyphs
-	missingRunes, err := etxt.GetMissingRunes(font, bidiText)
+	missingRunes, err := font.GetMissingRunes(sfntFont, bidiText)
 	if err != nil { log.Fatal(err) }
 	if len(missingRunes) != 0 {
 		log.Print("This example requires a font with both latin and arabic glyphs.")
 		log.Fatalf("Missing glyphs: %s", fmtMissingRunes(missingRunes))
 	}
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
 
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(24)
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.Left)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
+	renderer.SetSize(24)
+	renderer.SetFont(sfntFont)
+	renderer.SetAlign(etxt.VertCenter | etxt.Left)
 	renderer.SetColor(color.RGBA{0, 0, 0, 255}) // black
 
 	// determine right-to-left and left-to-right sections
@@ -93,23 +86,24 @@ func main() {
 			str = applyMirroring(str)
 		}
 		renderer.SetDirection(dir)
-		totalLength += renderer.SelectionRect(str).Width.Ceil()
+		totalLength += renderer.Measure(str).IntWidth()
 	}
 
 	// create target image and fill it with white
-	width := totalLength + 16 // 16px of margin
-	outImage := image.NewRGBA(image.Rect(0, 0, width, 42))
-	for i := 0; i < width*42*4; i++ { outImage.Pix[i] = 255 }
+	lineHeight := int(renderer.Utils().GetLineHeight()*1.4) // includes some padding
+	sideMargin := 16 // margin for each side
+	width := totalLength + sideMargin*2
+	outImage := image.NewRGBA(image.Rect(0, 0, width, lineHeight))
+	for i := 0; i < width*lineHeight*4; i++ { outImage.Pix[i] = 255 }
 
 	// set target and prepare align and starting position
-	renderer.SetTarget(outImage)
-	dot := fixed.Point26_6{ 0, 21*64 }
+	origin := fract.IntsToPoint(0, lineHeight/2)
 	if bidiParagraph.IsLeftToRight() {
-		renderer.SetHorzAlign(etxt.Left)
-		dot.X = 8*64 // 8px
+		renderer.SetAlign(etxt.Left)
+		origin.X = fract.FromInt(sideMargin)
 	} else { // is right to left
-		renderer.SetHorzAlign(etxt.Right)
-		dot.X = fixed.Int26_6((width - 8)*64) // width - 8px
+		renderer.SetAlign(etxt.Right)
+		origin.X = fract.FromInt(width - sideMargin)
 	}
 
 	// draw each ordering run
@@ -122,7 +116,8 @@ func main() {
 		if dir == etxt.RightToLeft {
 			str = applyMirroring(str)
 		}
-		dot.X = renderer.DrawFract(str, dot.X, dot.Y).X // (missing kern!)
+		renderer.Fract().Draw(outImage, str, origin.X, origin.Y) // (missing kern!)
+		origin.X -= renderer.Measure(str).Width()
 	}
 
 	// store image as png

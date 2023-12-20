@@ -11,17 +11,13 @@ import "log"
 import "fmt"
 import "math/rand"
 
-import "golang.org/x/image/math/fixed"
+import "golang.org/x/image/font/sfnt"
 
 import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
+import "github.com/tinne26/etxt/fract"
 
 // Must be compiled with '-tags gtxt'
-
-// NOTE: this is a rather advanced example. The renderer's DefaultDrawFunc
-//       is not enough like in gtxt/rainbow, so we will be doing some
-//       heavy lifting on our side..! If you aren't familiar with fixed
-//       point types, you might also want to take a look at this doc:
-//       >> https://github.com/tinne26/etxt/blob/main/docs/fixed-26-6.md
 
 const fontSize = 48
 func main() {
@@ -33,38 +29,37 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
-
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(fontSize)
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.Baseline, etxt.XCenter)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
+	renderer.SetSize(fontSize)
+	renderer.SetFont(sfntFont)
+	renderer.SetAlign(etxt.Baseline | etxt.HorzCenter)
 	renderer.SetColor(color.RGBA{255, 255, 255, 255}) // white
 
 	// create target image and fill it with black
 	outImage := image.NewRGBA(image.Rect(0, 0, 256, 128))
 	for i := 3; i < 256*128*4; i += 4 { outImage.Pix[i] = 255 }
 
-	// set target and start drawing
-	renderer.SetTarget(outImage)
-	renderer.Traverse("Mirror...?", fixed.P(128, 64),
-		func(dot fixed.Point26_6, _ rune, glyphIndex etxt.GlyphIndex) {
+	// configure a custom drawing function
+	renderer.Glyph().SetDrawFunc(
+		func(target etxt.Target, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
 			// draw the "mirrored" glyph manually *first*, so if there's
 			// any overlap with the main glyph (because we are using a rather
 		   // raw and basic method), the main glyph still gets drawn on top
-			mask := renderer.LoadGlyphMask(glyphIndex, dot)
-			customMirroredDraw(dot, mask, outImage)
+			mask := renderer.Glyph().LoadMask(glyphIndex, origin)
+			customMirroredDraw(outImage, mask, origin)
 
 			// draw the normal letter now
-			renderer.DefaultDrawFunc(dot, mask, glyphIndex)
+			renderer.Glyph().DrawMask(target, mask, origin)
 		})
+
+	// draw using our custom function
+	renderer.Draw(outImage, "Mirror...?", 128, 64)
 
 	// store result as png
 	filename, err := filepath.Abs("gtxt_mirror.png")
@@ -82,10 +77,10 @@ func main() {
 // This is the hardcore part of this program. We will use the mask to
 // manually draw into the target, applying the given dot drawing position
 // and flipping the glyph and stuff.
-func customMirroredDraw(dot fixed.Point26_6, mask etxt.GlyphMask, target *image.RGBA) {
+func customMirroredDraw(target *image.RGBA, mask etxt.GlyphMask, origin fract.Point) {
 	// to draw a mask into a target, we need to displace it by the
 	// current dot (drawing position) and be careful with clipping
-	srcRect, destRect := getDrawBounds(mask.Rect, target.Bounds(), dot)
+	srcRect, destRect := getDrawBounds(mask.Rect, target.Bounds(), origin)
 	if destRect.Empty() { return } // nothing to draw
 
 	// the destRect bounds are not appropriate here, since we want them
@@ -94,7 +89,7 @@ func customMirroredDraw(dot fixed.Point26_6, mask etxt.GlyphMask, target *image.
 	// and this way we don't mix too much stuff in a single place.
 	// ...this also makes this code incorrect under some clipping cases,
 	//    but don't worry about it, we will just panic :D
-	yFlippingPoint := dot.Y.Floor()
+	yFlippingPoint := origin.Y.ToIntFloor()
 	above := yFlippingPoint - destRect.Min.Y
 	below := destRect.Max.Y - yFlippingPoint
 	if below < 0 { below = -below } // take the absolute value
@@ -152,9 +147,9 @@ func customMirroredDraw(dot fixed.Point26_6, mask etxt.GlyphMask, target *image.
 // if it goes out of the target. It's a bit tricky, so here's this nice
 // function that deals with it for you. You can reuse it for your own
 // code any time you need it. I even considered putting some of these
-// trickier functions in a subpackage, but copying is good enough too.
-func getDrawBounds(srcRect, targetRect image.Rectangle, dot fixed.Point26_6) (image.Rectangle, image.Rectangle) {
-	shift := image.Pt(dot.X.Floor(), dot.Y.Floor())
+// trickier functions in a subpackage, but copying is good enough.
+func getDrawBounds(srcRect, targetRect image.Rectangle, origin fract.Point) (image.Rectangle, image.Rectangle) {
+	shift := image.Pt(origin.X.ToIntFloor(), origin.Y.ToIntFloor())
 	destRect := targetRect.Intersect(srcRect.Add(shift))
 	shift.X, shift.Y = -shift.X, -shift.Y
 	return destRect.Add(shift), destRect

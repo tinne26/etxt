@@ -10,15 +10,19 @@ import "path/filepath"
 import "log"
 import "fmt"
 
-import "github.com/tinne26/etxt"
+import "golang.org/x/image/font/sfnt"
 
-import "golang.org/x/image/math/fixed"
+import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
+import "github.com/tinne26/etxt/fract"
 
 // Must be compiled with '-tags gtxt'
 
 // NOTE: see gtxt/mirror if you want a more advanced example of drawing each
-//       character individually. This one uses the renderer's DefaultDrawFunc,
+//       glyph mask in a custom way. This one uses the default glyphs masks,
 //       so all the heavy lifting is already done.
+
+const Text = "RAINBOW" // colors will repeat every 7 letters
 
 func main() {
 	// get font path
@@ -29,29 +33,29 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
-	// (we omit the cache as we don't reuse any letters anyway...)
-	renderer := etxt.NewStdRenderer()
-	renderer.SetSizePx(48)
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
+	// (we omit the cache as we don't reuse any letters...)
+	renderer := etxt.NewRenderer()
+	renderer.SetSize(48)
+	renderer.SetFont(sfntFont)
+	renderer.SetAlign(etxt.Center)
 
 	// create target image and fill it with a white to black gradient
-	outImage := image.NewRGBA(image.Rect(0, 0, 256, 64))
+	width := renderer.Measure(Text).IntWidth() + 24
+	outImage := image.NewRGBA(image.Rect(0, 0, width, 64))
 	for y := 0; y < 64; y++ {
 		lvl := 255 - uint8(y*8)
 		if y >= 32 { lvl = 255 - lvl }
-		for x := 0; x < 256; x++ {
+		for x := 0; x < width; x++ {
 			outImage.Set(x, y, color.RGBA{lvl, lvl, lvl, 255})
 		}
 	}
 
-	// set target and prepare rainbow colors
-	renderer.SetTarget(outImage)
+	// prepare rainbow colors
 	colors := []color.RGBA {
 		color.RGBA{ R: 255, G:   0, B:   0, A: 255 }, // red
 		color.RGBA{ R: 255, G: 165, B:   0, A: 255 }, // orange
@@ -62,15 +66,18 @@ func main() {
 		color.RGBA{ R: 238, G: 130, B: 238, A: 255 }, // violet
 	}
 
-	// draw each letter with a different color
+	// set custom rendering function
 	colorIndex := 0
-	renderer.Traverse("RAINBOW", fixed.P(128, 32),
-		func(dot fixed.Point26_6, _ rune, glyphIndex etxt.GlyphIndex) {
-			renderer.SetColor(colors[colorIndex])
-			mask := renderer.LoadGlyphMask(glyphIndex, dot)
-			renderer.DefaultDrawFunc(dot, mask, glyphIndex)
+	renderer.Glyph().SetDrawFunc(
+		func(target etxt.Target, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
+			renderer.SetColor(colors[colorIndex % 7])
+			mask := renderer.Glyph().LoadMask(glyphIndex, origin)
+			renderer.Glyph().DrawMask(target, mask, origin)
 			colorIndex += 1
 		})
+
+	// draw the text
+	renderer.Draw(outImage, Text, width/2, 32)
 
 	// store result as png
 	filename, err := filepath.Abs("gtxt_rainbow.png")

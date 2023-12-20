@@ -11,6 +11,7 @@ import "log"
 import "fmt"
 
 import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
 
 // Must be compiled with '-tags gtxt'
 
@@ -23,45 +24,38 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
-
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(18)
-	renderer.SetFont(font)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
+	renderer.SetSize(18)
+	renderer.SetFont(sfntFont)
 	renderer.SetColor(color.RGBA{40, 0, 0, 255})
 
 	// create target image and fill it with a dark background color,
 	// four rectangles to draw text with different aligns within each
 	// one, including guide lines and a central mark for each rectangle
 	// (this has nothing to do with etxt, it's only to make it look nice)
-	outImage, targets := makeFancyOutImage()
-
-	// set renderer's target and draw on each target point
-	// with different aligns
-	renderer.SetTarget(outImage)
+	target, targets := makeFancyOutImage()
 
 	// default (Baseline, Left) align
-	// renderer.SetAlign(etxt.Baseline, etxt.Left)
-	renderer.Draw("(Baseline, Left)", targets[0].X, targets[0].Y)
+	// renderer.SetAlign(etxt.Baseline | etxt.Left) // (optional line)
+	renderer.Draw(target, "(Baseline, Left)", targets[0].X, targets[0].Y)
 
-	// (YCenter, XCenter) align
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
-	renderer.Draw("(YCenter, XCenter)", targets[1].X, targets[1].Y)
+	// (VertCenter, HorzCenter) align
+	renderer.SetAlign(etxt.Center)
+	renderer.Draw(target, "(VertCenter, HorzCenter)", targets[1].X, targets[1].Y)
 
 	// (Top, Right) align
-	renderer.SetAlign(etxt.Top, etxt.Right)
-	renderer.Draw("(Top, Right)", targets[2].X, targets[2].Y)
+	renderer.SetAlign(etxt.Top | etxt.Right)
+	renderer.Draw(target, "(Top, Right)", targets[2].X, targets[2].Y)
 
-	// (Bottom, XCenter) align
-	renderer.SetAlign(etxt.Bottom, etxt.XCenter)
-	renderer.Draw("(Bottom, XCenter)", targets[3].X, targets[3].Y)
+	// (Bottom, HorzCenter) align
+	renderer.SetAlign(etxt.Bottom | etxt.HorzCenter)
+	renderer.Draw(target, "(Bottom, HorzCenter)", targets[3].X, targets[3].Y)
 
 	// store image as png
 	filename, err := filepath.Abs("gtxt_aligns.png")
@@ -69,7 +63,7 @@ func main() {
 	fmt.Printf("Output image: %s\n", filename)
 	file, err := os.Create(filename)
 	if err != nil { log.Fatal(err) }
-	err = png.Encode(file, outImage)
+	err = png.Encode(file, target)
 	if err != nil { log.Fatal(err) }
 	err = file.Close()
 	if err != nil { log.Fatal(err) }
@@ -81,7 +75,7 @@ func main() {
 // aligns on top and see how they relate to the given marks.
 //
 // This has nothing to do with etxt itself, so you don't need to understand
-// it, and if you are doing game dev this is trivial for you anyway.
+// it, and if you are doing game dev this will be trivial for you anyway.
 func makeFancyOutImage() (*image.RGBA, [4]image.Point) {
 	// out image properties
 	rectWidth  := 301

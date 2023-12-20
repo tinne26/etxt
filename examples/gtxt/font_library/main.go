@@ -5,7 +5,9 @@ import "path/filepath"
 import "log"
 import "fmt"
 
-import "github.com/tinne26/etxt"
+import "golang.org/x/image/font/sfnt"
+
+import "github.com/tinne26/etxt/font"
 
 // Must be compiled with '-tags gtxt'.
 // This example expects a path to a font directory as the first
@@ -26,8 +28,8 @@ func main() {
 	fmt.Printf("Reading font directory: %s\n", fontDir)
 
 	// create font library
-	fontLib := etxt.NewFontLibrary()
-	added, skipped, err := fontLib.ParseDirFonts(fontDir)
+	fontLib := font.NewLibrary()
+	added, skipped, err := fontLib.ParseAllFromPath(fontDir)
 	if err != nil {
 		log.Fatalf("Added %d fonts, skipped %d, failed with '%s'", added, skipped, err.Error())
 	}
@@ -35,13 +37,13 @@ func main() {
 
 	// print, for each font parsed, its name, family and subfamily
 	err = fontLib.EachFont(
-		func(fontName string, font *etxt.Font) error {
-			family, err := etxt.FontFamily(font)
+		func(fontName string, sfntFont *sfnt.Font) error {
+			family, err := font.GetFamily(sfntFont)
 			if err != nil {
 				log.Printf("(failed to load family for font %s: %s)", fontName, err.Error())
 				family = "unknown"
 			}
-			subfamily, err := etxt.FontSubfamily(font)
+			subfamily, err := font.GetSubfamily(sfntFont)
 			if err != nil {
 				log.Printf("(failed to load subfamily for font %s: %s)", fontName, err.Error())
 				subfamily = "unknown"

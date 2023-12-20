@@ -12,6 +12,7 @@ import "log"
 import "fmt"
 
 import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
 
 // Must be compiled with '-tags gtxt'.
 // This example expects a path to a font directory as the first
@@ -32,16 +33,16 @@ func main() {
 	fmt.Printf("Reading font directory: %s\n", fontDir)
 
 	// create font library, parsing fonts in the given directory
-	fontLib := etxt.NewFontLibrary()
-	added, skipped, err := fontLib.ParseDirFonts(fontDir)
+	fontLib := font.NewLibrary()
+	added, skipped, err := fontLib.ParseAllFromPath(fontDir)
 	if err != nil {
 		log.Fatalf("Added %d fonts, skipped %d, failed with '%s'", added, skipped, err.Error())
 	}
 
 	// create renderer (uncached in this example)
-	renderer := etxt.NewStdRenderer()
-	renderer.SetSizePx(24)
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
+	renderer := etxt.NewRenderer()
+	renderer.SetSize(24)
+	renderer.SetAlign(etxt.Center)
 	renderer.SetColor(color.RGBA{0, 0, 0, 255}) // black
 
 	// determine how much space we will need to draw all
@@ -51,9 +52,9 @@ func main() {
 	err = fontLib.EachFont(
 		func(fontName string, font *etxt.Font) error {
 			renderer.SetFont(font)
-			rect := renderer.SelectionRect(fontName)
-			height += rect.Height.Ceil()
-			if rect.Width.Ceil() > width { width = rect.Width.Ceil() }
+			rect := renderer.Measure(fontName)
+			height += rect.IntHeight()
+			if rect.IntWidth() > width { width = rect.IntWidth() }
 			names = append(names, fontName)
 			return nil
 		})
@@ -67,15 +68,14 @@ func main() {
 	outImage := image.NewRGBA(image.Rect(0, 0, width, height))
 	for i := 0; i < width*height*4; i++ { outImage.Pix[i] = 255 }
 
-	// set target and draw each font name
-	renderer.SetTarget(outImage)
+	// draw each font name in order
 	sort.Strings(names)
 	y := 6
 	for _, name := range names {
 		renderer.SetFont(fontLib.GetFont(name)) // select the proper font
-		h := renderer.SelectionRect(name).Height.Ceil()
+		h := renderer.Measure(name).IntHeight()
 		y += h/2 // advance half of the line height
-		renderer.Draw(name, width/2, y) // draw font centered
+		renderer.Draw(outImage, name, width/2, y) // draw font centered
 		y += h - h/2 // advance remaining line height
 	}
 

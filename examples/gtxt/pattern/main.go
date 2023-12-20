@@ -10,9 +10,11 @@ import "path/filepath"
 import "log"
 import "fmt"
 
-import "github.com/tinne26/etxt"
+import "golang.org/x/image/font/sfnt"
 
-import "golang.org/x/image/math/fixed"
+import "github.com/tinne26/etxt"
+import "github.com/tinne26/etxt/font"
+import "github.com/tinne26/etxt/fract"
 
 // Must be compiled with '-tags gtxt'
 
@@ -29,32 +31,30 @@ func main() {
 	}
 
 	// parse font
-	font, fontName, err := etxt.ParseFontFrom(os.Args[1])
+	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
 	if err != nil { log.Fatal(err) }
 	fmt.Printf("Font loaded: %s\n", fontName)
 
-	// create cache
-	cache := etxt.NewDefaultCache(1024*1024*1024) // 1GB cache
-
 	// create and configure renderer
-	renderer := etxt.NewStdRenderer()
-	renderer.SetCacheHandler(cache.NewHandler())
-	renderer.SetSizePx(64)
-	renderer.SetFont(font)
-	renderer.SetAlign(etxt.YCenter, etxt.XCenter)
+	renderer := etxt.NewRenderer()
+	renderer.Utils().SetCache8MiB()
+	renderer.SetSize(64)
+	renderer.SetFont(sfntFont)
+	renderer.SetAlign(etxt.Center)
 	renderer.SetColor(color.RGBA{255, 255, 255, 255}) // white
 
 	// create target image and fill it with black
-	outImage := image.NewRGBA(image.Rect(0, 0, 360, 64))
-	for i := 3; i < 360*64*4; i += 4 { outImage.Pix[i] = 255 }
+	w, h := 360, 64
+	outImage := image.NewRGBA(image.Rect(0, 0, w, h))
+	for i := 3; i < w*h*4; i += 4 { outImage.Pix[i] = 255 }
 
-	// set target and start drawing
-	renderer.SetTarget(outImage)
-	renderer.Traverse("PATTERN", fixed.P(180, 32),
-		func(dot fixed.Point26_6, _ rune, glyphIndex etxt.GlyphIndex) {
-			mask := renderer.LoadGlyphMask(glyphIndex, dot)
-			drawAsPattern(dot, mask, outImage)
+	// set custom draw func and draw
+	renderer.Glyph().SetDrawFunc(
+		func(target etxt.Target, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
+			mask := renderer.Glyph().LoadMask(glyphIndex, origin)
+			drawAsPattern(outImage, mask, origin)
 		})
+	renderer.Draw(outImage, "PATTERN", 180, 32)
 
 	// store result as png
 	filename, err := filepath.Abs("gtxt_pattern.png")
@@ -69,10 +69,10 @@ func main() {
 	fmt.Print("Program exited successfully.\n")
 }
 
-func drawAsPattern(dot fixed.Point26_6, mask etxt.GlyphMask, target *image.RGBA) {
+func drawAsPattern(target *image.RGBA, mask etxt.GlyphMask, origin fract.Point) {
 	// to draw a mask into a target, we need to displace it by the
-	// current dot (drawing position) and be careful with clipping
-	srcRect, destRect := getDrawBounds(mask.Rect, target.Bounds(), dot)
+	// current drawing position and be careful with clipping
+	srcRect, destRect := getDrawBounds(mask.Rect, target.Bounds(), origin)
 	if destRect.Empty() { return } // nothing to draw
 
 	// we now have two rects that are the same size but identify
@@ -113,8 +113,8 @@ func drawAsPattern(dot fixed.Point26_6, mask etxt.GlyphMask, target *image.RGBA)
 }
 
 // same as in gtxt/mirror
-func getDrawBounds(srcRect, targetRect image.Rectangle, dot fixed.Point26_6) (image.Rectangle, image.Rectangle) {
-	shift := image.Pt(dot.X.Floor(), dot.Y.Floor())
+func getDrawBounds(srcRect, targetRect image.Rectangle, origin fract.Point) (image.Rectangle, image.Rectangle) {
+	shift := image.Pt(origin.X.ToIntFloor(), origin.Y.ToIntFloor())
 	destRect := targetRect.Intersect(srcRect.Add(shift))
 	shift.X, shift.Y = -shift.X, -shift.Y
 	return destRect.Add(shift), destRect
