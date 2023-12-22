@@ -1,5 +1,5 @@
 # etxt
-[![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt@v0.0.9-alpha.6.svg)](https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tinne26/etxt@v0.0.9-alpha.7.svg)](https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7)
 
 **NOTICE: this is a preview of v0.0.9, which is a non-trivial departure from previous versions. For the latest stable version, see [v0.0.8](https://github.com/tinne26/etxt/tree/v0.0.8).**
 
@@ -94,6 +94,7 @@ You can try running this yourself with[^2]:
 ```
 go run github.com/tinne26/etxt/examples/ebiten/words@latest
 ```
+Alternatively, you can go to https://tinne26.github.io/etxt-examples/ and click on the first example for the web version.
 
 [^2]: You will need Golang >=1.18, and if you have never used Ebitengine before, you may need to [install some dependencies](https://ebitengine.org/en/documents/install.html?os=linux) (typically only on Linux or FreeBSD).
 

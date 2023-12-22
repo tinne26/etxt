@@ -6,24 +6,24 @@ The main testing command is the following:
 ```
 go test -tags gtxt ./...
 ```
-While you can test without the `gtxt` tag, most tests won't run because there's no easy way to test Ebitengine graphical output. I made an effort to compare gtxt and Ebitengine results using `go generate`. That's explained in the next section. Outside that, Ebitengine-specific tests exist mainly to help detect build problems.
+While you can test without the `gtxt` tag, most tests won't run because there's no easy way to test Ebitengine's graphical output. I made an effort to compare gtxt and Ebitengine results using `go generate`. That's explained in the next section. Outside that, Ebitengine-specific tests exist mainly to help detect build problems.
 
 Many scripts are provided in `/test/scripts`. For example, you can run the tests with `run_tests.sh` (or `run_tests.bat` if you are on Windows). Here are the results of an example run:
 ```
 $ ./test/scripts/run_tests.sh
 [testing with gtxt...]
-ok      github.com/tinne26/etxt 0.066s  coverage: 29.4% of statements
-ok      github.com/tinne26/etxt/cache   0.052s  coverage: 86.0% of statements
-ok      github.com/tinne26/etxt/font    0.059s  coverage: 88.1% of statements
-ok      github.com/tinne26/etxt/fract   0.057s  coverage: 92.7% of statements
-ok      github.com/tinne26/etxt/mask    0.076s  coverage: 84.9% of statements
+ok      github.com/tinne26/etxt 0.331s  coverage: 44.2% of statements
+ok      github.com/tinne26/etxt/cache   0.266s  coverage: 82.2% of statements
+ok      github.com/tinne26/etxt/font    0.284s  coverage: 82.9% of statements
+ok      github.com/tinne26/etxt/fract   0.307s  coverage: 91.0% of statements
+ok      github.com/tinne26/etxt/mask    0.311s  coverage: 83.5% of statements
 
 [testing with Ebitengine...]
-ok      github.com/tinne26/etxt 0.105s  coverage: 17.9% of statements
-ok      github.com/tinne26/etxt/cache   0.141s  coverage: 86.0% of statements
-ok      github.com/tinne26/etxt/font    0.072s  coverage: 88.1% of statements
-ok      github.com/tinne26/etxt/fract   0.140s  coverage: 92.1% of statements
-ok      github.com/tinne26/etxt/mask    0.158s  coverage: 84.9% of statements
+ok      github.com/tinne26/etxt 0.506s  coverage: 18.0% of statements
+ok      github.com/tinne26/etxt/cache   0.463s  coverage: 82.2% of statements
+ok      github.com/tinne26/etxt/font    0.286s  coverage: 82.9% of statements
+ok      github.com/tinne26/etxt/fract   0.478s  coverage: 90.5% of statements
+ok      github.com/tinne26/etxt/mask    0.546s  coverage: 83.5% of statements
 ```
 
 Scripts also include generation of static documentation, coverage and some benchmarking of custom rasterizers.
@@ -49,6 +49,7 @@ To be honest, this set of tests is fairly limited and simplistic at the moment, 
 High test coverage percentages don't really mean much. Some examples:
 - The whole `go generate` stuff for Ebitengine doesn't even increase coverage.
 - You often have to write many more tests than what's strictly required for coverage to be really confident that something works as intended. I have written many such tests, but many more are still missing.
+- Examples go a long way in improving my confidence that something is working, even if this isn't reflected on tests coverage.
 - Maturity of v0.0.9's API is still quite heterogeneous.
 
 v0.0.9 is still on its infancy and it's likely to be much less stable than v0.0.8. At the same time, it also fixes a few big bugs and makes many, many small quality improvements over v0.0.8.

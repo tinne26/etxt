@@ -6,7 +6,7 @@ import "github.com/tinne26/etxt/fract"
 
 // [Gateway] to [RendererFract] functionality.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7#Renderer
 func (self *Renderer) Fract() *RendererFract {
 	return (*RendererFract)(self)
 }
@@ -26,7 +26,7 @@ func (self *Renderer) Fract() *RendererFract {
 // make sure to check out the [fract] subpackage if you need more context
 // to understand how everything ties together.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7#Renderer
 type RendererFract Renderer
 
 // ---- wrapper methods ----

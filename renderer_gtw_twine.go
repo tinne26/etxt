@@ -10,12 +10,12 @@ import "github.com/tinne26/etxt/fract"
 // In general, this type is used through method chaining:
 //   renderer.Twine().Draw(canvas, twine, x, y)
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7#Renderer
 type RendererTwine Renderer
 
 // [Gateway] to [RendererTwine] functionality.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7#Renderer
 func (self *Renderer) Twine() *RendererTwine {
 	return (*RendererTwine)(self)
 }

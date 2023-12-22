@@ -13,7 +13,7 @@ import "github.com/tinne26/etxt/mask"
 // Glyph cache handlers can't be used concurrently unless the concrete
 // implementation explicitly says otherwise.
 //
-// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.6#Renderer
+// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7#Renderer
 type GlyphCacheHandler interface {
 
 	// --- configuration notification methods ---

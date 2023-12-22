@@ -39,8 +39,8 @@ import "github.com/tinne26/etxt/fract"
 // If you need further help or guidance, consider reading ["advice on 
 // renderers"] and going through the code in the [examples] folder.
 //
-// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/docs/renderer.md
-// [examples]: https://github.com/tinne26/etxt/tree/v0.0.9-alpha.6/examples
+// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/renderer.md
+// [examples]: https://github.com/tinne26/etxt/tree/v0.0.9-alpha.7/examples
 type Renderer struct {
 	state restorableState
 	restorableStates []restorableState
@@ -94,7 +94,7 @@ func NewRenderer() *Renderer {
 // See also [Renderer.SetScale]() for proper handling of high
 // resolution text and display scaling.
 //
-// [general reference]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/docs/px-size.md
+// [general reference]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/px-size.md
 func (self *Renderer) SetSize(size float64) {
 	// TODO: test with size zero for draws and measures and all that,
 	//       as well as fractional but almost zero sizes. the rounding
@@ -123,7 +123,7 @@ func (self *Renderer) GetSize() float64 {
 // The scale must be non-negative. By default, [NewRenderer]()
 // initializes it to 1.0.
 //
-// [this guide]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/docs/display-scaling.md
+// [this guide]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/display-scaling.md
 func (self *Renderer) SetScale(scale float64) {
 	self.fractSetScale(fract.FromFloat64Up(scale))
 }
@@ -175,7 +175,7 @@ func (self *Renderer) GetDirection() Direction {
 //  - If you only have the unparsed font file data, consider [RendererUtils.SetFontBytes]().
 //  - If you need more robust font management, take a look at [etxt/font.Library].
 //
-// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.9-alpha.6#Library
+// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.9-alpha.7#Library
 func (self *Renderer) SetFont(font *sfnt.Font) {
 	// ensure there's enough space in the fonts slice
 	fontIndex := int(self.state.fontIndex)

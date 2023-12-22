@@ -15,5 +15,5 @@
 // offers more methods, more accurate algorithms and is designed
 // to integrate directly with etxt.
 //
-// [fixed point]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.6/docs/fixed-26-6.md
+// [fixed point]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/fixed-26-6.md
 package fract
