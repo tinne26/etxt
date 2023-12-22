@@ -1,4 +1,4 @@
-module github.com/tinne26/etxt/examples/ebiten/elastic_sizer
+module github.com/tinne26/etxt/examples/ebiten/bbcode
 
 go 1.18
 

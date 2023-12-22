@@ -24,7 +24,7 @@ import "github.com/tinne26/etxt/mask"
 // tedious and not very educative.
 // 
 // You can run the example like this:
-//   go run github.com/tinne26/etxt/examples/ebiten/text@latest path/to/font-1.ttf ...
+//   go run github.com/tinne26/etxt/examples/ebiten/twine_demo@latest path/to/font-1.ttf ...
 // You can pass additional fonts for this example, as it allows you
 // to interactively change the font for different text fragments.
 
@@ -34,9 +34,9 @@ const BigNumber = 2_000_000_000 // must fit in int32
 
 var textSamples = []string{
 	"Visit ebitengine.org for the best cooking tips!", // pen highlight and oblique
-	"Oblique text is not that bad,\nbut faux bold can't compete\nagainst actual bold font faces.\n(Use actual bold fonts!)", // oblique, faux bold, small text
+	"Oblique text is not that bad,\nbut faux bold can't compete\nagainst actual bold font faces.\n(Use proper bold fonts!)", // oblique, faux bold, small text
 	"Golang is not bad. Zig is okay-ish.\nCobol is the past, the present and\npleaaase heeeeelp the future.", // color and cross-out
-	"Big, regular, small.\nTake it slow and do not fall.", // sizes
+	"Big, regular, small.\nTake it slowly and do not fall.", // sizes
 	"Unformatted twine playground.",
 }
 
@@ -547,7 +547,7 @@ func (self *Game) updateFontPick() (bool, error) {
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyDelete) {
 		self.mode = EffectPickMode
 		self.auxMenuIndex = self.prevMenuIndex
-		self.refreshFontPickTwine()
+		self.refreshEffectPickTwine()
 		return false, nil
 	}
 

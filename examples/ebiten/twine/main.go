@@ -26,7 +26,7 @@ import "github.com/tinne26/etxt/fract"
 // to build when we want to tailor them to some specific usage context.
 // 
 // You can run the example like this (you need two fonts):
-//   go run github.com/tinne26/etxt/examples/ebiten/text@latest path/to/regular-font.ttf path/to/bold-font.ttf
+//   go run github.com/tinne26/etxt/examples/ebiten/twine@latest path/to/regular-font.ttf path/to/bold-font.ttf
 
 type Game struct {
 	text *etxt.Renderer

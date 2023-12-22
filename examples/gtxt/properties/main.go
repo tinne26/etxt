@@ -15,8 +15,9 @@ import "github.com/tinne26/etxt/font"
 
 // Must be compiled with '-tags gtxt'
 
-// This program prints info about the given font directly
-// to standard output. Mostly metrics.
+// This program prints info about the given font directly to standard
+// output. Mostly metrics. This is less of an example and more a useful
+// tool for debugging and checking specific font metrics.
 
 func main() {
 	// get font path

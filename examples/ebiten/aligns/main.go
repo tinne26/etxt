@@ -165,8 +165,8 @@ func main() {
 
 var horzAligns = []etxt.Align{ etxt.Left, etxt.HorzCenter, etxt.Right }
 var vertAligns = []etxt.Align{
-	etxt.Top, etxt.Midline, etxt.VertCenter, etxt.Baseline,
-	etxt.Bottom, etxt.LastMidline, etxt.LastBaseline,
+	etxt.Top, etxt.CapLine, etxt.Midline, etxt.VertCenter, etxt.Baseline,
+	etxt.Bottom, etxt.LastBaseline,
 }
 
 func nextAlign(aligns []etxt.Align, align etxt.Align) etxt.Align {

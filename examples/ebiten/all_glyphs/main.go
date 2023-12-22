@@ -171,7 +171,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 		self.text.SetAlign(etxt.Baseline | etxt.Right)
 		self.text.SetColor(color.RGBA{92, 92, 92, 255})
 		self.text.SetSize(14)
-		text := fmt.Sprintf("%d..%d of %d glyphs", self.glyphIndex + 1, index, self.numGlyphs)
+		text := fmt.Sprintf("%d to %d (of %d glyphs)", self.glyphIndex + 1, index, self.numGlyphs)
 		self.text.Draw(canvas, text, w - int(8*scale), h - int(8*scale))
 		self.text.Utils().RestoreState()
 	}
