@@ -207,6 +207,9 @@ func (self *Renderer) fractDrawCenterLTR(target Target, text string, lineBreakNt
 	var iv drawInternalValues
 	iv.prevFractX = x.FractShift()
 	iv.lineBreakNth = lineBreakNth
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(position)
+	}
 
 	var iterator ltrStringIterator
 	for {
@@ -237,6 +240,9 @@ func (self *Renderer) fractDrawCenterRTL(target Target, text string, lineBreakNt
 	var iv drawInternalValues
 	iv.prevFractX = x.FractShift()
 	iv.lineBreakNth = lineBreakNth
+	if self.cacheHandler != nil {
+		self.cacheHandler.NotifyFractChange(position)
+	}
 
 	var iterator ltrStringIterator
 	for {
