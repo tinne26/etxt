@@ -33,3 +33,11 @@ func (self *SharpRasterizer) Rasterize(outline sfnt.Segments, origin fract.Point
 	}
 	return mask, err
 }
+
+// Satisfies the [Rasterizer] interface.
+func (self *SharpRasterizer) Signature() uint64 {
+	// the overriding is necessary to prevent glyphs
+	// rasterized by this being mixed up with the
+	// embedded default rasterizer
+	return 0x0099000000000000
+}
