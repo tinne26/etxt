@@ -6,11 +6,11 @@ import "unicode/utf8"
 // on Traverse* operations. Sometimes we iterate lines in reverse,
 // so there's a bit of trickiness here and there.
 
-type ltrStringIterator struct { index int }
+type ltrStringIterator struct{ index int }
 
 func (self *ltrStringIterator) Next(text string) rune {
 	if self.index < len(text) {
-		codePoint, runeSize := utf8.DecodeRuneInString(text[self.index : ])
+		codePoint, runeSize := utf8.DecodeRuneInString(text[self.index:])
 		self.index += runeSize
 		return codePoint
 	} else {
@@ -20,7 +20,7 @@ func (self *ltrStringIterator) Next(text string) rune {
 
 func (self *ltrStringIterator) PeekNext(text string) rune {
 	if self.index < len(text) {
-		codePoint, _ := utf8.DecodeRuneInString(text[self.index : ])
+		codePoint, _ := utf8.DecodeRuneInString(text[self.index:])
 		return codePoint
 	} else {
 		return -1
@@ -32,11 +32,13 @@ func (self *ltrStringIterator) Unroll(codePoint rune) {
 }
 
 func (self *ltrStringIterator) StringLeft(text string) string {
-	if self.index >= len(text) { return "" }
-	return text[self.index : ]
+	if self.index >= len(text) {
+		return ""
+	}
+	return text[self.index:]
 }
 
-type rtlStringIterator struct { head, tail, index int }
+type rtlStringIterator struct{ head, tail, index int }
 
 func (self *rtlStringIterator) Init(text string) {
 	self.tail = 0
@@ -53,8 +55,10 @@ func (self *rtlStringIterator) LineSlide(text string) {
 			self.head += 1
 		} else {
 			for self.head < len(text) { // find next line break or end of string
-				codePoint, runeSize := utf8.DecodeRuneInString(text[self.head : ])
-				if codePoint == '\n' { break }
+				codePoint, runeSize := utf8.DecodeRuneInString(text[self.head:])
+				if codePoint == '\n' {
+					break
+				}
 				self.head += runeSize
 			}
 		}
@@ -64,7 +68,7 @@ func (self *rtlStringIterator) LineSlide(text string) {
 
 func (self *rtlStringIterator) Next(text string) rune {
 	if self.index > self.tail {
-		codePoint, runeSize := utf8.DecodeLastRuneInString(text[ : self.index])
+		codePoint, runeSize := utf8.DecodeLastRuneInString(text[:self.index])
 		self.index -= runeSize
 		if codePoint == '\n' || self.index <= self.tail {
 			self.LineSlide(text)
@@ -77,7 +81,7 @@ func (self *rtlStringIterator) Next(text string) rune {
 
 func (self *rtlStringIterator) PeekNext(text string) rune {
 	if self.index > self.tail {
-		codePoint, _ := utf8.DecodeLastRuneInString(text[ : self.index])
+		codePoint, _ := utf8.DecodeLastRuneInString(text[:self.index])
 		return codePoint
 	} else {
 		return -1

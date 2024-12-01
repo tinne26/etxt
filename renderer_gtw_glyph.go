@@ -1,16 +1,18 @@
 package etxt
 
-import "golang.org/x/image/font/sfnt"
-
-import "github.com/tinne26/etxt/fract"
-import "github.com/tinne26/etxt/mask"
+import (
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+	"golang.org/x/image/font/sfnt"
+)
 
 // This type exists only for documentation and structuring purposes,
 // acting as a [gateway] to perform low level operations related to
 // raw font glyphs and rasterizers.
 //
 // In general, this type is used through method chaining:
-//   renderer.Glyph().LoadMask(glyphIndex, origin)
+//
+//	renderer.Glyph().LoadMask(glyphIndex, origin)
 //
 // This type also uses fractional units for many operations, so it's
 // advisable to be familiar with [RendererFract] and the [etxt/fract]
@@ -49,8 +51,10 @@ func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 // one. You can set it to nil to go back to the default behavior.
 //
 // The default implementation is a streamlined equivalent of:
-//   mask := renderer.Glyph().LoadMask(glyphIndex, origin)
-//   renderer.Glyph().DrawMask(target, mask, origin)
+//
+//	mask := renderer.Glyph().LoadMask(glyphIndex, origin)
+//	renderer.Glyph().DrawMask(target, mask, origin)
+//
 // (Check out [examples/ebiten/colorful] and [examples/ebiten/shaking]
 // if you need practical usage examples)
 //
@@ -68,18 +72,32 @@ func (self *RendererGlyph) SetDrawFunc(drawFn func(Target, sfnt.GlyphIndex, frac
 	self.customDrawFn = drawFn
 }
 
+// Helper type for [RendererGlyph.SetLineChangeFunc]().
+type LineChangeDetails struct {
+	IsWrap      bool
+	ElidedSpace bool
+}
+
+// Sets a function to be called when processing a line break during draw
+// operations. This can be used to detect line wrap space elisions, track
+// draw indices more precisely and a few other advanced use-cases.
+func (self *RendererGlyph) SetLineChangeFunc(lineChangeFn func(LineChangeDetails)) {
+	self.lineChangeFn = lineChangeFn
+}
+
 // Obtains the glyph index for the given rune in the current renderer's
 // font. Panics if the glyph index can't be found.
 //
 // If you need to know whether the glyph mapping exists or not, consider
 // [font.GetMissingRunes]() instead... or the manual approach:
-//   buffer := renderer.GetBuffer()
-//   font := renderer.GetFont()
-//   index, err := font.GlyphIndex(buffer, codePoint)
-//   if err != nil { /* handle */ }
-//   if index == 0 { /* handle notdef glyph */ }
 //
-// [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt/font#GetMissingRunes
+//	buffer := renderer.GetBuffer()
+//	font := renderer.GetFont()
+//	index, err := font.GlyphIndex(buffer, codePoint)
+//	if err != nil { /* handle */ }
+//	if index == 0 { /* handle notdef glyph */ }
+//
+// [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7/font#GetMissingRunes
 func (self *RendererGlyph) GetRuneIndex(codePoint rune) sfnt.GlyphIndex {
 	return (*Renderer)(self).glyphRuneIndex(codePoint)
 }

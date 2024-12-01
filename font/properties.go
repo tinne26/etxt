@@ -15,6 +15,7 @@ var ErrNotFound = errors.New("font property not found or empty")
 // price. Only limitation? Panic recovers can leave it locked as being used.
 var sfntBuffer *sfnt.Buffer
 var usingSfntBuffer uint32 = 0
+
 func getSfntBuffer() *sfnt.Buffer {
 	if !atomic.CompareAndSwapUint32(&usingSfntBuffer, 0, 1) {
 		return nil
@@ -38,7 +39,9 @@ func GetProperty(font *sfnt.Font, property sfnt.NameID) (string, error) {
 	buffer := getSfntBuffer()
 	str, err := font.Name(buffer, property)
 	releaseSfntBuffer(buffer)
-	if err == sfnt.ErrNotFound { return "", ErrNotFound }
+	if err == sfnt.ErrNotFound {
+		return "", ErrNotFound
+	}
 	return str, err
 }
 
@@ -54,7 +57,7 @@ func GetFamily(font *sfnt.Font) (string, error) {
 // possible (e.g., if the font naming table is invalid).
 //
 // In most cases, the subfamily value will be one of:
-//  - "Regular", "Italic", "Bold", "Bold Italic"
+//   - "Regular", "Italic", "Bold", "Bold Italic"
 func GetSubfamily(font *sfnt.Font) (string, error) {
 	return GetProperty(font, sfnt.NameIDSubfamily)
 }
@@ -87,8 +90,12 @@ func GetMissingRunes(font *sfnt.Font, text string) ([]rune, error) {
 	missing := make([]rune, 0)
 	for _, codePoint := range text {
 		index, err := font.GlyphIndex(buffer, codePoint)
-		if err != nil { return missing, err }
-		if index == 0 { missing = append(missing, codePoint) }
+		if err != nil {
+			return missing, err
+		}
+		if index == 0 {
+			missing = append(missing, codePoint)
+		}
 	}
 	return missing, nil
 }
@@ -101,8 +108,12 @@ func IsMissingRunes(font *sfnt.Font, text string) (bool, error) {
 
 	for _, codePoint := range text {
 		index, err := font.GlyphIndex(buffer, codePoint)
-		if err != nil { return false, err }
-		if index == 0 { return true, nil }
+		if err != nil {
+			return false, err
+		}
+		if index == 0 {
+			return true, nil
+		}
 	}
 	return false, nil
 }

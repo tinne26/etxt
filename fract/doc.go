@@ -4,7 +4,7 @@
 // used to improve the rasterization speed is using [fixed point]
 // arithmetic instead of floating point arithmetic — and that's what
 // brings us to this subpackage.
-// 
+//
 // The fract subpackage defines a [Unit] type representing a 26.6
 // fixed point value and provides numerous methods to perform fixed
 // point operations. Additionally, the subpackage also defines the

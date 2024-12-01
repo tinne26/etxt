@@ -18,7 +18,7 @@ type curveSegmenter struct {
 // Returns a signature for the current configuration.
 // Only the lowest 24 bits are used, where the lowest 16 bits
 // are the curve threshold encoded as uint16 (in thousandths),
-// and the next 8 bits store the maximum curve splits as uint8. 
+// and the next 8 bits store the maximum curve splits as uint8.
 func (self *curveSegmenter) Signature() uint64 {
 	return uint64(self.curveThresholdThousandths) | (uint64(self.maxCurveSplits) << 16)
 }
@@ -35,11 +35,15 @@ func (self *curveSegmenter) Signature() uint64 {
 // Values outside the [0, 6.5] range will be silently clamped, and
 // precision is truncated to three decimal places.
 func (self *curveSegmenter) SetThreshold(dist float64) {
-	if dist > 6.5 { dist = 6.5 }
-	if dist <   0 { dist =   0 }
-	self.curveThresholdThousandths = uint16(dist*1000)
+	if dist > 6.5 {
+		dist = 6.5
+	}
+	if dist < 0 {
+		dist = 0
+	}
+	self.curveThresholdThousandths = uint16(dist * 1000)
 	thres := uint64(self.curveThresholdThousandths)
-	self.curveThreshold2 = float64(thres*thres)/1000_000.0
+	self.curveThreshold2 = float64(thres*thres) / 1000_000.0
 }
 
 // Sets the maximum amount of times a curve can be recursively split
@@ -77,9 +81,9 @@ func (self *curveSegmenter) recursiveTraceQuad(lineTo traceFunc, x, y, ctrlX, ct
 
 	ocx, ocy := lerp(x, y, ctrlX, ctrlY, 0.5)   // origin to control
 	cfx, cfy := lerp(ctrlX, ctrlY, fx, fy, 0.5) // control to end
-	ix , iy  := lerp(ocx, ocy, cfx, cfy, 0.5)   // interpolated point
-	x, y = self.recursiveTraceQuad(lineTo, x, y, ocx, ocy, ix, iy, depth + 1)
-	return self.recursiveTraceQuad(lineTo, x, y, cfx, cfy, fx, fy, depth + 1)
+	ix, iy := lerp(ocx, ocy, cfx, cfy, 0.5)     // interpolated point
+	x, y = self.recursiveTraceQuad(lineTo, x, y, ocx, ocy, ix, iy, depth+1)
+	return self.recursiveTraceQuad(lineTo, x, y, cfx, cfy, fx, fy, depth+1)
 }
 
 func (self *curveSegmenter) TraceCube(lineTo traceFunc, x, y, cx1, cy1, cx2, cy2, fx, fy float64) {
@@ -92,14 +96,14 @@ func (self *curveSegmenter) recursiveTraceCube(lineTo traceFunc, x, y, cx1, cy1,
 		return fx, fy
 	}
 
-	oc1x , oc1y  := lerp(x, y, cx1, cy1, 0.5)           // origin to control 1
-	c1c2x, c1c2y := lerp(cx1, cy1, cx2, cy2, 0.5)       // control 1 to control 2
-	c2fx , c2fy  := lerp(cx2, cy2, fx, fy, 0.5)         // control 2 to end
-	iox  , ioy   := lerp(oc1x, oc1y, c1c2x, c1c2y, 0.5) // first interpolation from origin
-	ifx  , ify   := lerp(c1c2x, c1c2y, c2fx, c2fy, 0.5) // second interpolation to end
-	ix   , iy    := lerp(iox, ioy, ifx, ify, 0.5)       // cubic interpolation
-	x, y = self.recursiveTraceCube(lineTo, x, y, oc1x, oc1y, iox, ioy, ix, iy, depth + 1)
-	return self.recursiveTraceCube(lineTo, x, y, ifx, ify, c2fx, c2fy, fx, fy, depth + 1)
+	oc1x, oc1y := lerp(x, y, cx1, cy1, 0.5)         // origin to control 1
+	c1c2x, c1c2y := lerp(cx1, cy1, cx2, cy2, 0.5)   // control 1 to control 2
+	c2fx, c2fy := lerp(cx2, cy2, fx, fy, 0.5)       // control 2 to end
+	iox, ioy := lerp(oc1x, oc1y, c1c2x, c1c2y, 0.5) // first interpolation from origin
+	ifx, ify := lerp(c1c2x, c1c2y, c2fx, c2fy, 0.5) // second interpolation to end
+	ix, iy := lerp(iox, ioy, ifx, ify, 0.5)         // cubic interpolation
+	x, y = self.recursiveTraceCube(lineTo, x, y, oc1x, oc1y, iox, ioy, ix, iy, depth+1)
+	return self.recursiveTraceCube(lineTo, x, y, ifx, ify, c2fx, c2fy, fx, fy, depth+1)
 }
 
 func (self *curveSegmenter) withinThreshold(ox, oy, fx, fy, px, py float64) bool {
@@ -107,5 +111,5 @@ func (self *curveSegmenter) withinThreshold(ox, oy, fx, fy, px, py float64) bool
 	// dist = |a*x + b*y + c| / sqrt(a^2 + b^2)
 	a, b, c := toLinearFormABC(ox, oy, fx, fy)
 	n := a*px + b*py + c
-	return n*n <= self.curveThreshold2*(a*a + b*b)
+	return n*n <= self.curveThreshold2*(a*a+b*b)
 }

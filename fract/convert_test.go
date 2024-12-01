@@ -10,14 +10,14 @@ func TestFromFloat64(t *testing.T) {
 		low  Unit
 		high Unit
 	}{
-		{in:   0.0, low:    0, high:    0},
-		{in:   nzr, low:    0, high:    0},
-		{in:   1.0, low:   64, high:   64},
-		{in:  -1.0, low:  -64, high:  -64},
-		{in:   0.5, low:   32, high:   32},
-		{in:  3.14, low:  201, high:  201},
+		{in: 0.0, low: 0, high: 0},
+		{in: nzr, low: 0, high: 0},
+		{in: 1.0, low: 64, high: 64},
+		{in: -1.0, low: -64, high: -64},
+		{in: 0.5, low: 32, high: 32},
+		{in: 3.14, low: 201, high: 201},
 		{in: -3.14, low: -201, high: -201},
-		{in:  8.33, low:  533, high:  533},
+		{in: 8.33, low: 533, high: 533},
 		{in: 8.3359375, low: 533, high: 534},
 		{in: 8.3359374, low: 533, high: 533},
 		{in: 8.3359376, low: 534, high: 534},

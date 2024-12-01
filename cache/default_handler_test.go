@@ -7,7 +7,7 @@ import "github.com/tinne26/etxt/fract"
 
 func TestDefaultHandler(t *testing.T) {
 	rast := mask.DefaultRasterizer{}
-	cache := NewDefaultCache(16*1024*1024)
+	cache := NewDefaultCache(16 * 1024 * 1024)
 	handler := cache.NewHandler()
 	handler.NotifyFontChange(nil)
 	handler.NotifyRasterizerChange(&rast)
@@ -23,11 +23,17 @@ func TestDefaultHandler(t *testing.T) {
 	}
 
 	_, found := handler.GetMask(9)
-	if found { t.Fatal("no mask in the cache") }
+	if found {
+		t.Fatal("no mask in the cache")
+	}
 	handler.PassMask(9, nil)
 	mask, found := handler.GetMask(9)
-	if !found { t.Fatal("expected mask in cache") }
-	if mask != nil { t.Fatal("expected nil mask") }
+	if !found {
+		t.Fatal("expected mask in cache")
+	}
+	if mask != nil {
+		t.Fatal("expected nil mask")
+	}
 
 	gotSize := handler.Cache().PeakSize()
 	if gotSize != constMaskSizeFactor {
@@ -35,8 +41,12 @@ func TestDefaultHandler(t *testing.T) {
 	}
 
 	mask, found = cache.GetMask([3]uint64{0, 0x0000000000000000, 0x0000030000410009})
-	if !found { t.Fatal("expected mask at the given key") }
-	if mask != nil { t.Fatal("expected nil mask") }
+	if !found {
+		t.Fatal("expected mask at the given key")
+	}
+	if mask != nil {
+		t.Fatal("expected nil mask")
+	}
 
 	preSize := cache.CurrentSize()
 	cache.removeRandOldEntry()
@@ -53,7 +63,9 @@ func TestDefaultHandler(t *testing.T) {
 	}
 
 	gotSize = handler.Cache().CurrentSize()
-	if gotSize != 0 { t.Fatalf("expected 0 bytes, got %d", gotSize) }
+	if gotSize != 0 {
+		t.Fatalf("expected 0 bytes, got %d", gotSize)
+	}
 
 	gotSize = handler.Cache().PeakSize()
 	if gotSize != constMaskSizeFactor {

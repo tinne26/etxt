@@ -1,7 +1,5 @@
 package mask
 
-//import "fmt"
-
 import "image"
 
 import "golang.org/x/image/font/sfnt"
@@ -15,10 +13,12 @@ var _ Rasterizer = (*SharperRasterizer)(nil)
 // CPU; an ideal implementation for Ebitengine would perform a similar
 // process through a shader instead. As of right now, this is offered
 // mostly as a proof of concept.
-type SharperRasterizer struct { DefaultRasterizer }
+type SharperRasterizer struct{ DefaultRasterizer }
 
 func max2(a, b uint8) uint8 {
-	if a >= b { return a }
+	if a >= b {
+		return a
+	}
 	return b
 }
 
@@ -27,20 +27,28 @@ func max3(a, b, c uint8) uint8 {
 }
 
 func stemPick(center, sideA, sideB uint8) uint8 {
-	if sideA == 0 { return max2(center, sideB) }
-	if sideB == 0 { return max2(center, sideA) }
+	if sideA == 0 {
+		return max2(center, sideB)
+	}
+	if sideB == 0 {
+		return max2(center, sideA)
+	}
 	return center
 }
 
 func cornerPick(a, b uint8) uint8 {
-	if a == 0 && b == 0 { return 255 }
+	if a == 0 && b == 0 {
+		return 255
+	}
 	return max2(a, b)
 }
 
 // Satisfies the [Rasterizer] interface.
 func (self *SharperRasterizer) Rasterize(outline sfnt.Segments, origin fract.Point) (*image.Alpha, error) {
 	mask, err := self.DefaultRasterizer.Rasterize(outline, origin)
-	if err != nil { return mask, err }
+	if err != nil {
+		return mask, err
+	}
 	self.sharpen(mask)
 	return mask, nil
 }
@@ -48,11 +56,8 @@ func (self *SharperRasterizer) Rasterize(outline sfnt.Segments, origin fract.Poi
 func (self *SharperRasterizer) sharpen(mask *image.Alpha) {
 	// first pass, correcting corners
 	bounds := mask.Bounds()
-	width  := bounds.Dx()
+	width := bounds.Dx()
 	height := bounds.Dy()
-
-	//fmt.Printf("---- new sharpen ----\n")
-	//fmt.Printf("mask size (%dx%d)\n", width, height)
 
 	var i int = 0
 	for y := 0; y < height; y++ {
@@ -62,15 +67,21 @@ func (self *SharperRasterizer) sharpen(mask *image.Alpha) {
 				i += 1
 				continue
 			}
-			
+
 			// check neighbours
 			var up, down, left, right uint8
-			if y > 0 { up = mask.Pix[i - width] }
-			if y < height - 1 { down = mask.Pix[i + width] }
-			if x > 0 { left = mask.Pix[i - 1] }
-			if x < width - 1 { right = mask.Pix[i + 1] }
-
-			// fmt.Printf("(%d, %d) has up = %d, left = %d, right = %d, down = %d\n", x, y, up, left, right, down)
+			if y > 0 {
+				up = mask.Pix[i-width]
+			}
+			if y < height-1 {
+				down = mask.Pix[i+width]
+			}
+			if x > 0 {
+				left = mask.Pix[i-1]
+			}
+			if x < width-1 {
+				right = mask.Pix[i+1]
+			}
 
 			if up == 255 {
 				if left == 255 {
@@ -98,17 +109,17 @@ func (self *SharperRasterizer) sharpen(mask *image.Alpha) {
 				// isolated fragment cases. I don't know if this is necessary in practice
 				// ok, this should only be done if a solid interior exists
 				if up >= 128 {
-					if left >= 128 && mask.Pix[i - width - 1] >= 128 {
+					if left >= 128 && mask.Pix[i-width-1] >= 128 {
 						mask.Pix[i] = max3(value, up, left)
-					} else if right >= 128 && mask.Pix[i - width + 1] >= 128 {
+					} else if right >= 128 && mask.Pix[i-width+1] >= 128 {
 						mask.Pix[i] = max3(value, up, right)
 					}
 				} else if left >= 128 {
-					if down >= 128 && mask.Pix[i + width - 1] >= 128 {
+					if down >= 128 && mask.Pix[i+width-1] >= 128 {
 						mask.Pix[i] = max3(value, left, down)
 					}
 				} else if right >= 128 {
-					if down >= 128 && mask.Pix[i + width + 1] >= 128  {
+					if down >= 128 && mask.Pix[i+width+1] >= 128 {
 						mask.Pix[i] = max3(value, right, down)
 					}
 				}

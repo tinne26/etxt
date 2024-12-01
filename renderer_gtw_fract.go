@@ -16,11 +16,12 @@ func (self *Renderer) Fract() *RendererFract {
 //
 // Fractional units allow us to operate with a higher level of precision
 // when drawing or measuring text. The use-cases for this are rather
-// limited, though; as a rule of thumb, ignore these advanced features 
+// limited, though; as a rule of thumb, ignore these advanced features
 // unless you find yourself really needing them.
 //
 // In general, this type is used through method chaining:
-//   renderer.Fract().Draw(canvas, text, x, y)
+//
+//	renderer.Fract().Draw(canvas, text, x, y)
 //
 // All the fractional operations depend on the [fract.Unit] type, so
 // make sure to check out the [fract] subpackage if you need more context
@@ -52,7 +53,7 @@ func (self *RendererFract) GetScale() fract.Unit {
 }
 
 // Returns the scaled text size (logicalSize*scale).
-// 
+//
 // Having access to the renderer's scaled font size
 // is useful when working with sizers and trying to
 // obtain specific metrics for advanced use-cases.
@@ -110,7 +111,9 @@ func (self *RendererFract) DrawWithWrap(target Target, text string, x, y fract.U
 
 func (self *Renderer) fractSetSize(size fract.Unit) {
 	// range checks
-	if size < 0 { panic("negative text size") }
+	if size < 0 {
+		panic("negative text size")
+	}
 	if size > 0x000F_FFFF { // maximum 12 bits for the size (~16k max size)
 		panic("size " + strconv.FormatFloat(size.ToFloat64(), 'f', -1, 64) + " too big")
 	}
@@ -120,7 +123,9 @@ func (self *Renderer) fractSetSize(size fract.Unit) {
 	// try to render multiple characters, but... I tried...)
 
 	// set the new size
-	if self.state.logicalSize == size { return }
+	if self.state.logicalSize == size {
+		return
+	}
 	self.state.logicalSize = size
 	self.refreshScaledSize()
 }
@@ -131,10 +136,14 @@ func (self *Renderer) fractGetSize() fract.Unit {
 
 func (self *Renderer) fractSetScale(scale fract.Unit) {
 	// safety check
-	if scale < 0 { panic("negative scaling factor") }
+	if scale < 0 {
+		panic("negative scaling factor")
+	}
 
 	// set new scale
-	if self.state.scale == scale { return }
+	if self.state.scale == scale {
+		return
+	}
 	self.state.scale = scale
 	self.refreshScaledSize()
 }
@@ -146,8 +155,10 @@ func (self *Renderer) fractGetScale() fract.Unit {
 // Must be called after logical size or scale changes.
 func (self *Renderer) refreshScaledSize() {
 	scaledSize := self.scaleLogicalSize(self.state.logicalSize)
-	
-	if scaledSize == self.state.scaledSize { return } // yeah, not likely
+
+	if scaledSize == self.state.scaledSize {
+		return
+	} // yeah, not likely
 	self.state.scaledSize = scaledSize
 
 	// notify changes

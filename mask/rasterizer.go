@@ -5,7 +5,6 @@ import "image"
 import "golang.org/x/image/font/sfnt"
 import "github.com/tinne26/etxt/fract"
 
-
 // Rasterizer is an interface for 2D vector graphics rasterization to an
 // alpha mask. This interface is offered as an open alternative to the
 // concrete [golang.org/x/image/vector.Rasterizer] type (as used by
@@ -72,7 +71,9 @@ func Rasterize(outline sfnt.Segments, rasterizer Rasterizer, origin fract.Point)
 	// TODO: actually, one could argue that this should be on the rasterizer,
 	// as some rasterizers may want to draw something even for empty glyphs...
 	for _, segment := range outline {
-		if segment.Op == sfnt.SegmentOpMoveTo { continue }
+		if segment.Op == sfnt.SegmentOpMoveTo {
+			continue
+		}
 		return rasterizer.Rasterize(outline, origin)
 	}
 	return nil, nil // nothing to draw

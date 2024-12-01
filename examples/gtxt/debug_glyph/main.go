@@ -18,7 +18,7 @@ import "github.com/tinne26/etxt/font"
 // and rasterizers to print mask glyph data directly and be able to
 // see it and analyze it.
 
-const GlyphToDebug = 'A'
+const GlyphToDebug = 'Q'
 
 func main() {
 	// get font path
@@ -35,7 +35,7 @@ func main() {
 
 	// create and configure renderer
 	// (notice that we don't set a cache, no need for a single glyph)
-	const FontSize = 18
+	const FontSize = 10
 	renderer := etxt.NewRenderer()
 	renderer.SetSize(FontSize)
 	renderer.SetFont(sfntFont)

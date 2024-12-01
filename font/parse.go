@@ -17,7 +17,9 @@ import "golang.org/x/image/font/sfnt"
 // [sfnt.Parse]: https://pkg.go.dev/golang.org/x/image/font/sfnt#Parse.
 func ParseFromBytes(fontBytes []byte) (*sfnt.Font, string, error) {
 	newFont, err := sfnt.Parse(fontBytes)
-	if err != nil { return nil, "", err }
+	if err != nil {
+		return nil, "", err
+	}
 	fontName, err := GetName(newFont)
 	return newFont, fontName, err
 }
@@ -37,7 +39,9 @@ func ParseFromPath(path string) (*sfnt.Font, string, error) {
 
 	// open font file
 	file, err := os.Open(path)
-	if err != nil { return nil, "", err }
+	if err != nil {
+		return nil, "", err
+	}
 	return parseFontFileAndClose(file)
 }
 
@@ -54,7 +58,9 @@ func ParseFromFS(filesys fs.FS, path string) (*sfnt.Font, string, error) {
 
 	// open font file
 	file, err := filesys.Open(path)
-	if err != nil { return nil, "", err }
+	if err != nil {
+		return nil, "", err
+	}
 	return parseFontFileAndClose(file)
 }
 
@@ -67,17 +73,29 @@ func parseFontFileAndClose(file io.ReadCloser) (*sfnt.Font, string, error) {
 		return nil, "", err
 	}
 	err = file.Close()
-	if err != nil { return nil, "", err }
+	if err != nil {
+		return nil, "", err
+	}
 	return ParseFromBytes(fontBytes)
 }
 
 // Whether font path ends in .ttf or .otf.
 func hasValidFontExtension(path string) bool {
-	if len(path) < 4 { return false }
-	if path[len(path) - 1] != 'f' { return false }
-	if path[len(path) - 2] != 't' { return false }
-	thrd := path[len(path) - 3]
-	if thrd != 't' && thrd != 'o' { return false }
-	if path[len(path) - 4] != '.' { return false }
+	if len(path) < 4 {
+		return false
+	}
+	if path[len(path)-1] != 'f' {
+		return false
+	}
+	if path[len(path)-2] != 't' {
+		return false
+	}
+	thrd := path[len(path)-3]
+	if thrd != 't' && thrd != 'o' {
+		return false
+	}
+	if path[len(path)-4] != '.' {
+		return false
+	}
 	return true
 }

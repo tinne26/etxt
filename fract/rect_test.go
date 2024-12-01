@@ -4,8 +4,12 @@ import "testing"
 
 func TestRectTrivial(t *testing.T) {
 	rect := UnitsToRect(0, 0, 64, 64)
-	if rect.Width()  != 64 { t.Fatal("incorrect width") }
-	if rect.Height() != 64 { t.Fatal("incorrect width") }
+	if rect.Width() != 64 {
+		t.Fatal("incorrect width")
+	}
+	if rect.Height() != 64 {
+		t.Fatal("incorrect width")
+	}
 
 	imgRect := rect.ImageRect()
 	if imgRect.Min.X != 0 || imgRect.Min.Y != 0 || imgRect.Max.X != 1 || imgRect.Max.Y != 1 {
@@ -46,14 +50,22 @@ func TestRectPoints(t *testing.T) {
 		t.Fatal("expected empty rect")
 	}
 	rect = PointsToRect(pt1, pt2)
-	if rect.String() != pt1.String() + "-" + pt2.String() {
+	if rect.String() != pt1.String()+"-"+pt2.String() {
 		t.Fatalf("unexpected rect.String() value '%s'", rect.String())
 	}
 
-	if !rect.Contains(pt1) { t.Fatal("expected pt1 to be contained") }
-	if  rect.Contains(pt2) { t.Fatal("expected pt2 to NOT be contained") }
-	
+	if !rect.Contains(pt1) {
+		t.Fatal("expected pt1 to be contained")
+	}
+	if rect.Contains(pt2) {
+		t.Fatal("expected pt2 to NOT be contained")
+	}
+
 	rect = rect.AddPoint(pt1)
-	if !rect.Contains(pt1.AddPoint(pt1)) { t.Fatal("expected pt1 + pt1 to be contained") }
-	if  rect.Contains(pt1.AddPoint(pt2)) { t.Fatal("expected pt1 + pt2 to NOT be contained") }
+	if !rect.Contains(pt1.AddPoint(pt1)) {
+		t.Fatal("expected pt1 + pt1 to be contained")
+	}
+	if rect.Contains(pt1.AddPoint(pt2)) {
+		t.Fatal("expected pt1 + pt2 to NOT be contained")
+	}
 }

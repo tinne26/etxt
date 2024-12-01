@@ -10,7 +10,9 @@ import "github.com/tinne26/etxt/mask"
 
 func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) sfnt.GlyphIndex {
 	index, err := font.GlyphIndex(&self.buffer, codePoint)
-	if err != nil { panic("font.GlyphIndex error: " + err.Error()) }
+	if err != nil {
+		panic("font.GlyphIndex error: " + err.Error())
+	}
 	if index == 0 {
 		msg := "glyph index for '" + string(codePoint) + "' ["
 		msg += runeToUnicodeCode(codePoint) + "] missing"
@@ -20,7 +22,9 @@ func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) sfnt.GlyphI
 }
 
 func (self *Renderer) withTextDirSign(value fract.Unit) fract.Unit {
-	if self.state.textDirection == LeftToRight { return value }
+	if self.state.textDirection == LeftToRight {
+		return value
+	}
 	return -value
 }
 
@@ -40,7 +44,9 @@ func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, orig
 	// if the mask is available in the cache, that's all
 	if self.cacheHandler != nil {
 		glyphMask, found := self.cacheHandler.GetMask(index)
-		if found { return glyphMask }
+		if found {
+			return glyphMask
+		}
 	}
 
 	// glyph mask not cached, let's rasterize on our own
@@ -54,7 +60,9 @@ func (self *Renderer) loadGlyphMask(font *sfnt.Font, index sfnt.GlyphIndex, orig
 
 	// rasterize the glyph mask
 	alphaMask, err := mask.Rasterize(segments, self.state.rasterizer, origin)
-	if err != nil { panic("RasterizeGlyphMask failed: " + err.Error()) }
+	if err != nil {
+		panic("RasterizeGlyphMask failed: " + err.Error())
+	}
 
 	// pass to cache and return
 	glyphMask := convertAlphaImageToGlyphMask(alphaMask)
@@ -112,7 +120,9 @@ func (self *Renderer) getOpDescent() fract.Unit {
 func (self *Renderer) getSlowOpXHeight() fract.Unit {
 	const hintingNone = 0
 	metrics, err := self.state.activeFont.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
-	if err != nil { panic("font.Metrics error: " + err.Error()) }
+	if err != nil {
+		panic("font.Metrics error: " + err.Error())
+	}
 	return fract.Unit(metrics.XHeight)
 }
 
@@ -120,6 +130,8 @@ func (self *Renderer) getSlowOpXHeight() fract.Unit {
 func (self *Renderer) getSlowOpCapHeight() fract.Unit {
 	const hintingNone = 0
 	metrics, err := self.state.activeFont.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
-	if err != nil { panic("font.Metrics error: " + err.Error()) }
+	if err != nil {
+		panic("font.Metrics error: " + err.Error())
+	}
 	return fract.Unit(metrics.CapHeight)
 }

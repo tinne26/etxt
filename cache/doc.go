@@ -22,7 +22,7 @@
 // mask on Ebitengine. Then say we will have around 64 different glyphs (there
 // may only be 26 letters in english, but we also need to account for uppercase,
 // numbers, punctuation, variants with diacritic marks, etc.). We would already
-// be around 42KiB of data. If you account for a couple different fonts being 
+// be around 42KiB of data. If you account for a couple different fonts being
 // used in an app, bigger sizes and maybe variants with italics or bold, you get
 // closer to be working with MiBs of data, not KiBs. If you also disable full
 // quantization, each glyph mask will need to be rendered for different subpixel

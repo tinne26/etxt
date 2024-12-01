@@ -13,17 +13,19 @@ type buffer struct {
 // Sets a new Width and Height and resizes the underlying buffer
 // if necessary. The buffer contents are always cleared too.
 func (self *buffer) Resize(width, height int) {
-	if width <= 0 || height <= 0 { panic("width or height <= 0") }
-	self.Width  = width
+	if width <= 0 || height <= 0 {
+		panic("width or height <= 0")
+	}
+	self.Width = width
 	self.Height = height
-	totalLen := width*height
+	totalLen := width * height
 	if len(self.Values) == totalLen {
 		// nothing
 	} else if len(self.Values) > totalLen {
-		self.Values = self.Values[0 : totalLen]
+		self.Values = self.Values[0:totalLen]
 	} else { // len(self.Values) < totalLen
 		if cap(self.Values) >= totalLen {
-			self.Values = self.Values[0 : totalLen]
+			self.Values = self.Values[0:totalLen]
 		} else {
 			self.Values = make([]float64, totalLen)
 			return // stop before ClearBuffer()
@@ -47,12 +49,12 @@ func (self *buffer) AccumulateUint8(buffer []uint8) {
 	index := 0
 	for y := 0; y < self.Height; y++ {
 		accumulator := float64(0)
-		accUint8    := uint8(0)
+		accUint8 := uint8(0)
 		for x := 0; x < self.Width; x++ {
 			value := self.Values[index]
 			if value != 0 { // small optimization
 				accumulator += value
-				accUint8 = uint8(clampUnit64(abs64(accumulator))*255)
+				accUint8 = uint8(clampUnit64(abs64(accumulator)) * 255)
 			}
 			buffer[index] = accUint8
 			index += 1

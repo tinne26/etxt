@@ -14,9 +14,9 @@ import "math"
 // You should manually SetCurveThreshold() and SetMaxCurveSplits() to
 // the desired values.
 type edgeMarker struct {
-	x float64 // current drawing point position
-	y float64 // current drawing point position
-	Buffer buffer
+	x              float64 // current drawing point position
+	y              float64 // current drawing point position
+	Buffer         buffer
 	CurveSegmenter curveSegmenter
 }
 
@@ -53,8 +53,10 @@ func (self *edgeMarker) LineTo(x, y float64) {
 
 	// if the y doesn't change, we are marking an horizontal boundary...
 	// but horizontal boundaries don't have to be marked
-	if math.Abs(deltaY) <= HorizontalityThreshold { return }
-	xAdvancePerY := deltaX/deltaY
+	if math.Abs(deltaY) <= HorizontalityThreshold {
+		return
+	}
+	xAdvancePerY := deltaX / deltaY
 
 	// mark boundaries for every pixel that we pass through
 	for {
@@ -65,8 +67,12 @@ func (self *edgeMarker) LineTo(x, y float64) {
 		// check if we reached targets and clamp
 		atHorzTarget := hasReachedTarget(nextX, x, deltaX)
 		atVertTarget := hasReachedTarget(nextY, y, deltaY)
-		if atHorzTarget { nextX = x }
-		if atVertTarget { nextY = y }
+		if atHorzTarget {
+			nextX = x
+		}
+		if atVertTarget {
+			nextY = y
+		}
 
 		// find distances to next coords
 		horzAdvance := nextX - self.x
@@ -74,14 +80,14 @@ func (self *edgeMarker) LineTo(x, y float64) {
 
 		// determine which whole coordinate we reach first
 		// with the current line direction and position
-		altHorzAdvance := xAdvancePerY*vertAdvance
+		altHorzAdvance := xAdvancePerY * vertAdvance
 		if math.Abs(altHorzAdvance) <= math.Abs(horzAdvance) {
 			// reach vertical whole coord first
 			horzAdvance = altHorzAdvance
 		} else {
 			// reach horizontal whole coord first
 			// (notice that here xAdvancePerY can't be 0)
-			vertAdvance = horzAdvance/xAdvancePerY
+			vertAdvance = horzAdvance / xAdvancePerY
 		}
 
 		// mark the boundary segment traversing the vertical axis at
@@ -93,7 +99,9 @@ func (self *edgeMarker) LineTo(x, y float64) {
 		self.y += vertAdvance
 
 		// return if we reached the final position
-		if atHorzTarget && atVertTarget { return }
+		if atHorzTarget && atVertTarget {
+			return
+		}
 	}
 
 	// *note 1: precision won't cause trouble here. Since we calculated
@@ -136,8 +144,12 @@ func (self *edgeMarker) markBoundary(x, y, horzAdvance, vertAdvance float64) {
 	// stop if going outside bounds (except for negative
 	// x coords, which have to be applied anyway as they
 	// would accumulate)
-	if row < 0 || row >= self.Buffer.Height { return }
-	if col >= self.Buffer.Width { return }
+	if row < 0 || row >= self.Buffer.Height {
+		return
+	}
+	if col >= self.Buffer.Width {
+		return
+	}
 
 	// to mark the boundary, we have to see how much we have moved vertically,
 	// and accumulate that change into the relevant pixel(s). the vertAdvance
@@ -157,39 +169,51 @@ func (self *edgeMarker) markBoundary(x, y, horzAdvance, vertAdvance float64) {
 	totalChange := vertAdvance
 	var partialChange float64
 	if horzAdvance >= 0 {
-		partialChange = (1 - (x - math.Floor(x) + horzAdvance/2))*vertAdvance
+		partialChange = (1 - (x - math.Floor(x) + horzAdvance/2)) * vertAdvance
 	} else { // horzAdvance < 0
-		partialChange = (math.Ceil(x) - x - horzAdvance/2)*vertAdvance
+		partialChange = (math.Ceil(x) - x - horzAdvance/2) * vertAdvance
 	}
 
 	// set the accumulator values
-	self.Buffer.Values[row*self.Buffer.Width + col] += partialChange
-	if col + 1 < self.Buffer.Width {
-		self.Buffer.Values[row*self.Buffer.Width + col + 1] += (totalChange - partialChange)
+	self.Buffer.Values[row*self.Buffer.Width+col] += partialChange
+	if col+1 < self.Buffer.Width {
+		self.Buffer.Values[row*self.Buffer.Width+col+1] += (totalChange - partialChange)
 	}
 }
 
 func hasReachedTarget(current float64, limit float64, deltaSign float64) bool {
-	if deltaSign >= 0 { return current >= limit }
+	if deltaSign >= 0 {
+		return current >= limit
+	}
 	return current <= limit
 }
 
 func nextWholeCoord(position float64, deltaSign float64) float64 {
-	if deltaSign == 0 { return position } // this works for *our* context
+	if deltaSign == 0 {
+		return position
+	} // this works for *our* context
 	if deltaSign > 0 {
 		ceil := math.Ceil(position)
-		if ceil != position { return ceil }
+		if ceil != position {
+			return ceil
+		}
 		return ceil + 1.0
 	} else { // deltaSign < 0
 		floor := math.Floor(position)
-		if floor != position { return floor }
+		if floor != position {
+			return floor
+		}
 		return floor - 1
 	}
 }
 
 func intFloorOfSegment(start, advance float64) int {
 	floor := math.Floor(start)
-	if advance >= 0 { return int(floor) }
-	if floor != start { return int(floor) }
+	if advance >= 0 {
+		return int(floor)
+	}
+	if floor != start {
+		return int(floor)
+	}
 	return int(floor) - 1
 }

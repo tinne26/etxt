@@ -21,7 +21,8 @@ func (self *Renderer) Utils() *RendererUtils {
 // acting as a [gateway] to utility functions for a [Renderer].
 //
 // In general, this type is used through method chaining:
-//   renderer.Utils().SetCache8MiB()
+//
+//	renderer.Utils().SetCache8MiB()
 //
 // The focus of this type are non-essential but handy functions
 // that can make it easier to set up [Renderer] properties or
@@ -45,11 +46,12 @@ func (self *RendererUtils) SetCache8MiB() {
 }
 
 // Utility method to get the current line height. Functionally equivalent to:
-//   font   := renderer.GetFont()
-//   buffer := renderer.GetBuffer()
-//   size   := renderer.Fract().GetScaledSize()
-//   sizer  := renderer.GetSizer()
-//   lineHeight := sizer.LineHeight(font, buffer, size).ToFloat64()
+//
+//	font   := renderer.GetFont()
+//	buffer := renderer.GetBuffer()
+//	size   := renderer.Fract().GetScaledSize()
+//	sizer  := renderer.GetSizer()
+//	lineHeight := sizer.LineHeight(font, buffer, size).ToFloat64()
 func (self *RendererUtils) GetLineHeight() float64 {
 	return (*Renderer)(self).utilsGetLineHeight()
 }
@@ -81,11 +83,12 @@ func (self *RendererUtils) SetFontBytes(data []byte) error {
 // Makes a copy of the current renderer state and pushes it
 // into an internal stack. Stored states can be recovered with
 // [RendererUtils.RestoreState]() in last-in first-out order.
-// 
+//
 // The stored state includes the following properties:
-//  - [Align], color, size, scale, [BlendMode], [FontIndex],
-//    active font, rasterizer, sizer, quantization and
-//    text [Direction].
+//   - [Align], color, size, scale, [BlendMode], [FontIndex],
+//     active font, rasterizer, sizer, quantization and
+//     text [Direction].
+//
 // Notably, custom rendering functions, inactive fonts
 // and the cache handler are not stored.
 //
@@ -107,13 +110,13 @@ func (self *RendererUtils) RestoreState() bool {
 
 // Panics when the size of the stored states stack exceeds
 // the given value. States are stored with [RendererUtils.StoreState]().
-// 
+//
 // There are two main ways to use this function:
-//  - Regularly asserting that the number of stored states
-//    stays below a reasonable limit for your use-case in
-//    order to prevent memory leaks.
-//  - Passing zero whenever you want to ensure that the
-//    states stack is completely empty.
+//   - Regularly asserting that the number of stored states
+//     stays below a reasonable limit for your use-case in
+//     order to prevent memory leaks.
+//   - Passing zero whenever you want to ensure that the
+//     states stack is completely empty.
 func (self *RendererUtils) AssertMaxStoredStates(n int) {
 	if n > len(self.restorableStates) {
 		assertMax := strconv.Itoa(n)
@@ -130,14 +133,16 @@ func (self *Renderer) utilsSetCache8MiB() {
 	// many renderers with different fonts, it may be better
 	// to start creating your own caches.
 	if pkgCache8MiB == nil {
-		pkgCache8MiB = cache.NewDefaultCache(8*1024*1024)
+		pkgCache8MiB = cache.NewDefaultCache(8 * 1024 * 1024)
 	}
 	self.SetCacheHandler(pkgCache8MiB.NewHandler())
 }
 
 func (self *Renderer) utilsSetFontBytes(data []byte) error {
 	font, err := sfnt.Parse(data)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	self.SetFont(font)
 	return nil
 }
@@ -159,10 +164,10 @@ func (self *Renderer) utilsFillMissingProperties() {
 	if self.state.vertQuantization == 0 {
 		self.state.vertQuantization = uint8(QtFull)
 	}
-	if self.state.align & alignVertBits == 0 {
+	if self.state.align&alignVertBits == 0 {
 		self.state.align = self.state.align | Baseline
 	}
-	if self.state.align & alignHorzBits == 0 {
+	if self.state.align&alignHorzBits == 0 {
 		self.state.align = self.state.align | Left
 	}
 
@@ -172,7 +177,7 @@ func (self *Renderer) utilsFillMissingProperties() {
 		refreshSize = true
 	}
 	if self.state.logicalSize == 0 {
-		self.state.logicalSize = 16*fract.One
+		self.state.logicalSize = 16 * fract.One
 		refreshSize = true
 	}
 	if refreshSize {
@@ -190,19 +195,21 @@ func (self *Renderer) utilsStoreState() {
 }
 
 func (self *Renderer) utilsRestoreState() bool {
-	if len(self.restorableStates) == 0 { return false }
+	if len(self.restorableStates) == 0 {
+		return false
+	}
 	last := len(self.restorableStates) - 1
 	self.setState(self.restorableStates[last])
-	self.restorableStates = self.restorableStates[0 : last]
+	self.restorableStates = self.restorableStates[0:last]
 	return true
 }
 
 func (self *Renderer) setState(state restorableState) {
-	initFont  := self.state.activeFont
+	initFont := self.state.activeFont
 	initSizer := self.state.fontSizer
-	initSize  := self.state.scaledSize
-	initRast  := self.state.rasterizer
-	
+	initSize := self.state.scaledSize
+	initRast := self.state.rasterizer
+
 	self.state = state
 
 	// notify changes where relevant
@@ -226,7 +233,9 @@ func (self *Renderer) setState(state restorableState) {
 
 	if self.state.rasterizer != initRast {
 		// clear previous rasterizer onChangeFunc
-		if initRast != nil { initRast.SetOnChangeFunc(nil) }
+		if initRast != nil {
+			initRast.SetOnChangeFunc(nil)
+		}
 
 		// link new rasterizer to the cache handler
 		if self.cacheHandler == nil {

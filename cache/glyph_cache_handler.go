@@ -30,8 +30,8 @@ type GlyphCacheHandler interface {
 	// rasterizer's CacheSignature() will be used to tell them apart.
 	NotifyRasterizerChange(mask.Rasterizer) // called on config changes too
 
-	// Notifies that the fractional drawing position has changed. 
-	// Only the 6 bits corresponding to the non-integer part of each 
+	// Notifies that the fractional drawing position has changed.
+	// Only the 6 bits corresponding to the non-integer part of each
 	// coordinate are considered.
 	NotifyFractChange(fract.Point)
 

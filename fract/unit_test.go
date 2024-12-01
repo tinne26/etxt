@@ -12,8 +12,8 @@ func TestToFloat64(t *testing.T) {
 		out float64
 	}{
 		{0, 0}, {64, 1}, {32, 0.5}, {-32, -0.5},
-		{1, 1.0/64.0}, {2, 2.0/64.0}, {-2, -2.0/64.0},
-		{3, 3.0/64.0}, {63, 63.0/64.0}, {96, 1.5},
+		{1, 1.0 / 64.0}, {2, 2.0 / 64.0}, {-2, -2.0 / 64.0},
+		{3, 3.0 / 64.0}, {63, 63.0 / 64.0}, {96, 1.5},
 		{MinUnit, MinFloat64}, {MaxUnit, MaxFloat64},
 	}
 
@@ -32,8 +32,8 @@ func TestToFloat32(t *testing.T) {
 		out float32
 	}{
 		{0, 0}, {64, 1}, {32, 0.5}, {-32, -0.5},
-		{1, 1.0/64.0}, {2, 2.0/64.0}, {-2, -2.0/64.0},
-		{3, 3.0/64.0}, {63, 63.0/64.0}, {96, 1.5},
+		{1, 1.0 / 64.0}, {2, 2.0 / 64.0}, {-2, -2.0 / 64.0},
+		{3, 3.0 / 64.0}, {63, 63.0 / 64.0}, {96, 1.5},
 	}
 
 	for i, test := range tests {
@@ -82,7 +82,9 @@ func TestFract(t *testing.T) {
 			t.Fatalf(str, i, test.in, test.in.ToFloat64(), test.out, out)
 		}
 		_, fract := math.Modf(test.in.ToFloat64())
-		if fract != out.ToFloat64() { panic("bad test") }
+		if fract != out.ToFloat64() {
+			panic("bad test")
+		}
 	}
 }
 
@@ -91,10 +93,10 @@ func TestToIntFloor(t *testing.T) {
 		in  Unit
 		out int
 	}{
-		{   0,  0}, { 32,  0}, {  96,  1}, {  64,  1},
-		{  65,  1}, { 63,  0}, { -64, -1}, { -65, -2},
-		{ -63, -1}, {-96, -2}, {-127, -2}, {-128, -2},
-		{-129, -3}, {127,  1}, { 129,  2},
+		{0, 0}, {32, 0}, {96, 1}, {64, 1},
+		{65, 1}, {63, 0}, {-64, -1}, {-65, -2},
+		{-63, -1}, {-96, -2}, {-127, -2}, {-128, -2},
+		{-129, -3}, {127, 1}, {129, 2},
 	}
 
 	for i, test := range tests {
@@ -111,10 +113,10 @@ func TestToIntCeil(t *testing.T) {
 		in  Unit
 		out int
 	}{
-		{   0,  0}, { 32,  1}, {  96,  2}, {  64,  1},
-		{  65,  2}, { 63,  1}, { -64, -1}, { -65, -1},
-		{ -63,  0}, {-96, -1}, {-127, -1}, {-128, -2},
-		{-129, -2}, {127,  2}, { 129,  3},
+		{0, 0}, {32, 1}, {96, 2}, {64, 1},
+		{65, 2}, {63, 1}, {-64, -1}, {-65, -1},
+		{-63, 0}, {-96, -1}, {-127, -1}, {-128, -2},
+		{-129, -2}, {127, 2}, {129, 3},
 	}
 
 	for i, test := range tests {
@@ -134,7 +136,7 @@ func TestToIntToward(t *testing.T) {
 	}{
 		{0, +1, 0}, {31, +1, 1}, {32, +1, 1}, {33, +1, 1}, {96, +1, 1}, {64, +1, 1},
 		{0, -1, 0}, {31, -1, 0}, {32, -1, 0}, {33, -1, 0}, {96, -1, 1}, {64, -1, 1},
-		{-31, +1,  0}, {-32, +1,  0}, {-33, +1,  0}, {-96, +1, -1}, {-64, +1, -1},
+		{-31, +1, 0}, {-32, +1, 0}, {-33, +1, 0}, {-96, +1, -1}, {-64, +1, -1},
 		{-31, -1, -1}, {-32, -1, -1}, {-33, -1, -1}, {-96, -1, -1}, {-64, -1, -1},
 		{95, 2, 2}, {-95, -2, -2}, {-128, -2, -2}, {-128, 500, -2}, {-127, 500, -1},
 		{-129, 500, -2},
@@ -158,7 +160,7 @@ func TestToIntAway(t *testing.T) {
 		{0, +1, 0}, {31, +1, 0}, {32, +1, 0}, {33, +1, 0}, {96, +1, 2}, {64, +1, 1},
 		{0, -1, 0}, {31, -1, 1}, {32, -1, 1}, {33, -1, 1}, {96, -1, 2}, {64, -1, 1},
 		{-31, +1, -1}, {-32, +1, -1}, {-33, +1, -1}, {-96, +1, -2}, {-64, +1, -1},
-		{-31, -1,  0}, {-32, -1,  0}, {-33, -1,  0}, {-96, -1, -2}, {-64, -1, -1},
+		{-31, -1, 0}, {-32, -1, 0}, {-33, -1, 0}, {-96, -1, -2}, {-64, -1, -1},
 		{95, 2, 1}, {-95, -2, -1}, {-128, -2, -2}, {-128, 500, -2}, {-127, 500, -2},
 		{-129, 500, -3}, {65, -1, 2},
 	}
@@ -218,7 +220,7 @@ func TestToIntHalfToward(t *testing.T) {
 		ref int
 		out int
 	}{
-		{0,  42, 0}, {64,  42, 1}, {-64,  42, -1}, {128,  42, 2}, {-128,  42, -2},
+		{0, 42, 0}, {64, 42, 1}, {-64, 42, -1}, {128, 42, 2}, {-128, 42, -2},
 		{0, -42, 0}, {64, -42, 1}, {-64, -42, -1}, {128, -42, 2}, {-128, -42, -2},
 		{32, 42, 1}, {31, 42, 0}, {33, 42, 1}, {32, 0, 0}, {31, 0, 0}, {33, 0, 1},
 		{-32, -42, -1}, {-31, -42, 0}, {-33, -42, -1}, {-32, 0, 0}, {-31, 0, 0}, {-33, 0, -1},
@@ -239,7 +241,7 @@ func TestToIntHalfAway(t *testing.T) {
 		ref int
 		out int
 	}{
-		{0,  42, 0}, {64,  42, 1}, {-64,  42, -1}, {128,  42, 2}, {-128,  42, -2},
+		{0, 42, 0}, {64, 42, 1}, {-64, 42, -1}, {128, 42, 2}, {-128, 42, -2},
 		{0, -42, 0}, {64, -42, 1}, {-64, -42, -1}, {128, -42, 2}, {-128, -42, -2},
 		{32, 42, 0}, {31, 42, 0}, {33, 42, 1}, {32, 0, 1}, {31, 0, 0}, {33, 0, 1},
 		{-32, -42, 0}, {-31, -42, 0}, {-33, -42, -1}, {-32, 0, -1}, {-31, 0, 0}, {-33, 0, -1},
@@ -265,10 +267,10 @@ func TestFloor(t *testing.T) {
 		in  Unit
 		out Unit
 	}{
-		{   0,   0}, { 32,  0}, {  96,  64}, {  64, 64},
-		{  65,  64}, { 63,  0}, { -64, -64}, { -65, -128},
-		{ -63, -64}, {-96, -128}, {-127, -128}, {-128, -128},
-		{-129, -192}, {127,  64}, { 129,  128},
+		{0, 0}, {32, 0}, {96, 64}, {64, 64},
+		{65, 64}, {63, 0}, {-64, -64}, {-65, -128},
+		{-63, -64}, {-96, -128}, {-127, -128}, {-128, -128},
+		{-129, -192}, {127, 64}, {129, 128},
 	}
 
 	for i, test := range tests {
@@ -285,10 +287,10 @@ func TestCeil(t *testing.T) {
 		in  Unit
 		out Unit
 	}{
-		{   0,   0}, { 32, 64}, { 96, 128}, { 64,  64},
-		{  65, 128}, { 63, 64}, {-64, -64}, {-65, -64},
-		{ -63,    0}, {-96, -64}, {-127, -64}, {-128, -128},
-		{-129, -128}, {127, 128}, { 129, 192},
+		{0, 0}, {32, 64}, {96, 128}, {64, 64},
+		{65, 128}, {63, 64}, {-64, -64}, {-65, -64},
+		{-63, 0}, {-96, -64}, {-127, -64}, {-128, -128},
+		{-129, -128}, {127, 128}, {129, 192},
 	}
 
 	for i, test := range tests {
@@ -308,7 +310,7 @@ func TestToward(t *testing.T) {
 	}{
 		{0, +1, 0}, {31, +1, 64}, {32, +1, 64}, {33, +1, 64}, {96, +1, 64}, {64, +1, 64},
 		{0, -1, 0}, {31, -1, 0}, {32, -1, 0}, {33, -1, 0}, {96, -1, 64}, {64, -1, 64},
-		{-31, +1,  0}, {-32, +1,  0}, {-33, +1,  0}, {-96, +1, -64}, {-64, +1, -64},
+		{-31, +1, 0}, {-32, +1, 0}, {-33, +1, 0}, {-96, +1, -64}, {-64, +1, -64},
 		{-31, -1, -64}, {-32, -1, -64}, {-33, -1, -64}, {-96, -1, -64}, {-64, -1, -64},
 		{95, 2, 128}, {-95, -2, -128}, {-128, -2, -128}, {-128, 500, -128}, {-127, 500, -64},
 		{-129, 500, -128},
@@ -332,7 +334,7 @@ func TestAway(t *testing.T) {
 		{0, +1, 0}, {31, +1, 0}, {32, +1, 0}, {33, +1, 0}, {96, +1, 128}, {64, +1, 64},
 		{0, -1, 0}, {31, -1, 64}, {32, -1, 64}, {33, -1, 64}, {96, -1, 128}, {64, -1, 64},
 		{-31, +1, -64}, {-32, +1, -64}, {-33, +1, -64}, {-96, +1, -128}, {-64, +1, -64},
-		{-31, -1,  0}, {-32, -1,  0}, {-33, -1,  0}, {-96, -1, -128}, {-64, -1, -64},
+		{-31, -1, 0}, {-32, -1, 0}, {-33, -1, 0}, {-96, -1, -128}, {-64, -1, -64},
 		{95, 2, 64}, {-95, -2, -64}, {-128, -2, -128}, {-128, 500, -128}, {-127, 500, -128},
 		{-129, 500, -192}, {65, -1, 128},
 	}
@@ -392,7 +394,7 @@ func TestHalfToward(t *testing.T) {
 		ref int
 		out Unit
 	}{
-		{0,  42, 0}, {64,  42, 64}, {-64,  42, -64}, {128,  42, 128}, {-128,  42, -128},
+		{0, 42, 0}, {64, 42, 64}, {-64, 42, -64}, {128, 42, 128}, {-128, 42, -128},
 		{0, -42, 0}, {64, -42, 64}, {-64, -42, -64}, {128, -42, 128}, {-128, -42, -128},
 		{32, 42, 64}, {31, 42, 0}, {33, 42, 64}, {32, 0, 0}, {31, 0, 0}, {33, 0, 64},
 		{-32, -42, -64}, {-31, -42, 0}, {-33, -42, -64}, {-32, 0, 0}, {-31, 0, 0}, {-33, 0, -64},
@@ -413,7 +415,7 @@ func TestHalfAway(t *testing.T) {
 		ref int
 		out Unit
 	}{
-		{0,  42, 0}, {64,  42, 64}, {-64,  42, -64}, {128,  42, 128}, {-128,  42, -128},
+		{0, 42, 0}, {64, 42, 64}, {-64, 42, -64}, {128, 42, 128}, {-128, 42, -128},
 		{0, -42, 0}, {64, -42, 64}, {-64, -42, -64}, {128, -42, 128}, {-128, -42, -128},
 		{32, 42, 0}, {31, 42, 0}, {33, 42, 64}, {32, 0, 64}, {31, 0, 0}, {33, 0, 64},
 		{-32, -42, 0}, {-31, -42, 0}, {-33, -42, -64}, {-32, 0, -64}, {-31, 0, 0}, {-33, 0, -64},
@@ -435,11 +437,11 @@ func TestMulUp(t *testing.T) {
 		out float64
 	}{
 		{0, 0, 0}, {0, 35, 0}, {-1125, 0, 0},
-		{64, 182, 182/64.0}, {222, 64, 222/64.0}, 
+		{64, 182, 182 / 64.0}, {222, 64, 222 / 64.0},
 		{64, 64, 1}, {64, -64, -1}, {64, 128, 2}, {128, -64, -2},
-		{64, 32, 0.5}, {-64, -32, 0.5}, {32, -64, -0.5}, 
-		{32, 32, 1/4.0}, {-32, -32, 1/4.0}, {32, -32, -1/4.0}, {-32, 32, -1/4.0},
-		{64*3, 32, 1.5}, {64*2 + 2, 32, 1.0 + 1/64.0}, {64*3, -32, -1.5}, {-64*2 - 2, 32, -1.0 - 1/64.0},
+		{64, 32, 0.5}, {-64, -32, 0.5}, {32, -64, -0.5},
+		{32, 32, 1 / 4.0}, {-32, -32, 1 / 4.0}, {32, -32, -1 / 4.0}, {-32, 32, -1 / 4.0},
+		{64 * 3, 32, 1.5}, {64*2 + 2, 32, 1.0 + 1/64.0}, {64 * 3, -32, -1.5}, {-64*2 - 2, 32, -1.0 - 1/64.0},
 
 		// some of the tricky inexact cases where the +32 makes a difference
 		{-95, 31, -0.718750}, {-94, 30, -0.687500}, {-93, 29, -0.656250},
@@ -463,11 +465,11 @@ func TestMulInt(t *testing.T) {
 		out float64
 	}{
 		{0, 0, 0}, {0, 35, 0}, {-1125, 0, 0},
-		{64, 2, 2.0}, {222, 3, (222*3)/64.0}, 
+		{64, 2, 2.0}, {222, 3, (222 * 3) / 64.0},
 		{64, 64, 64.0}, {64, -1, -1}, {64, 128, 128}, {128, -64, -128},
-		{32, 1, 0.5}, {-32, -1, 0.5}, {32, -1, -0.5}, 
+		{32, 1, 0.5}, {-32, -1, 0.5}, {32, -1, -0.5},
 		{32, 2, 1.0}, {-32, -2, 1.0}, {32, -2, -1.0},
-		{64*3, 4, 12}, {96, -3, -4.5}, {-96, -2, 3},
+		{64 * 3, 4, 12}, {96, -3, -4.5}, {-96, -2, 3},
 	}
 
 	for i, test := range tests {
@@ -482,8 +484,12 @@ func TestMulInt(t *testing.T) {
 func NewRng() *mrand.Rand {
 	var bytes [8]byte
 	n, err := crand.Read(bytes[:])
-	if err != nil { panic(err) }
-	if n != 8 { panic("spec violation") }
+	if err != nil {
+		panic(err)
+	}
+	if n != 8 {
+		panic("spec violation")
+	}
 	seed := int64(binary.BigEndian.Uint64(bytes[:]))
 	return mrand.New(mrand.NewSource(seed))
 }
@@ -492,7 +498,9 @@ func TestAbs(t *testing.T) {
 	rng := NewRng()
 	for i := 0; i < 9999; i++ {
 		value := Unit(rng.Intn(64*8) - 64*4)
-		if value.Abs() < 0 { t.Fatalf("negative abs() value for %d", value) }
+		if value.Abs() < 0 {
+			t.Fatalf("negative abs() value for %d", value)
+		}
 		if value.Abs() != value && value.Abs() != -value {
 			t.Fatalf("inconsistent abs() value for %d", value)
 		}
@@ -501,19 +509,28 @@ func TestAbs(t *testing.T) {
 
 func TestMulRng(t *testing.T) {
 	rng := NewRng()
-	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	var abs = func(x float64) float64 {
+		if x >= 0 {
+			return x
+		}
+		return -x
+	}
 	for i := 0; i < 9999; i++ {
 		valueA := Unit(rng.Intn(64*8) - 64*4)
 		valueB := Unit(rng.Intn(64*8) - 64*4)
-		
-		resultFloat := valueA.ToFloat64()*valueB.ToFloat64()
+
+		resultFloat := valueA.ToFloat64() * valueB.ToFloat64()
 		resultFixed := valueA.Mul(valueB)
 		dist := abs(resultFloat - resultFixed.ToFloat64())
-		distPlus1  := abs(resultFloat - (resultFixed + 1).ToFloat64())
+		distPlus1 := abs(resultFloat - (resultFixed + 1).ToFloat64())
 		distMinus1 := abs(resultFloat - (resultFixed - 1).ToFloat64())
 		var bestFixed = resultFixed
-		if distPlus1  < dist { bestFixed = resultFixed + 1 }
-		if distMinus1 < dist { bestFixed = resultFixed - 1 }
+		if distPlus1 < dist {
+			bestFixed = resultFixed + 1
+		}
+		if distMinus1 < dist {
+			bestFixed = resultFixed - 1
+		}
 		if bestFixed != resultFixed {
 			t.Fatalf(
 				"%d*%d (%f*%f) = %f, but got %d (%f) when %d (%f) is closer",
@@ -526,12 +543,17 @@ func TestMulRng(t *testing.T) {
 
 func TestMulUpRng(t *testing.T) {
 	rng := NewRng()
-	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	var abs = func(x float64) float64 {
+		if x >= 0 {
+			return x
+		}
+		return -x
+	}
 	for i := 0; i < 9999; i++ {
 		valueA := Unit(rng.Intn(64*8) - 64*4)
 		valueB := Unit(rng.Intn(64*8) - 64*4)
-		
-		resultFloat := valueA.ToFloat64()*valueB.ToFloat64()
+
+		resultFloat := valueA.ToFloat64() * valueB.ToFloat64()
 		resultFixed := valueA.MulUp(valueB)
 		dist := abs(resultFloat - resultFixed.ToFloat64())
 		if dist > HalfDelta {
@@ -541,11 +563,15 @@ func TestMulUpRng(t *testing.T) {
 				resultFixed, resultFixed.ToFloat64(),
 			)
 		}
-		distPlus1  := abs(resultFloat - (resultFixed + 1).ToFloat64())
+		distPlus1 := abs(resultFloat - (resultFixed + 1).ToFloat64())
 		distMinus1 := abs(resultFloat - (resultFixed - 1).ToFloat64())
 		var bestFixed = resultFixed
-		if distPlus1  < dist { bestFixed = resultFixed + 1 }
-		if distMinus1 < dist { bestFixed = resultFixed - 1 }
+		if distPlus1 < dist {
+			bestFixed = resultFixed + 1
+		}
+		if distMinus1 < dist {
+			bestFixed = resultFixed - 1
+		}
 		if bestFixed != resultFixed {
 			t.Fatalf(
 				"%d*%d (%f*%f) = %f, but got %d (%f) when %d (%f) is closer",
@@ -567,12 +593,17 @@ func TestMulUpRng(t *testing.T) {
 
 func TestMulDownRng(t *testing.T) {
 	rng := NewRng()
-	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	var abs = func(x float64) float64 {
+		if x >= 0 {
+			return x
+		}
+		return -x
+	}
 	for i := 0; i < 9999; i++ {
 		valueA := Unit(rng.Intn(64*8) - 64*4)
 		valueB := Unit(rng.Intn(64*8) - 64*4)
-		
-		resultFloat := valueA.ToFloat64()*valueB.ToFloat64()
+
+		resultFloat := valueA.ToFloat64() * valueB.ToFloat64()
 		resultFixed := valueA.MulDown(valueB)
 		dist := abs(resultFloat - resultFixed.ToFloat64())
 		if dist > HalfDelta {
@@ -582,11 +613,15 @@ func TestMulDownRng(t *testing.T) {
 				resultFixed, resultFixed.ToFloat64(),
 			)
 		}
-		distPlus1  := abs(resultFloat - (resultFixed + 1).ToFloat64())
+		distPlus1 := abs(resultFloat - (resultFixed + 1).ToFloat64())
 		distMinus1 := abs(resultFloat - (resultFixed - 1).ToFloat64())
 		var bestFixed = resultFixed
-		if distPlus1  < dist { bestFixed = resultFixed + 1 }
-		if distMinus1 < dist { bestFixed = resultFixed - 1 }
+		if distPlus1 < dist {
+			bestFixed = resultFixed + 1
+		}
+		if distMinus1 < dist {
+			bestFixed = resultFixed - 1
+		}
 		if bestFixed != resultFixed {
 			t.Fatalf(
 				"%d*%d (%g*%g) = %g, but got %d (%g) when %d (%g) is closer",
@@ -609,13 +644,20 @@ func TestMulDownRng(t *testing.T) {
 func TestDivRng(t *testing.T) {
 	rng := NewRng()
 	var roundedUp, roundedDown, roundedTowardZero, roundedAwayZero int
-	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	var abs = func(x float64) float64 {
+		if x >= 0 {
+			return x
+		}
+		return -x
+	}
 	for i := 0; i < 9999; i++ {
 		valueA := Unit(rng.Intn(64*8) - 64*4)
 		valueB := Unit(rng.Intn(64*8) - 64*4)
-		if valueB == 0 { valueB = 64 }
-		
-		resultFloat := valueA.ToFloat64()/valueB.ToFloat64()
+		if valueB == 0 {
+			valueB = 64
+		}
+
+		resultFloat := valueA.ToFloat64() / valueB.ToFloat64()
 		resultFixed := valueA.Div(valueB)
 		dist := abs(resultFloat - resultFixed.ToFloat64())
 		if dist > abs(valueB.ToFloat64()) {
@@ -625,14 +667,20 @@ func TestDivRng(t *testing.T) {
 				resultFixed, resultFixed.ToFloat64(), dist,
 			)
 		}
-		distPlus1  := abs(resultFloat - (resultFixed + 1).ToFloat64())
+		distPlus1 := abs(resultFloat - (resultFixed + 1).ToFloat64())
 		distMinus1 := abs(resultFloat - (resultFixed - 1).ToFloat64())
 		var bestFixed = resultFixed
-		if distPlus1  < dist { bestFixed = resultFixed + 1 }
-		if distMinus1 < dist { bestFixed = resultFixed - 1 }
+		if distPlus1 < dist {
+			bestFixed = resultFixed + 1
+		}
+		if distMinus1 < dist {
+			bestFixed = resultFixed - 1
+		}
 		if bestFixed != resultFixed {
 			minDist := distPlus1
-			if distMinus1 < minDist { minDist = distMinus1 }
+			if distMinus1 < minDist {
+				minDist = distMinus1
+			}
 			t.Fatalf(
 				"%d/%d (%g/%g) = %g, but got %d (%g) when %d (%g) is closer (diff %g vs %g) (iter = %d)",
 				valueA, valueB, valueA.ToFloat64(), valueB.ToFloat64(), resultFloat,
@@ -640,8 +688,10 @@ func TestDivRng(t *testing.T) {
 				dist, minDist, i,
 			)
 		}
-		if dist == distPlus1 && dist == distMinus1 { t.Fatalf("wat") }
-		
+		if dist == distPlus1 && dist == distMinus1 {
+			t.Fatalf("wat")
+		}
+
 		// rounding analysis, see debugRounding below
 		if distPlus1 == dist {
 			roundedDown += 1
@@ -680,18 +730,25 @@ func TestDivRng(t *testing.T) {
 
 func TestRescaleRng(t *testing.T) {
 	rng := NewRng()
-	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	var abs = func(x float64) float64 {
+		if x >= 0 {
+			return x
+		}
+		return -x
+	}
 	for i := 0; i < 9999; i++ {
-		value     := Unit(rng.Intn(64*32) - 64*16)
+		value := Unit(rng.Intn(64*32) - 64*16)
 		fromScale := Unit(rng.Intn(64*32) - 64*16)
-		toScale   := Unit(rng.Intn(64*16) - 64*8)
-		if fromScale == 0 { fromScale = 1024 }
+		toScale := Unit(rng.Intn(64*16) - 64*8)
+		if fromScale == 0 {
+			fromScale = 1024
+		}
 
-		floatRescale := (value.ToFloat64()*toScale.ToFloat64())/fromScale.ToFloat64()
+		floatRescale := (value.ToFloat64() * toScale.ToFloat64()) / fromScale.ToFloat64()
 		fixedRescale := value.Rescale(fromScale, toScale)
 
-		diffZero   := abs(abs(floatRescale) - abs((fixedRescale + 0).ToFloat64()))
-		diffPlus1  := abs(abs(floatRescale) - abs((fixedRescale + 1).ToFloat64()))
+		diffZero := abs(abs(floatRescale) - abs((fixedRescale + 0).ToFloat64()))
+		diffPlus1 := abs(abs(floatRescale) - abs((fixedRescale + 1).ToFloat64()))
 		diffMinus1 := abs(abs(floatRescale) - abs((fixedRescale - 1).ToFloat64()))
 		if diffZero > Delta {
 			t.Fatalf(
@@ -701,16 +758,20 @@ func TestRescaleRng(t *testing.T) {
 				diffZero,
 			)
 		}
-		if diffPlus1  < diffZero { t.Fatalf("inaccurate rescaling") }
-		if diffMinus1 < diffZero { t.Fatalf("inaccurate rescaling") }
+		if diffPlus1 < diffZero {
+			t.Fatalf("inaccurate rescaling")
+		}
+		if diffMinus1 < diffZero {
+			t.Fatalf("inaccurate rescaling")
+		}
 	}
 }
 
 func TestQuantizeUp(t *testing.T) {
 	tests := []struct {
 		step Unit
-		in  Unit
-		out Unit
+		in   Unit
+		out  Unit
 	}{
 		{step: 1, in: 26, out: 26}, {step: 1, in: 27, out: 27}, {step: 1, in: 45, out: 45},
 		{step: 2, in: 26, out: 26}, {step: 2, in: 27, out: 28}, {step: 2, in: 45, out: 46},
@@ -718,7 +779,7 @@ func TestQuantizeUp(t *testing.T) {
 		{step: 4, in: 26, out: 28}, {step: 4, in: 27, out: 28}, {step: 4, in: 45, out: 44},
 		{step: 5, in: 62, out: 60}, {step: 5, in: 63, out: 64}, {step: 5, in: 59, out: 60},
 		{step: 5, in: 67, out: 69}, {step: 5, in: 66, out: 64},
-		
+
 		// full unit by unit consistency test sequence
 		{3, 67, 67}, {3, 66, 67}, {3, 65, 64}, {3, 64, 64}, {3, 63, 63}, {3, 62, 63}, {3, 61, 60},
 		{3, 60, 60}, {3, 59, 60}, {3, 58, 57}, {3, 57, 57},
@@ -727,7 +788,7 @@ func TestQuantizeUp(t *testing.T) {
 		{3, -64, -64}, {3, -63, -64}, {3, -62, -61}, {3, -61, -61}, {3, -65, -65},
 
 		// even tie
-		{2, 66, 66}, {2, 65, 66}, {2, 64, 64}, {2, 63, 64}, {2, 62, 62}, {2, 61, 62}, 
+		{2, 66, 66}, {2, 65, 66}, {2, 64, 64}, {2, 63, 64}, {2, 62, 62}, {2, 61, 62},
 
 		{step: 1, in: -26, out: -26}, {step: 1, in: -27, out: -27}, {step: 1, in: -45, out: -45},
 		{step: 2, in: -26, out: -26}, {step: 2, in: -27, out: -26}, {step: 2, in: -45, out: -44},
@@ -752,7 +813,7 @@ func TestQuantizeUp(t *testing.T) {
 	// test expected panics
 	for _, value := range []Unit{0, 65, -47, 1238} {
 		func() {
-			defer func(){ _ = recover() }()
+			defer func() { _ = recover() }()
 			Unit(0).QuantizeUp(value)
 			t.Fatalf("expected %d to panic", value)
 		}()
@@ -762,8 +823,8 @@ func TestQuantizeUp(t *testing.T) {
 func TestQuantizeDown(t *testing.T) {
 	tests := []struct {
 		step Unit
-		in  Unit
-		out Unit
+		in   Unit
+		out  Unit
 	}{
 		{step: 1, in: 26, out: 26}, {step: 1, in: 27, out: 27}, {step: 1, in: 45, out: 45},
 		{step: 2, in: 26, out: 26}, {step: 2, in: 27, out: 26}, {step: 2, in: 45, out: 44},
@@ -771,7 +832,7 @@ func TestQuantizeDown(t *testing.T) {
 		{step: 4, in: 26, out: 24}, {step: 4, in: 27, out: 28}, {step: 4, in: 45, out: 44},
 		{step: 5, in: 62, out: 60}, {step: 5, in: 63, out: 64}, {step: 5, in: 59, out: 60},
 		{step: 5, in: 67, out: 69}, {step: 5, in: 66, out: 64},
-		
+
 		// full unit by unit consistency test sequence
 		{3, 67, 67}, {3, 66, 67}, {3, 65, 64}, {3, 64, 64}, {3, 63, 63}, {3, 62, 63}, {3, 61, 60},
 		{3, 60, 60}, {3, 59, 60}, {3, 58, 57}, {3, 57, 57},
@@ -780,7 +841,7 @@ func TestQuantizeDown(t *testing.T) {
 		{3, -64, -64}, {3, -63, -64}, {3, -62, -61}, {3, -61, -61}, {3, -65, -65},
 
 		// even tie
-		{2, 66, 66}, {2, 65, 64}, {2, 64, 64}, {2, 63, 62}, {2, 62, 62}, {2, 61, 60}, 
+		{2, 66, 66}, {2, 65, 64}, {2, 64, 64}, {2, 63, 62}, {2, 62, 62}, {2, 61, 60},
 
 		{step: 1, in: -26, out: -26}, {step: 1, in: -27, out: -27}, {step: 1, in: -45, out: -45},
 		{step: 2, in: -26, out: -26}, {step: 2, in: -27, out: -28}, {step: 2, in: -45, out: -46},
@@ -805,7 +866,7 @@ func TestQuantizeDown(t *testing.T) {
 	// test expected panics
 	for _, value := range []Unit{0, 65, -47, 1238} {
 		func() {
-			defer func(){ _ = recover() }()
+			defer func() { _ = recover() }()
 			Unit(0).QuantizeDown(value)
 			t.Fatalf("expected %d to panic", value)
 		}()
@@ -817,7 +878,7 @@ func TestFractShift(t *testing.T) {
 	for i := 0; i < 9999; i++ {
 		value := Unit(rng.Intn(64*64) - 64*32)
 		shift := value.FractShift()
-		if value.Floor() + shift != value {
+		if value.Floor()+shift != value {
 			t.Fatalf("incorrect fract shift %d for value %d (%f)", shift, value, value.ToFloat64())
 		}
 	}
@@ -825,7 +886,12 @@ func TestFractShift(t *testing.T) {
 
 func TestFloatError(t *testing.T) {
 	const factor = 262144 // 2^18
-	var abs = func(x float64) float64 { if x >= 0 { return x } ; return -x }
+	var abs = func(x float64) float64 {
+		if x >= 0 {
+			return x
+		}
+		return -x
+	}
 	totalDistF64 := 0.0
 	totalDistF32 := 0.0
 

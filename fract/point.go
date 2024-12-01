@@ -13,12 +13,12 @@ type Point struct {
 
 // Creates a point from a pair of units.
 func UnitsToPoint(x, y Unit) Point {
-	return Point{ X: x, Y: y }
+	return Point{X: x, Y: y}
 }
 
 // Creates a point from a pair of ints.
 func IntsToPoint(x, y int) Point {
-	return Point{ X: FromInt(x), Y: FromInt(y) }
+	return Point{X: FromInt(x), Y: FromInt(y)}
 }
 
 // Converts the point coordinates to ints and returns

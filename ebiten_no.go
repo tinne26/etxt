@@ -32,13 +32,13 @@ type GlyphMask = *image.Alpha
 type BlendMode uint8
 
 const (
-	BlendOver       BlendMode = 0 // glyphs drawn over target (default mode)
-	BlendReplace    BlendMode = 1 // glyph mask only (transparent pixels included!)
-	BlendAdd        BlendMode = 2 // add colors (black adds nothing, white stays white)
-	BlendSub        BlendMode = 3 // subtract colors (black removes nothing) (alpha = target)
-	BlendMultiply   BlendMode = 4 // multiply % of glyph and target colors and MixOver
-	BlendCut        BlendMode = 5 // cut glyph shape hole based on alpha (cutout text)
-	BlendHue        BlendMode = 6 // keep highest alpha, blend hues proportionally
+	BlendOver     BlendMode = 0 // glyphs drawn over target (default mode)
+	BlendReplace  BlendMode = 1 // glyph mask only (transparent pixels included!)
+	BlendAdd      BlendMode = 2 // add colors (black adds nothing, white stays white)
+	BlendSub      BlendMode = 3 // subtract colors (black removes nothing) (alpha = target)
+	BlendMultiply BlendMode = 4 // multiply % of glyph and target colors and MixOver
+	BlendCut      BlendMode = 5 // cut glyph shape hole based on alpha (cutout text)
+	BlendHue      BlendMode = 6 // keep highest alpha, blend hues proportionally
 
 	// TODO: many of the modes above will have some trouble with
 	//       semi-transparency, I should look more into it.
@@ -50,14 +50,18 @@ func convertAlphaImageToGlyphMask(i *image.Alpha) GlyphMask { return i }
 // Underlying default glyph drawing function for renderers.
 // Can be overridden with Renderer.Glyph().SetDrawFunc(...).
 func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask GlyphMask) {
-	if mask == nil { return } // spaces and empty glyphs will be nil
+	if mask == nil {
+		return
+	} // spaces and empty glyphs will be nil
 
 	// compute src and target rects within bounds
 	targetBounds := target.Bounds()
 	srcRect := mask.Rect
 	shift := image.Pt(origin.X.ToIntFloor(), origin.Y.ToIntFloor())
 	targetRect := targetBounds.Intersect(srcRect.Add(shift))
-	if targetRect.Empty() { return }
+	if targetRect.Empty() {
+		return
+	}
 	shift.X, shift.Y = -shift.X, -shift.Y
 	srcRect = targetRect.Add(shift)
 
@@ -71,12 +75,16 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 		self.mixImageInto(mask, target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				_, _, _, na := new.RGBA()
-				if na == 0 { return curr }
+				if na == 0 {
+					return curr
+				}
 				cr, cg, cb, ca := curr.RGBA()
 
 				alpha := ca - na
-				if alpha < 0 { alpha = 0 }
-				return color.RGBA64 {
+				if alpha < 0 {
+					alpha = 0
+				}
+				return color.RGBA64{
 					R: min32As16(cr, alpha),
 					G: min32As16(cg, alpha),
 					B: min32As16(cb, alpha),
@@ -88,11 +96,11 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 			func(new, curr color.Color) color.Color {
 				nr, ng, nb, na := new.RGBA()
 				cr, cg, cb, ca := curr.RGBA()
-				pureMult := color.RGBA64 {
-					R: uint16(nr*cr/0xFFFF),
-					G: uint16(ng*cg/0xFFFF),
-					B: uint16(nb*cb/0xFFFF),
-					A: uint16(na*ca/0xFFFF),
+				pureMult := color.RGBA64{
+					R: uint16(nr * cr / 0xFFFF),
+					G: uint16(ng * cg / 0xFFFF),
+					B: uint16(nb * cb / 0xFFFF),
+					A: uint16(na * ca / 0xFFFF),
 				}
 				return blendOverFunc(pureMult, curr)
 			})
@@ -100,9 +108,11 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 		self.mixImageInto(mask, target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				nr, ng, nb, na := new.RGBA()
-				if na == 0 { return curr }
+				if na == 0 {
+					return curr
+				}
 				cr, cg, cb, ca := curr.RGBA()
-				return color.RGBA64 {
+				return color.RGBA64{
 					R: uint16N(nr + cr),
 					G: uint16N(ng + cg),
 					B: uint16N(nb + cb),
@@ -113,9 +123,11 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 		self.mixImageInto(mask, target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				nr, ng, nb, na := new.RGBA()
-				if na == 0 { return curr }
+				if na == 0 {
+					return curr
+				}
 				cr, cg, cb, ca := curr.RGBA()
-				return color.RGBA64 {
+				return color.RGBA64{
 					R: uint32subFloor16(cr, nr),
 					G: uint32subFloor16(cg, ng),
 					B: uint32subFloor16(cb, nb),
@@ -126,19 +138,25 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 		self.mixImageInto(mask, target, srcRect, targetRect,
 			func(new, curr color.Color) color.Color {
 				var nr, ng, nb, na uint32 = new.RGBA()
-				if na == 0 { return curr }
+				if na == 0 {
+					return curr
+				}
 				cr, cg, cb, ca := curr.RGBA()
-				if ca == 0 { return new }
+				if ca == 0 {
+					return new
+				}
 
 				// hue contribution is proportional to alpha.
 				// if both alphas are equal, hue contributions are 50/50
 				ta := ca + na // alpha sum (total)
 				ma := ca      // max alpha
-				if na > ca { ma = na }
-				r := (((nr + cr) >> 1)*ma)/(ta >> 1) // shifts prevent overflows
-				g := (((ng + cg) >> 1)*ma)/(ta >> 1)
-				b := (((nb + cb) >> 1)*ma)/(ta >> 1)
-				partial := color.RGBA64 {
+				if na > ca {
+					ma = na
+				}
+				r := (((nr + cr) >> 1) * ma) / (ta >> 1) // shifts prevent overflows
+				g := (((ng + cg) >> 1) * ma) / (ta >> 1)
+				b := (((nb + cb) >> 1) * ma) / (ta >> 1)
+				partial := color.RGBA64{
 					R: uint16(r),
 					G: uint16(g),
 					B: uint16(b),
@@ -154,7 +172,7 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 // All this code is extremely slow due to using a very straightforward
 // implementation. Making this faster, though, is not so trivial.
 func (self *Renderer) mixImageInto(src GlyphMask, target draw.Image, srcRect, tarRect image.Rectangle, mixFunc func(color.Color, color.Color) color.Color) {
-	width  := srcRect.Dx()
+	width := srcRect.Dx()
 	height := srcRect.Dy()
 	srcOffX := srcRect.Min.X
 	srcOffY := srcRect.Min.Y
@@ -167,7 +185,7 @@ func (self *Renderer) mixImageInto(src GlyphMask, target draw.Image, srcRect, ta
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			// get mask alpha applied to our main drawing color
-			level := src.AlphaAt(srcOffX + x, srcOffY + y).A
+			level := src.AlphaAt(srcOffX+x, srcOffY+y).A
 			var newColor color.Color
 			if level == 0 {
 				newColor = color.RGBA{0, 0, 0, 0}
@@ -178,49 +196,61 @@ func (self *Renderer) mixImageInto(src GlyphMask, target draw.Image, srcRect, ta
 			}
 
 			// get target current color and mix
-			currColor := target.At(tarOffX + x, tarOffY + y)
-			mixColor  := mixFunc(newColor, currColor)
-			target.Set(tarOffX + x, tarOffY + y, mixColor)
+			currColor := target.At(tarOffX+x, tarOffY+y)
+			mixColor := mixFunc(newColor, currColor)
+			target.Set(tarOffX+x, tarOffY+y, mixColor)
 		}
 	}
 }
 
 func rescaledAlpha(r, g, b, a uint32, alphaFactor uint8) color.Color {
 	return color.RGBA64{
-		R: uint16((r*uint32(alphaFactor))/255),
-		G: uint16((g*uint32(alphaFactor))/255),
-		B: uint16((b*uint32(alphaFactor))/255),
-		A: uint16((a*uint32(alphaFactor))/255),
+		R: uint16((r * uint32(alphaFactor)) / 255),
+		G: uint16((g * uint32(alphaFactor)) / 255),
+		B: uint16((b * uint32(alphaFactor)) / 255),
+		A: uint16((a * uint32(alphaFactor)) / 255),
 	}
 }
 
 func uint16N(value uint32) uint16 {
-	if value > 65535 { return 65535 }
+	if value > 65535 {
+		return 65535
+	}
 	return uint16(value)
 }
 
 func uint32subFloor16(a, b uint32) uint16 {
-	if b >= a { return 0 }
+	if b >= a {
+		return 0
+	}
 	return uint16(a - b)
 }
 
 func min32As16(a, b uint32) uint16 {
-	if a <= b { return uint16(a) }
+	if a <= b {
+		return uint16(a)
+	}
 	return uint16(b)
 }
 
 // ---- color blending functions ----
 func blendOverFunc(new, curr color.Color) color.Color {
 	nr, ng, nb, na := new.RGBA()
-	if na == 0xFFFF { return new }
-	if na == 0      { return curr }
+	if na == 0xFFFF {
+		return new
+	}
+	if na == 0 {
+		return curr
+	}
 	cr, cg, cb, ca := curr.RGBA()
-	if ca == 0      { return new }
+	if ca == 0 {
+		return new
+	}
 
-	return color.RGBA64 {
-		R: uint16(nr + (cr*(0xFFFF - na)) >> 16), // dividing by 0xFFFF is also possible, but
-		G: uint16(ng + (cg*(0xFFFF - na)) >> 16), // we get as much difference with ebitengine
-		B: uint16(nb + (cb*(0xFFFF - na)) >> 16), // as with >> 16, so we prefer going fast
-		A: uint16(na + (ca*(0xFFFF - na)) >> 16),
+	return color.RGBA64{
+		R: uint16(nr + (cr*(0xFFFF-na))>>16), // dividing by 0xFFFF is also possible, but
+		G: uint16(ng + (cg*(0xFFFF-na))>>16), // we get as much difference with ebitengine
+		B: uint16(nb + (cb*(0xFFFF-na))>>16), // as with >> 16, so we prefer going fast
+		A: uint16(na + (ca*(0xFFFF-na))>>16),
 	}
 }

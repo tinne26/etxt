@@ -1,13 +1,14 @@
 package etxt
 
-import "image/color"
+import (
+	"image/color"
 
-import "golang.org/x/image/font/sfnt"
-
-import "github.com/tinne26/etxt/mask"
-import "github.com/tinne26/etxt/cache"
-import "github.com/tinne26/etxt/sizer"
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/cache"
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+	"github.com/tinne26/etxt/sizer"
+	"golang.org/x/image/font/sfnt"
+)
 
 // This file contains the Renderer type definition and all the
 // getter and setter methods. Actual operations are split in other
@@ -17,41 +18,38 @@ import "github.com/tinne26/etxt/fract"
 // everything else revolves.
 //
 // Renderers have three groups of functions:
-//  - Simple functions to adjust basic text properties like font,
-//    size, color, align, etc.
-//  - Simple functions to draw and measure text.
-//  - Gateways to access more advanced or specific functionality.
+//   - Simple functions to adjust basic text properties like font,
+//     size, color, align, etc.
+//   - Simple functions to draw and measure text.
+//   - Gateways to access more advanced or specific functionality.
 //
 // Gateways are auxiliary types that group specialized functions together
 // and keep them out of the way for most workflows that won't require them.
 // The current gateways are the following:
-//  - [Renderer.Utils](), to access non-essential but handy functions.
-//  - [Renderer.Fract](), to access specialized fractional positioning functionality.
-//  - [Renderer.Glyph](), to access low level functions for glyphs and
-//    glyph masks.
-//  - [Renderer.Twine](), to access text formatting and [Twine] functionality.
+//   - [Renderer.Utils](), to access non-essential but handy functions.
+//   - [Renderer.Fract](), to access specialized fractional positioning functionality.
+//   - [Renderer.Glyph](), to access low level functions for glyphs and
+//     glyph masks.
 //
 // To create a renderer, using [NewRenderer]() is recommended. Before you
 // can start using it, though, you have to set a font. In most practical
 // scenarios you will also want to set a cache, the text size, the text
 // color and the align explicitly.
 //
-// If you need further help or guidance, consider reading ["advice on 
+// If you need further help or guidance, consider reading ["advice on
 // renderers"] and going through the code in the [examples] folder.
 //
 // ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/renderer.md
 // [examples]: https://github.com/tinne26/etxt/tree/v0.0.9-alpha.7/examples
 type Renderer struct {
-	state restorableState
+	state            restorableState
 	restorableStates []restorableState
-	
+
 	cacheHandler cache.GlyphCacheHandler
-	twineEffectFuncs []TwineEffectFunc
-	twineMotionFuncs []TwineMotionFunc
-	twineStorage []any
 	customDrawFn func(Target, sfnt.GlyphIndex, fract.Point)
-	fonts []*sfnt.Font
-	buffer sfnt.Buffer
+	lineChangeFn func(LineChangeDetails)
+	fonts        []*sfnt.Font
+	buffer       sfnt.Buffer
 }
 
 // Creates a new [Renderer], initialized with reasonable default values.
@@ -64,15 +62,15 @@ func NewRenderer() *Renderer {
 	// No font sizer change notification required (there's no font yet)
 	return &Renderer{
 		state: restorableState{
-			fontColor: color.RGBA{255, 255, 255, 255},
-			fontSizer: &sizer.DefaultSizer{},
-			rasterizer: &mask.DefaultRasterizer{},
+			fontColor:        color.RGBA{255, 255, 255, 255},
+			fontSizer:        &sizer.DefaultSizer{},
+			rasterizer:       &mask.DefaultRasterizer{},
 			horzQuantization: uint8(Qt4th),
 			vertQuantization: uint8(QtFull),
-			align: Left | Baseline,
-			scale: fract.One,
-			logicalSize: 16*fract.One,
-			scaledSize: 16*fract.One,
+			align:            Left | Baseline,
+			scale:            fract.One,
+			logicalSize:      16 * fract.One,
+			scaledSize:       16 * fract.One,
 		},
 		fonts: make([]*sfnt.Font, 0, 1),
 	}
@@ -86,10 +84,10 @@ func NewRenderer() *Renderer {
 // The relationship between font size and the size of its glyphs
 // is complicated and can vary a lot between fonts, but to
 // provide a [general reference]:
-//  - A capital latin letter is usually around 70% as tall as
-//    the given size. E.g.: at 16px, "A" will be 10-12px tall.
-//  - A lowercase latin letter is usually around 48% as tall as
-//    the given size. E.g.: at 16px, "x" will be 7-9px tall.
+//   - A capital latin letter is usually around 70% as tall as
+//     the given size. E.g.: at 16px, "A" will be 10-12px tall.
+//   - A lowercase latin letter is usually around 48% as tall as
+//     the given size. E.g.: at 16px, "x" will be 7-9px tall.
 //
 // See also [Renderer.SetScale]() for proper handling of high
 // resolution text and display scaling.
@@ -144,10 +142,7 @@ func (self *Renderer) GetScale() float64 {
 //
 // Notice that etxt is not really at a point where it can handle
 // complex scripts properly; if that's an important feature for you,
-// consider [ebiten/v2/text/v2] instead. In particular, even if
-// you were to externalize the text shaping process and draw the
-// glyphs with a [Twine], etxt still can't mirror glyphs nor handle
-// bidirectional text automatically.
+// consider [ebiten/v2/text/v2] instead.
 //
 // [ebiten/v2/text/v2]: https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2/text/v2
 func (self *Renderer) SetDirection(dir Direction) {
@@ -172,20 +167,25 @@ func (self *Renderer) GetDirection() Direction {
 // set one!
 //
 // Miscellaneous tips and advice:
-//  - If you only have the unparsed font file data, consider [RendererUtils.SetFontBytes]().
-//  - If you need more robust font management, take a look at [etxt/font.Library].
+//   - If you only have the unparsed font file data, consider [RendererUtils.SetFontBytes]().
+//   - If you need more robust font management, take a look at [etxt/font.Library].
+//   - If you need a quick font for testing, take on from [github.com/tinne26/fonts]
+//     (e.g. lbrtsans.Font()).
 //
 // [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.9-alpha.7#Library
+// [github.com/tinne26/fonts]: https://github.com/tinne26/fonts
 func (self *Renderer) SetFont(font *sfnt.Font) {
 	// ensure there's enough space in the fonts slice
 	fontIndex := int(self.state.fontIndex)
-	self.fonts = ensureSliceSize(self.fonts, fontIndex + 1)
+	self.fonts = ensureSliceSize(self.fonts, fontIndex+1)
 
 	// assign font if new
-	if font == self.state.activeFont { return }
+	if font == self.state.activeFont {
+		return
+	}
 	self.fonts[fontIndex] = font
 	self.state.activeFont = font
-	
+
 	// notify font change
 	self.notifyFontChange(font)
 }
@@ -248,7 +248,9 @@ func (self *Renderer) GetSizer() sizer.Sizer {
 // custom glyph mask rasterizers; all fairly uncommon things for the
 // average user to have to worry about.
 func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
-	if self.state.fontSizer == fontSizer { return }
+	if self.state.fontSizer == fontSizer {
+		return
+	}
 	self.state.fontSizer = fontSizer
 	self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
 }
@@ -266,8 +268,10 @@ func (self *Renderer) GetCacheHandler() cache.GlyphCacheHandler {
 // The easiest way is to use [RendererUtils.SetCache8MiB](). If that's
 // not suitable for your use-case, the general approach is to create
 // a cache manually, obtain a cache handler from it and set it:
-//   glyphsCache := cache.NewDefaultCache(16*1024*1024) // 16MiB cache
-//   renderer.SetCacheHandler(glyphsCache.NewHandler())
+//
+//	glyphsCache := cache.NewDefaultCache(16*1024*1024) // 16MiB cache
+//	renderer.SetCacheHandler(glyphsCache.NewHandler())
+//
 // See [cache.NewDefaultCache]() for more details.
 //
 // A cache handler can only be used with a single renderer, but you
@@ -276,7 +280,9 @@ func (self *Renderer) GetCacheHandler() cache.GlyphCacheHandler {
 func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 	self.cacheHandler = cacheHandler
 	if cacheHandler == nil {
-		if self.state.rasterizer != nil { self.state.rasterizer.SetOnChangeFunc(nil) }
+		if self.state.rasterizer != nil {
+			self.state.rasterizer.SetOnChangeFunc(nil)
+		}
 		return
 	}
 
@@ -286,7 +292,9 @@ func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 
 	cacheHandler.NotifySizeChange(self.state.scaledSize)
 	font := self.GetFont()
-	if font != nil { cacheHandler.NotifyFontChange(font) }
+	if font != nil {
+		cacheHandler.NotifyFontChange(font)
+	}
 	if self.state.rasterizer != nil {
 		cacheHandler.NotifyRasterizerChange(self.state.rasterizer)
 	}

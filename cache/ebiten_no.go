@@ -10,7 +10,9 @@ type GlyphMask = *image.Alpha
 const constMaskSizeFactor = 56
 
 func GlyphMaskByteSize(mask GlyphMask) uint32 {
-	if mask == nil { return constMaskSizeFactor }
+	if mask == nil {
+		return constMaskSizeFactor
+	}
 	w, h := mask.Rect.Dx(), mask.Rect.Dy()
 	return maskDimsByteSize(w, h)
 }

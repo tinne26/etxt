@@ -14,21 +14,21 @@ type Rect struct {
 // Creates a rect from a set of four units.
 func UnitsToRect(minX, minY, maxX, maxY Unit) Rect {
 	return Rect{
-		Min: Point{ X: minX, Y: minY },
-		Max: Point{ X: maxX, Y: maxY },
+		Min: Point{X: minX, Y: minY},
+		Max: Point{X: maxX, Y: maxY},
 	}
 }
 
 // Creates a rect from a pair of points.
 func PointsToRect(min, max Point) Rect {
-	return Rect{ Min: min, Max: max }
+	return Rect{Min: min, Max: max}
 }
 
 // Creates a rect from a set of four integers.
 func IntsToRect(minX, minY, maxX, maxY int) Rect {
 	return Rect{
-		Min: Point{ X: FromInt(minX), Y: FromInt(minY) },
-		Max: Point{ X: FromInt(maxX), Y: FromInt(maxY) },
+		Min: Point{X: FromInt(minX), Y: FromInt(minY)},
+		Max: Point{X: FromInt(maxX), Y: FromInt(maxY)},
 	}
 }
 
@@ -121,8 +121,8 @@ func (self Rect) Empty() bool {
 // with vertPad*2).
 func (self Rect) PadUnits(horzPad, vertPad Unit) Rect {
 	return UnitsToRect(
-		self.Min.X - horzPad, self.Min.Y - vertPad,
-		self.Max.X + horzPad, self.Max.Y + vertPad,
+		self.Min.X-horzPad, self.Min.Y-vertPad,
+		self.Max.X+horzPad, self.Max.Y+vertPad,
 	)
 }
 
@@ -160,10 +160,10 @@ func (self Rect) AddPoint(pt Point) Rect {
 // becomes aligned to the given coordinates.
 func (self Rect) CenteredAtIntCoords(x, y int) Rect {
 	ux, uy := FromInt(x), FromInt(y)
-	hw, hh := self.Width() >> 1, self.Height() >> 1
+	hw, hh := self.Width()>>1, self.Height()>>1
 	return Rect{
-		Min: Point{ X: ux - hw, Y: uy - hh },
-		Max: Point{ X: ux + hw, Y: uy + hh },
+		Min: Point{X: ux - hw, Y: uy - hh},
+		Max: Point{X: ux + hw, Y: uy + hh},
 	}
 }
 

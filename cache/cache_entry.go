@@ -5,9 +5,9 @@ import "sync/atomic"
 // A cached mask with additional information to estimate how
 // much the entry is being used.
 type cachedMaskEntry struct {
-	Mask GlyphMask // Read-only.
+	Mask       GlyphMask // Read-only.
 	lastAccess uint64
-	byteSize uint32 // Read-only.
+	byteSize   uint32 // Read-only.
 }
 
 func (self *cachedMaskEntry) UpdateAccess(accessTick uint64) {
@@ -24,9 +24,9 @@ func (self *cachedMaskEntry) ByteSize() uint32 {
 
 // Creates a new cached mask entry for the given GlyphMask.
 func newCachedMaskEntry(mask GlyphMask, accessTick uint64) *cachedMaskEntry {
-	return &cachedMaskEntry {
-		Mask: mask,
+	return &cachedMaskEntry{
+		Mask:       mask,
 		lastAccess: accessTick,
-		byteSize: GlyphMaskByteSize(mask),
+		byteSize:   GlyphMaskByteSize(mask),
 	}
 }

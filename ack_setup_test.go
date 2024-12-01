@@ -30,11 +30,14 @@ func TestAssetAvailability(t *testing.T) {
 }
 
 var testWarnings string
+
 func ensureTestAssetsLoaded() {
 	// assets load access control
 	assetsLoadMutex.Lock()
 	defer assetsLoadMutex.Unlock()
-	if testAssetsLoaded { return }
+	if testAssetsLoaded {
+		return
+	}
 	testAssetsLoaded = true
 
 	// load library from embedded folder and check fonts
@@ -45,10 +48,13 @@ func ensureTestAssetsLoaded() {
 		os.Exit(1)
 	}
 
-	type FontInfo struct{ font *sfnt.Font; name string }
+	type FontInfo struct {
+		font *sfnt.Font
+		name string
+	}
 	fonts := make([]FontInfo, 0, 2)
 	lib.EachFont(func(name string, sfntFont *sfnt.Font) error {
-		fonts = append(fonts, FontInfo{ sfntFont, name })
+		fonts = append(fonts, FontInfo{sfntFont, name})
 		return nil
 	})
 	sort.Slice(fonts, func(i, j int) bool {
@@ -59,11 +65,11 @@ func ensureTestAssetsLoaded() {
 	switch len(fonts) {
 	case 0:
 		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 0)\n" +
-		               "WARNING: Most tests will be skipped\n"
-   case 1:
+			"WARNING: Most tests will be skipped\n"
+	case 1:
 		testFontA = fonts[0].font
 		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 1)\n" +
-		               "WARNING: Some tests will be skipped\n"
+			"WARNING: Some tests will be skipped\n"
 	default:
 		testFontA = fonts[0].font
 		testFontB = fonts[1].font

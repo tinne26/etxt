@@ -1,7 +1,7 @@
 package fract
 
 // Fixed point type to represent fractional values used for font rendering.
-// 
+//
 // 26 bits represent the integer part of the value, while the remaining 6
 // bits represent the decimal part. For an intuitive understanding, if you
 // know that var ms Millis = 1000 is storing the equivalent to 1 second,
@@ -17,12 +17,14 @@ type Unit int32
 // Returns true if the current value is a whole number, or false
 // if the fractional part is non-zero.
 func (self Unit) IsWhole() bool {
-	return self & 0x3F == 0
+	return self&0x3F == 0
 }
 
 // Returns the absolute value of the unit.
 func (self Unit) Abs() Unit {
-	if self >= 0 { return self }
+	if self >= 0 {
+		return self
+	}
 	return -self
 }
 
@@ -42,20 +44,22 @@ func (self Unit) FractShift() Unit {
 // Returns the result of multiplying the unit by the given value,
 // rounding the unrepresentable decimals away from zero in case of ties.
 func (self Unit) Mul(multiplier Unit) Unit {
-	mx64 := int64(self)*int64(multiplier)
-	if mx64 >= 0 { return Unit((mx64 + 32) >> 6) }
+	mx64 := int64(self) * int64(multiplier)
+	if mx64 >= 0 {
+		return Unit((mx64 + 32) >> 6)
+	}
 	return Unit((mx64 + 31) >> 6)
 }
 
 // Returns the result of multiplying the unit by the given int.
 func (self Unit) MulInt(multiplier int) Unit {
-	return self*Unit(multiplier)
+	return self * Unit(multiplier)
 }
 
 // Returns the result of multiplying the unit by the given value,
 // rounding the unrepresentable decimals up in case of ties.
 func (self Unit) MulUp(multiplier Unit) Unit {
-	mx64 := int64(self)*int64(multiplier)
+	mx64 := int64(self) * int64(multiplier)
 	return Unit((mx64 + 32) >> 6) // round up
 }
 
@@ -70,7 +74,7 @@ func (self Unit) MulUp(multiplier Unit) Unit {
 // Returns the result of multiplying the unit by the given value,
 // rounding the unrepresentable decimals down in case of ties.
 func (self Unit) MulDown(multiplier Unit) Unit {
-	mx64 := int64(self)*int64(multiplier)
+	mx64 := int64(self) * int64(multiplier)
 	return Unit((mx64 + 31) >> 6) // round down
 }
 
@@ -80,7 +84,7 @@ func (self Unit) Div(divisor Unit) Unit {
 	// I don't know why people share obviously lame formulas for fixed
 	// point division on the internet. Sure, they are fast and whatever...
 	// but the results are so obviously off that I had to try figuring it
-	// out on my own. The key idea is that we need a rounding factor to be 
+	// out on my own. The key idea is that we need a rounding factor to be
 	// applied before the actual division, unlike in the multiplication
 	// where we apply the rounding afterwards. The natural rounding factor
 	// here would be divisor/2, but if divisor is odd, this will result
@@ -89,14 +93,14 @@ func (self Unit) Div(divisor Unit) Unit {
 	// since we have the bits for it, there's no problem using 'divisor'
 	// directly as the rounding factor. Well, there's also some sign
 	// trickiness, but that's expanded below, you can figure it out.
-	numerator   := int64(self)    << 7
+	numerator := int64(self) << 7
 	denominator := int64(divisor) << 1
 	if (self >= 0) == (divisor >= 0) { // *
 		numerator += int64(divisor)
 	} else {
 		numerator -= int64(divisor)
 	}
-	return Unit(numerator/denominator)
+	return Unit(numerator / denominator)
 	// * If you wanted to round towards zero, instead, you would
 	// have to expand the (self >= 0) == (divisor >= 0) expression
 	// into something like this:
@@ -128,23 +132,26 @@ func (self Unit) Div(divisor Unit) Unit {
 // different EM sizes (e.g. an advance of 512 on a font with EM of
 // 1024 units corresponds to an advance of 384 with an EM size of 768,
 // or 512.Rescale(1024, 768) = 384).
+//
+// Notice that there's an implicit division in this operation; if
+// 'from' is zero, the function will panic.
 func (self Unit) Rescale(from, to Unit) Unit {
 	// this is basically an inlined form of self.Mul(to).Div(from)
 	// that avoids rounding between operations. refer to them for
 	// further implementation details
-	numerator   := (int64(self)*int64(to)) << 1
+	numerator := (int64(self) * int64(to)) << 1
 	denominator := int64(from) << 1
 	if (numerator >= 0) == (from >= 0) {
 		numerator += int64(from)
 	} else {
 		numerator -= int64(from)
 	}
-	return Unit(numerator/denominator)
+	return Unit(numerator / denominator)
 }
 
 // Returns the unit as a float64. The conversion is always exact.
 func (self Unit) ToFloat64() float64 {
-	return float64(self)/64.0 // *
+	return float64(self) / 64.0 // *
 	// math.Ldexp(float64(self), -6) also sounds good and works, but it's
 	// slower. even with amd64 assembly, lack of inlining kills perf.
 	// oh, and https://go-review.googlesource.com/c/go/+/291229
@@ -157,7 +164,7 @@ func (self Unit) ToFloat64() float64 {
 // to +/-2^18 (+/-262144) in the decimal numbering system, conversions
 // become progressively less precise.
 func (self Unit) ToFloat32() float32 {
-	return float32(self)/64.0
+	return float32(self) / 64.0
 }
 
 // Utility method equivalent to [Unit.ToIntHalfAway](0). For the
@@ -169,7 +176,7 @@ func (self Unit) ToInt() int {
 // Returns the unit as a truncated int.
 // This is the fastest Unit to int conversion method.
 func (self Unit) ToIntFloor() int {
-	return (int(self) +  0) >> 6
+	return (int(self) + 0) >> 6
 }
 
 // Returns the integer ceil of the unit.
@@ -181,7 +188,9 @@ func (self Unit) ToIntCeil() int {
 // given by the reference parameter.
 func (self Unit) ToIntToward(reference int) int {
 	floor := self.ToIntFloor()
-	if floor >= reference { return floor }
+	if floor >= reference {
+		return floor
+	}
 	return self.ToIntCeil()
 }
 
@@ -189,7 +198,9 @@ func (self Unit) ToIntToward(reference int) int {
 // opposite to the reference parameter.
 func (self Unit) ToIntAway(reference int) int {
 	ceil := self.ToIntCeil()
-	if ceil > reference { return ceil }
+	if ceil > reference {
+		return ceil
+	}
 	return self.ToIntFloor()
 }
 
@@ -206,14 +217,18 @@ func (self Unit) ToIntHalfUp() int {
 // Rounds the unit towards the reference value and returns
 // the result as an int.
 func (self Unit) ToIntHalfToward(reference int) int {
-	if self >= FromInt(reference) { return self.ToIntHalfDown() }
+	if self >= FromInt(reference) {
+		return self.ToIntHalfDown()
+	}
 	return self.ToIntHalfUp()
 }
 
 // Rounds the unit away from the reference value and returns
 // the result as an int.
 func (self Unit) ToIntHalfAway(reference int) int {
-	if self <= FromInt(reference) { return self.ToIntHalfDown() }
+	if self <= FromInt(reference) {
+		return self.ToIntHalfDown()
+	}
 	return self.ToIntHalfUp()
 }
 
@@ -230,14 +245,18 @@ func (self Unit) Ceil() Unit {
 // Returns the closest whole value in the direction given
 // by the refence parameter.
 func (self Unit) Toward(reference int) Unit {
-	if self >= FromInt(reference) { return self.Floor() }
+	if self >= FromInt(reference) {
+		return self.Floor()
+	}
 	return self.Ceil()
 }
 
-// Returns the closest whole value in the direction 
+// Returns the closest whole value in the direction
 // opposite to the refence parameter.
 func (self Unit) Away(reference int) Unit {
-	if self <= FromInt(reference) { return self.Floor() }
+	if self <= FromInt(reference) {
+		return self.Floor()
+	}
 	return self.Ceil()
 }
 
@@ -254,14 +273,18 @@ func (self Unit) HalfUp() Unit {
 // Returns the result of rounding the unit towards
 // the given reference parameter.
 func (self Unit) HalfToward(reference int) Unit {
-	if self >= FromInt(reference) { return self.HalfDown() }
+	if self >= FromInt(reference) {
+		return self.HalfDown()
+	}
 	return self.HalfUp()
 }
 
 // Returns the result of rounding the unit away
 // from the given reference parameter.
 func (self Unit) HalfAway(reference int) Unit {
-	if self <= FromInt(reference) { return self.HalfDown() }
+	if self <= FromInt(reference) {
+		return self.HalfDown()
+	}
 	return self.HalfUp()
 }
 
@@ -270,17 +293,25 @@ func (self Unit) HalfAway(reference int) Unit {
 // higher value in case of ties.
 func (self Unit) QuantizeUp(step Unit) Unit {
 	// safety assertions
-	if step > 64 { panic("step > 64") }	
-	if step <  1 { panic("step < 1" ) }
+	if step > 64 {
+		panic("step > 64")
+	}
+	if step < 1 {
+		panic("step < 1")
+	}
 
 	// quantize based on the fraction relative to floor
 	lfract := self & 0x3F
-	mod    := lfract % step
-	if mod == 0 { return self }
+	mod := lfract % step
+	if mod == 0 {
+		return self
+	}
 	sum := lfract - mod
 	if mod >= ((step + 1) >> 1) { // tie point
 		sum += step
-		if sum > 64 { sum = 64 }
+		if sum > 64 {
+			sum = 64
+		}
 	}
 	return self.Floor() + sum
 }
@@ -290,17 +321,25 @@ func (self Unit) QuantizeUp(step Unit) Unit {
 // lower value in case of ties.
 func (self Unit) QuantizeDown(step Unit) Unit {
 	// safety assertions
-	if step > 64 { panic("step > 64") }	
-	if step <  1 { panic("step < 1" ) }
+	if step > 64 {
+		panic("step > 64")
+	}
+	if step < 1 {
+		panic("step < 1")
+	}
 
 	// quantize based on the fraction relative to floor
 	lfract := self & 0x3F
-	mod    := lfract % step
-	if mod == 0 { return self }
+	mod := lfract % step
+	if mod == 0 {
+		return self
+	}
 	sum := lfract - mod
 	if mod > (step >> 1) { // tie point
 		sum += step
-		if sum > 64 { sum = 64 }
+		if sum > 64 {
+			sum = 64
+		}
 	}
 	return self.Floor() + sum
 }

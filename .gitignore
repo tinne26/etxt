@@ -6,11 +6,6 @@
 *.work
 *.work.sum
 
-# ignore generable documentation (./run_docsgen.sh)
-docs/*.html
-docs/*.js
-docs/*.css
-
 # ignore fonts for testing
 /fonts/
 *.ttf
@@ -27,3 +22,6 @@ testdata_*.go
 
 # don't share the dirty secrets
 TODO.txt
+
+# ignore some work directories
+unused/

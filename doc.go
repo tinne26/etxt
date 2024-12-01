@@ -3,9 +3,10 @@
 //
 // To get started, you should create a [Renderer] and set up
 // a font and a cache:
-//   text := etxt.NewRenderer()
-//   text.SetFont(font)
-//   text.Utils().SetCache8MiB()
+//
+//	text := etxt.NewRenderer()
+//	text.SetFont(font) // e.g. lbrtsans.Font() from github.com/tinne26/fonts
+//	text.Utils().SetCache8MiB()
 //
 // Then, you can further adjust the renderer properties with functions
 // like [Renderer.SetColor](), [Renderer.SetSize](), [Renderer.SetAlign](),
@@ -13,7 +14,8 @@
 //
 // Once you have everything configured to your liking, drawing is quite
 // straightforward:
-//   text.Draw(canvas, "Hello world!", x, y)
+//
+//	text.Draw(canvas, "Hello world!", x, y)
 //
 // To learn more, make sure to check the [examples]!
 //

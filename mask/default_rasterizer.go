@@ -14,7 +14,7 @@ var _ Rasterizer = (*DefaultRasterizer)(nil)
 type DefaultRasterizer struct {
 	rasterizer vector.Rasterizer
 	normOffset fract.Point // offset to normalize points to the positive
-	                       // quadrant starting from the fractional coords
+	// quadrant starting from the fractional coords
 	onChange func(Rasterizer)
 
 	// Notice that the x/image/vector rasterizer expects coords in the
@@ -56,7 +56,7 @@ func (self *DefaultRasterizer) QuadTo(control, target fract.Point) {
 func (self *DefaultRasterizer) CubeTo(controlA, controlB, target fract.Point) {
 	cax, cay := controlA.AddPoint(self.normOffset).ToFloat32s()
 	cbx, cby := controlB.AddPoint(self.normOffset).ToFloat32s()
-	tx , ty  := target.AddPoint(self.normOffset).ToFloat32s()
+	tx, ty := target.AddPoint(self.normOffset).ToFloat32s()
 	self.rasterizer.CubeTo(cax, cay, cbx, cby, tx, ty)
 }
 

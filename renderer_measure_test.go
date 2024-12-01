@@ -1,11 +1,15 @@
 package etxt
 
-import "testing"
+import (
+	"testing"
 
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+)
 
 func TestMeasure(t *testing.T) {
-	if testFontA == nil { t.SkipNow() }
+	if testFontA == nil {
+		t.SkipNow()
+	}
 
 	renderer := NewRenderer()
 	renderer.SetFont(testFontA)
@@ -16,48 +20,10 @@ func TestMeasure(t *testing.T) {
 	})
 }
 
-func TestMeasureTwine(t *testing.T) {
-	if testFontA == nil { t.SkipNow() }
-
-	renderer := NewRenderer()
-	renderer.SetFont(testFontA)
-	renderer.Utils().SetCache8MiB()
-
-	var twine Twine
-	testMeasureBasics(t, renderer, func(r *Renderer, str string) fract.Rect {
-		twine.Reset()
-		twine.Add(str)
-		return r.Twine().Measure(twine)
-	})
-}
-
-func TestMeasureComparison(t *testing.T) {
-	if testFontA == nil { t.SkipNow() }
-
-	renderer := NewRenderer()
-	renderer.SetFont(testFontA)
-	renderer.Utils().SetCache8MiB()
-
-	var twine Twine
-	var n int
-	testMeasureBasics(t, renderer, func(r *Renderer, str string) fract.Rect {
-		twine.Reset()
-		twine.Add(str)
-		stdRect   := r.Measure(str)
-		twineRect := r.Twine().Measure(twine)
-		if stdRect != twineRect {
-			t.Fatalf(
-				"On measure comparison #%d: string and twine measurements differ (%s vs %s)",
-				n, stdRect.String(), twineRect.String(),
-			)
-		}
-		n += 1
-		return stdRect
-	})
-}
-
 func TestMeasureWithWrap(t *testing.T) {
-	if testFontA == nil { t.SkipNow() }
+	if testFontA == nil {
+		t.SkipNow()
+	}
 
 	renderer := NewRenderer()
 	renderer.SetFont(testFontA)
@@ -68,9 +34,9 @@ func TestMeasureWithWrap(t *testing.T) {
 	})
 
 	// test wrapping behaviors
-	for _, qt := range []fract.Unit{ QtFull, QtHalf, Qt4th, QtNone } {
-		for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {
-			for _, dir := range []Direction{ LeftToRight, RightToLeft } {
+	for _, qt := range []fract.Unit{QtFull, QtHalf, Qt4th, QtNone} {
+		for _, align := range []Align{Baseline | Left, Baseline | Right, Center} {
+			for _, dir := range []Direction{LeftToRight, RightToLeft} {
 				// configure renderer with current params
 				//fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
 				renderer.Fract().SetHorzQuantization(qt)
@@ -79,29 +45,47 @@ func TestMeasureWithWrap(t *testing.T) {
 
 				r1 := renderer.Measure("xyz")
 				r2 := renderer.MeasureWithWrap("xyz k", r1.Width().ToIntCeil())
-				if r2.Width() > r1.Width() { t.Fatal("expected wrap") }
-				if r2.Height() <= r1.Height() { t.Fatal("expected wrap") }
+				if r2.Width() > r1.Width() {
+					t.Fatal("expected wrap")
+				}
+				if r2.Height() <= r1.Height() {
+					t.Fatal("expected wrap")
+				}
 
-				lh  := renderer.Measure("\n").Height()
+				lh := renderer.Measure("\n").Height()
 				lhw := renderer.MeasureWithWrap("\n", 0).Height()
-				if lhw != lh { t.Fatal("line height mismatch") }
+				if lhw != lh {
+					t.Fatal("line height mismatch")
+				}
 				wd := renderer.Measure(".").Width()
 				r3 := renderer.MeasureWithWrap(".", 0)
-				if r3.Height() != lh { t.Fatalf("expected height (%d) to match line height (%d)", r3.Height(), lh) }
-				if r3.Width() != wd { t.Fatalf("expected width = %d, got %d", wd, r3.Width()) }
+				if r3.Height() != lh {
+					t.Fatalf("expected height (%d) to match line height (%d)", r3.Height(), lh)
+				}
+				if r3.Width() != wd {
+					t.Fatalf("expected width = %d, got %d", wd, r3.Width())
+				}
 
 				hr := renderer.Measure("a\n").Height()
 				hc := renderer.MeasureWithWrap("a\n", 0).Height()
-				if hr != hc { t.Fatalf("expected wrap height (%d) to match normal height (%d)", hc, hr) }
+				if hr != hc {
+					t.Fatalf("expected wrap height (%d) to match normal height (%d)", hc, hr)
+				}
 
 				r1 = renderer.Measure("xyz")
 				r2 = renderer.MeasureWithWrap("xyzk", r1.Width().ToIntCeil())
-				if r2.Height() != hr { t.Fatal("expected wrap") }
-				if r2.Width() != r1.Width() { t.Fatalf("%d, %d", r2.Width(), r1.Width()) }
+				if r2.Height() != hr {
+					t.Fatal("expected wrap")
+				}
+				if r2.Width() != r1.Width() {
+					t.Fatalf("%d, %d", r2.Width(), r1.Width())
+				}
 
 				r1 = renderer.Measure("hello world")
 				r2 = renderer.MeasureWithWrap("hello world hello world hello world\ngoodbye", r1.Width().ToIntCeil())
-				if r1.Width() != r2.Width() { t.Fatalf("expected %d, got %d", r1.Width(), r2.Width()) }
+				if r1.Width() != r2.Width() {
+					t.Fatalf("expected %d, got %d", r1.Width(), r2.Width())
+				}
 				if r2.Height() != renderer.Measure("hello world\nhello world\nhello world\ngoodbye").Height() {
 					t.Fatalf("unexpected height")
 				}
@@ -112,9 +96,9 @@ func TestMeasureWithWrap(t *testing.T) {
 
 func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, string) fract.Rect) {
 	vertQuant := fract.Unit(renderer.state.vertQuantization)
-	for _, qt := range []fract.Unit{ QtFull, QtHalf, Qt4th, QtNone } {
-		for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {
-			for _, dir := range []Direction{ LeftToRight, RightToLeft } {
+	for _, qt := range []fract.Unit{QtFull, QtHalf, Qt4th, QtNone} {
+		for _, align := range []Align{Baseline | Left, Baseline | Right, Center} {
+			for _, dir := range []Direction{LeftToRight, RightToLeft} {
 				// configure renderer with current params
 				// fmt.Printf("config: qt = %d, align = %s, dir = %s\n", qt, align.String(), dir.String())
 				renderer.Fract().SetHorzQuantization(qt)
@@ -134,7 +118,7 @@ func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, stri
 				w1, h1 := fn(renderer, "hey h").Size()
 				w2, h2 := fn(renderer, "hey ho").Size()
 				w3, h3 := fn(renderer, "hey hoo").Size()
-				w4,  _ := fn(renderer, "hey ho.hey ho").Size()
+				w4, _ := fn(renderer, "hey ho.hey ho").Size()
 				fractLineHeight := fract.FromFloat64(renderer.Utils().GetLineHeight())
 				if h1 != fractLineHeight.QuantizeUp(vertQuant) {
 					t.Fatalf( // notice: this could not always be true if there's formatting
@@ -173,17 +157,21 @@ func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, stri
 
 				hs1 := fn(renderer, "A").Height()
 				hs2 := fn(renderer, " ").Height()
-				if hs1 != hs2 { t.Fatal("expected same height") }
+				if hs1 != hs2 {
+					t.Fatal("expected same height")
+				}
 				hs1 = fn(renderer, "A\n\nA").Height()
 				hs2 = fn(renderer, "    \n\n      ").Height()
-				if hs1 != hs2 { t.Fatal("expected same height") }
+				if hs1 != hs2 {
+					t.Fatal("expected same height")
+				}
 			}
 		}
 	}
 
 	// direction symmetry check (only reliable when quantization is fully disabled)
 	renderer.Fract().SetHorzQuantization(QtNone)
-	for _, align := range []Align{ Baseline | Left, Baseline | Right, Center } {	
+	for _, align := range []Align{Baseline | Left, Baseline | Right, Center} {
 		renderer.SetAlign(align)
 
 		renderer.SetDirection(LeftToRight)

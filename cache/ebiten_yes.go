@@ -21,7 +21,9 @@ const constMaskSizeFactor = 192
 // be treated as a lower bound. With gtxt, the returned values are
 // exact.
 func GlyphMaskByteSize(mask GlyphMask) uint32 {
-	if mask == nil { return constMaskSizeFactor }
+	if mask == nil {
+		return constMaskSizeFactor
+	}
 	w, h := mask.Size()
 	return maskDimsByteSize(w, h)
 }

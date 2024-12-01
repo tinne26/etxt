@@ -11,7 +11,7 @@ var _ GlyphCacheHandler = (*DefaultCacheHandler)(nil)
 
 // A default implementation of [GlyphCacheHandler].
 type DefaultCacheHandler struct {
-	cache *DefaultCache
+	cache     *DefaultCache
 	activeKey [3]uint64
 }
 

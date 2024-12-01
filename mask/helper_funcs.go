@@ -20,7 +20,7 @@ func figureOutBounds(bounds fract.Rect, origin fract.Point) (int, int, fract.Poi
 	var normOffset fract.Point
 	normOffset.X = -floorMinX + origin.X.FractShift()
 	normOffset.Y = -floorMinY + origin.Y.FractShift()
-	width  := (bounds.Max.X + normOffset.X).ToIntCeil()
+	width := (bounds.Max.X + normOffset.X).ToIntCeil()
 	height := (bounds.Max.Y + normOffset.Y).ToIntCeil()
 	return width, height, normOffset, maskCorrection
 }
@@ -51,21 +51,25 @@ func lerp(ax, ay, bx, by float64, t float64) (float64, float64) {
 }
 
 // interpolate a and b at the given t, which must be in [0, 1]
-func interpolateAt(a, b float64, t float64) float64 { return a + t*(b - a) }
+func interpolateAt(a, b float64, t float64) float64 { return a + t*(b-a) }
 
 // Given two points of a line, it returns its A, B and C
 // coefficients from the form "Ax + By + C = 0".
 func toLinearFormABC(ox, oy, fx, fy float64) (float64, float64, float64) {
-	a, b, c := fy - oy, -(fx - ox), (fx - ox)*oy - (fy - oy)*ox
+	a, b, c := fy-oy, -(fx - ox), (fx-ox)*oy-(fy-oy)*ox
 	return a, b, c
 }
 
 func abs64(value float64) float64 {
-	if value >= 0 { return value }
+	if value >= 0 {
+		return value
+	}
 	return -value
 }
 
 func clampUnit64(value float64) float64 {
-	if value <= 1.0 { return value }
+	if value <= 1.0 {
+		return value
+	}
 	return 1.0
 }

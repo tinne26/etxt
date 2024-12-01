@@ -11,15 +11,15 @@ var _ Sizer = (*CustomVertSizer)(nil)
 // the font and instead replaces them with fixed values relative to
 // the font size. This can be used to manually control the line
 // height for a single font or a small set of fonts.
-// 
+//
 // One must call [CustomVertSizer.NotifyChange]() to properly update
 // values after changing AscentMult, DescentMult or LineGapMult.
 type CustomVertSizer struct {
-	AscentMult fract.Unit
-	DescentMult fract.Unit
-	LineGapMult fract.Unit
-	cachedAscent  fract.Unit
-	cachedDescent fract.Unit
+	AscentMult       fract.Unit
+	DescentMult      fract.Unit
+	LineGapMult      fract.Unit
+	cachedAscent     fract.Unit
+	cachedDescent    fract.Unit
 	cachedLineHeight fract.Unit
 }
 
@@ -51,15 +51,21 @@ func (self *CustomVertSizer) LineAdvance(*Font, *Buffer, fract.Unit, int) fract.
 // Satisfies the [Sizer] interface.
 func (self *CustomVertSizer) GlyphAdvance(font *Font, buffer *Buffer, size fract.Unit, g GlyphIndex) fract.Unit {
 	advance, err := font.GlyphAdvance(buffer, g, fixed.Int26_6(size), hintingNone)
-	if err == nil { return fract.Unit(advance) }
+	if err == nil {
+		return fract.Unit(advance)
+	}
 	panic("font.GlyphAdvance(index = " + strconv.Itoa(int(g)) + ") error: " + err.Error())
 }
 
 // Satisfies the [Sizer] interface.
 func (self *CustomVertSizer) Kern(font *Font, buffer *Buffer, size fract.Unit, g1, g2 GlyphIndex) fract.Unit {
 	kern, err := font.Kern(buffer, g1, g2, fixed.Int26_6(size), hintingNone)
-	if err == nil { return fract.Unit(kern) }
-	if err == ErrNotFound { return 0 }
+	if err == nil {
+		return fract.Unit(kern)
+	}
+	if err == ErrNotFound {
+		return 0
+	}
 
 	msg := "font.Kern failed for glyphs with indices "
 	msg += strconv.Itoa(int(g1)) + " and "
@@ -69,7 +75,7 @@ func (self *CustomVertSizer) Kern(font *Font, buffer *Buffer, size fract.Unit, g
 
 // Satisfies the [Sizer] interface.
 func (self *CustomVertSizer) NotifyChange(_ *Font, _ *Buffer, size fract.Unit) {
-	self.cachedAscent  = size.MulUp(self.AscentMult)
+	self.cachedAscent = size.MulUp(self.AscentMult)
 	self.cachedDescent = size.MulUp(self.DescentMult)
 	self.cachedLineHeight = size.MulUp(self.LineGapMult) + self.cachedAscent + self.cachedDescent
 }

@@ -9,19 +9,19 @@ import "github.com/tinne26/etxt/sizer"
 import "github.com/tinne26/etxt/fract"
 
 type restorableState struct {
-	fontColor color.Color
-	fontSizer sizer.Sizer
+	fontColor  color.Color
+	fontSizer  sizer.Sizer
 	rasterizer mask.Rasterizer
 	activeFont *sfnt.Font
 
-	textDirection Direction
+	textDirection    Direction
 	horzQuantization uint8
 	vertQuantization uint8
-	align Align
+	align            Align
 
-	scale fract.Unit
+	scale       fract.Unit
 	logicalSize fract.Unit
-	scaledSize fract.Unit
-	fontIndex FontIndex
-	blendMode BlendMode
+	scaledSize  fract.Unit
+	fontIndex   FontIndex
+	blendMode   BlendMode
 }

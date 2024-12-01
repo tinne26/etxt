@@ -16,7 +16,9 @@ func TestTestdataBlendRand(t *testing.T) {
 	if foundE != foundG || foundE != foundB {
 		panic("incorrect test data generation or setup")
 	}
-	if !foundE { t.SkipNow() }
+	if !foundE {
+		t.SkipNow()
+	}
 
 	// compare values
 	if !similarByteSlices(valuesE, valuesG) {
@@ -28,11 +30,19 @@ func TestTestdataBlendRand(t *testing.T) {
 }
 
 func similarByteSlices(a, b []byte) bool {
-	if len(a) != len(b) { return false }
+	if len(a) != len(b) {
+		return false
+	}
 	for i := 0; i < len(a); i++ {
-		if a[i] == b[i] { continue }
-		if a[i] < b[i] && a[i] + 1 == b[i] { continue }
-		if b[i] < a[i] && b[i] + 1 == a[i] { continue }
+		if a[i] == b[i] {
+			continue
+		}
+		if a[i] < b[i] && a[i]+1 == b[i] {
+			continue
+		}
+		if b[i] < a[i] && b[i]+1 == a[i] {
+			continue
+		}
 		return false
 	}
 	return true

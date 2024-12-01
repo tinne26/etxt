@@ -8,14 +8,14 @@ import "sync/atomic"
 // memory bounds and uses random sampling for evicting entries.
 type DefaultCache struct {
 	cachedMasks map[[3]uint64]*cachedMaskEntry
-	mutex sync.RWMutex
-	capacity uint64
+	mutex       sync.RWMutex
+	capacity    uint64
 	currentSize uint64
-	peakSize uint64 // (max ever size)
-	accessTick uint64 // (see toNextAccessTick() for overflow details)
+	peakSize    uint64 // (max ever size)
+	accessTick  uint64 // (see toNextAccessTick() for overflow details)
 }
 
-// Creates a new cache bounded by the given capacity. Negative 
+// Creates a new cache bounded by the given capacity. Negative
 // values will panic.
 //
 // Values below 32*1024 (32KiB) are not recommended; allowing the
@@ -23,10 +23,12 @@ type DefaultCache struct {
 // For more concrete size estimations, the package overview includes
 // a more detailed explanation.
 func NewDefaultCache(capacityInBytes int) *DefaultCache {
-	if capacityInBytes < 0 { panic("capacityInBytes < 0") } // likely a dev mistake
-	return &DefaultCache {
+	if capacityInBytes < 0 {
+		panic("capacityInBytes < 0")
+	} // likely a dev mistake
+	return &DefaultCache{
 		cachedMasks: make(map[[3]uint64]*cachedMaskEntry, 128),
-		capacity: uint64(capacityInBytes),
+		capacity:    uint64(capacityInBytes),
 	}
 }
 
@@ -48,7 +50,9 @@ func (self *DefaultCache) removeRandOldEntry() {
 
 		// break if we already took enough samples
 		entriesSampled += 1
-		if entriesSampled >= RequiredSamples { break }
+		if entriesSampled >= RequiredSamples {
+			break
+		}
 	}
 	self.mutex.RUnlock()
 
@@ -69,11 +73,15 @@ func (self *DefaultCache) PassMask(key [3]uint64, mask GlyphMask) {
 	tick := self.toNextAccessTick()
 	maskEntry := newCachedMaskEntry(mask, tick)
 	maskSize := uint64(maskEntry.ByteSize())
-	if maskSize > atomic.LoadUint64(&self.capacity) { return } // awkward
-	
+	if maskSize > atomic.LoadUint64(&self.capacity) {
+		return
+	} // awkward
+
 	// see if we have enough space to add (without concurrent checking)
 	for attempt := 0; attempt < 5; attempt++ {
-		if self.hasRoomForMask(maskSize) { break }
+		if self.hasRoomForMask(maskSize) {
+			break
+		}
 		self.removeRandOldEntry()
 	}
 
@@ -97,9 +105,11 @@ func (self *DefaultCache) PassMask(key [3]uint64, mask GlyphMask) {
 
 func (self *DefaultCache) hasRoomForMask(maskSize uint64) bool {
 	capacity := atomic.LoadUint64(&self.capacity)
-	if capacity < maskSize { return false }
+	if capacity < maskSize {
+		return false
+	}
 	size := atomic.LoadUint64(&self.currentSize)
-	return size <= capacity - maskSize
+	return size <= capacity-maskSize
 }
 
 // Returns the capacity of the cache, in bytes.
@@ -116,11 +126,13 @@ func (self *DefaultCache) CurrentSize() int {
 func (self *DefaultCache) remainingCapacity() uint64 {
 	currSize := atomic.LoadUint64(&self.currentSize)
 	capacity := atomic.LoadUint64(&self.capacity)
-	if currSize >= capacity { return 0 }
+	if currSize >= capacity {
+		return 0
+	}
 	return capacity - currSize
 }
 
-// Returns an approximation of the maximum amount of bytes that 
+// Returns an approximation of the maximum amount of bytes that
 // the cache has been filled with throughout its life.
 //
 // This method can be useful to determine the actual usage of a cache
@@ -142,7 +154,9 @@ func (self *DefaultCache) GetMask(key [3]uint64) (GlyphMask, bool) {
 	self.mutex.RLock()
 	entry, found := self.cachedMasks[key]
 	self.mutex.RUnlock()
-	if !found { return nil, false }
+	if !found {
+		return nil, false
+	}
 
 	tick := self.toNextAccessTick()
 	entry.UpdateAccess(tick)
@@ -176,5 +190,5 @@ func (self *DefaultCache) toNextAccessTick() uint64 {
 // renderers.
 func (self *DefaultCache) NewHandler() *DefaultCacheHandler {
 	var zeroKey [3]uint64
-	return &DefaultCacheHandler { cache: self, activeKey: zeroKey }
+	return &DefaultCacheHandler{cache: self, activeKey: zeroKey}
 }

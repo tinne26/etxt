@@ -25,10 +25,10 @@ func (self Align) Vert() Align { return alignVertBits & self }
 func (self Align) Horz() Align { return alignHorzBits & self }
 
 // Returns whether the align has a vertical component.
-func (self Align) HasVertComponent() bool { return alignVertBits & self != 0 }
+func (self Align) HasVertComponent() bool { return alignVertBits&self != 0 }
 
 // Returns whether the align has a horizontal component.
-func (self Align) HasHorzComponent() bool { return alignHorzBits & self != 0 }
+func (self Align) HasHorzComponent() bool { return alignHorzBits&self != 0 }
 
 // Returns the result of overriding the current align with
 // the non-empty components of the given align. If both
@@ -41,7 +41,9 @@ func (self Align) Adjusted(align Align) Align {
 	horz := align.Horz()
 	vert := align.Vert()
 	if horz != 0 {
-		if vert != 0 { return align }
+		if vert != 0 {
+			return align
+		}
 		return horz | self.Vert()
 	} else if vert != 0 {
 		return self.Horz() | vert
@@ -51,41 +53,57 @@ func (self Align) Adjusted(align Align) Align {
 }
 
 // Returns a value between 'left' and 'right' based on the current horizontal align:
-//  - [Left]: the function returns 'left'.
-//  - [Right]: the function returns 'right'.
-//  - Otherwise: the function returns the middle point between 'left' and 'right'.
+//   - [Left]: the function returns 'left'.
+//   - [Right]: the function returns 'right'.
+//   - Otherwise: the function returns the middle point between 'left' and 'right'.
 func (self Align) GetHorzAnchor(left, right int) int {
 	switch self.Horz() {
-	case Left  : return left
-	case Right : return right
+	case Left:
+		return left
+	case Right:
+		return right
 	default: // assume horz center even when undefined
 		return (left + right) >> 1
 	}
 }
 
 // Returns a textual description of the align. Some examples:
-//   (Top | Right).String() == "(Top | Right)"
-//   (Right | Top).String() == "(Top | Right)"
-//   Center.String() == "(VertCenter | HorzCenter)"
-//   (Baseline | Left).String() == "(Baseline | Left)"
-//   HorzCenter.String() == "(HorzCenter)"
-//   Bottom.String() == "(Bottom)"
+//
+//	(Top | Right).String() == "(Top | Right)"
+//	(Right | Top).String() == "(Top | Right)"
+//	Center.String() == "(VertCenter | HorzCenter)"
+//	(Baseline | Left).String() == "(Baseline | Left)"
+//	HorzCenter.String() == "(HorzCenter)"
+//	Bottom.String() == "(Bottom)"
 func (self Align) String() string {
-	if self == 0 { return "(ZeroAlign)" }
-	if self.Vert() == 0 { return "(" + self.horzString() + ")" }
-	if self.Horz() == 0 { return "(" + self.vertString() + ")" }
+	if self == 0 {
+		return "(ZeroAlign)"
+	}
+	if self.Vert() == 0 {
+		return "(" + self.horzString() + ")"
+	}
+	if self.Horz() == 0 {
+		return "(" + self.vertString() + ")"
+	}
 	return "(" + self.vertString() + " | " + self.horzString() + ")"
 }
 
 func (self Align) vertString() string {
 	switch self.Vert() {
-	case Top: return "Top"
-	case CapLine: return "CapLine"
-	case Midline: return "Midline"
-	case VertCenter: return "VertCenter"
-	case Baseline: return "Baseline"
-	case Bottom: return "Bottom"
-	case LastBaseline: return "LastBaseline"
+	case Top:
+		return "Top"
+	case CapLine:
+		return "CapLine"
+	case Midline:
+		return "Midline"
+	case VertCenter:
+		return "VertCenter"
+	case Baseline:
+		return "Baseline"
+	case Bottom:
+		return "Bottom"
+	case LastBaseline:
+		return "LastBaseline"
 	default:
 		return "VertUnknown"
 	}
@@ -93,16 +111,19 @@ func (self Align) vertString() string {
 
 func (self Align) horzString() string {
 	switch self.Horz() {
-	case Left: return "Left"
-	case HorzCenter: return "HorzCenter"
-	case Right: return "Right"
+	case Left:
+		return "Left"
+	case HorzCenter:
+		return "HorzCenter"
+	case Right:
+		return "Right"
 	default:
 		return "HorzUnknown"
 	}
 }
 
 // Aligns have a vertical and a horizontal component. To set
-// both components at once you can use a bitwise OR (e.g. 
+// both components at once you can use a bitwise OR (e.g.
 // [Renderer.SetAlign](etxt.Left | etxt.Bottom)). To retrieve or
 // compare the individual components, avoid bitwise operations
 // and use [Align.Vert]() and [Align.Horz]() instead.
@@ -123,10 +144,11 @@ const (
 
 	// Full aligns
 	Center Align = HorzCenter | VertCenter
-	
+
 	alignVertBits Align = 0b0000_1111 // bit mask
 	alignHorzBits Align = 0b1111_0000 // bit mask
 )
+
 // Internal note: the fact that the combinations of Bottom | Top,
 // Baseline | Bottom and Midline | Bottom are valid is intentional
 // and I intend to preserve it like that, despite the fact that it
@@ -136,11 +158,11 @@ const (
 
 // The renderer's [Align] defines how [Renderer.Draw]() and other operations
 // interpret the coordinates passed to them. For example:
-//  - If the align is set to (etxt.[Top] | etxt.[Left]), coordinates will 
-//    be interpreted as the top-left corner of the box that the text needs
-//    to occupy.
-//  - If the align is set to (etxt.[Center]), coordinates will be
-//    interpreted as the center of the box that the text needs to occupy.
+//   - If the align is set to (etxt.[Top] | etxt.[Left]), coordinates will
+//     be interpreted as the top-left corner of the box that the text needs
+//     to occupy.
+//   - If the align is set to (etxt.[Center]), coordinates will be
+//     interpreted as the center of the box that the text needs to occupy.
 //
 // See [this image] for a visual explanation instead.
 //

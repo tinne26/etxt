@@ -28,7 +28,7 @@ type EdgeMarkerRasterizer struct {
 	// method. The rest is only a wrapper to comply with the
 	// emask.Rasterizer interface.
 	rasterizer edgeMarker
-	onChange func(Rasterizer)
+	onChange   func(Rasterizer)
 	rectOffset image.Point
 	normOffset fract.Point
 }
@@ -80,7 +80,7 @@ func (self *EdgeMarkerRasterizer) SetMaxCurveSplits(maxCurveSplits int) {
 		segmenter.SetMaxSplits(maxCurveSplits)
 		if segmenter.maxCurveSplits != preSplits {
 			self.onChange(self)
-		}		
+		}
 	}
 }
 
@@ -91,10 +91,10 @@ func (self *EdgeMarkerRasterizer) SetOnChangeFunc(onChange func(Rasterizer)) {
 
 // Satisfies the [Rasterizer] interface. The signature for the
 // edge marker rasterizer has the following shape:
-//  - 0xFF00000000000000 unused bits customizable through type embedding.
-//  - 0x00FF000000000000 bits being 0xE6 (self signature byte).
-//  - 0x0000FFFFFF000000 bits being zero, currently undefined.
-//  - 0x0000000000FFFFFF bits representing the curve segmenter configuration.
+//   - 0xFF00000000000000 unused bits customizable through type embedding.
+//   - 0x00FF000000000000 bits being 0xE6 (self signature byte).
+//   - 0x0000FFFFFF000000 bits being zero, currently undefined.
+//   - 0x0000000000FFFFFF bits representing the curve segmenter configuration.
 func (self *EdgeMarkerRasterizer) Signature() uint64 {
 	segmenter := &self.rasterizer.CurveSegmenter
 	return 0x00E6000000000000 | segmenter.Signature()
@@ -123,7 +123,7 @@ func (self *EdgeMarkerRasterizer) QuadTo(control, target fract.Point) {
 func (self *EdgeMarkerRasterizer) CubeTo(controlA, controlB, target fract.Point) {
 	cax, cay := controlA.AddPoint(self.normOffset).ToFloat64s()
 	cbx, cby := controlB.AddPoint(self.normOffset).ToFloat64s()
-	tx , ty  := target.AddPoint(self.normOffset).ToFloat64s()
+	tx, ty := target.AddPoint(self.normOffset).ToFloat64s()
 	self.rasterizer.CubeTo(cax, cay, cbx, cby, tx, ty)
 }
 
@@ -135,7 +135,7 @@ func (self *EdgeMarkerRasterizer) Rasterize(outline sfnt.Segments, origin fract.
 		Min: fract.UnitsToPoint(fract.Unit(fbounds.Min.X), fract.Unit(fbounds.Min.Y)),
 		Max: fract.UnitsToPoint(fract.Unit(fbounds.Max.X), fract.Unit(fbounds.Max.Y)),
 	}
-	
+
 	// prepare rasterizer
 	var width, height int
 	width, height, self.normOffset, self.rectOffset = figureOutBounds(bounds, origin)

@@ -26,12 +26,9 @@ ok      github.com/tinne26/etxt/fract   0.478s  coverage: 90.5% of statements
 ok      github.com/tinne26/etxt/mask    0.546s  coverage: 83.5% of statements
 ```
 
-Scripts also include generation of static documentation, coverage and some benchmarking of custom rasterizers.
-
-
 ## Testing Ebitengine vs gtxt
 
-As explained in the previous section, Ebitengine's graphical output is hard to test. The logic between the default etxt version and the `-tags gtxt` version is almost entirely shared, so testing only with `gtxt` is still a fairly decent guarantee that things will also work on Ebitengine. The main difference are blend modes and glyph compositing over a target surface. To help out cover this gap, we can use `go generate` from the base `etxt` directory:
+As explained in the previous section, Ebitengine's graphical output is hard to test. The logic between the default etxt version and the `-tags gtxt` version is almost entirely shared, so testing only with `gtxt` is still a fairly decent guarantee that things will also work on Ebitengine. The main difference are blend modes and glyph compositing over a target surface. To help cover this gap, we can use `go generate` from the base `etxt` directory:
 ```
 $ go generate
 Generating 'testdata_blend_rand_ebiten_test.go'... OK
@@ -50,6 +47,6 @@ High test coverage percentages don't really mean much. Some examples:
 - The whole `go generate` stuff for Ebitengine doesn't even increase coverage.
 - You often have to write many more tests than what's strictly required for coverage to be really confident that something works as intended. I have written many such tests, but many more are still missing.
 - Examples go a long way in improving my confidence that something is working, even if this isn't reflected on tests coverage.
-- Maturity of v0.0.9's API is still quite heterogeneous.
+- Maturity of v0.0.9 API is still quite heterogeneous.
 
 v0.0.9 is still on its infancy and it's likely to be much less stable than v0.0.8. At the same time, it also fixes a few big bugs and makes many, many small quality improvements over v0.0.8.

@@ -18,7 +18,7 @@ type Library struct {
 
 // Creates a new, empty font [Library].
 func NewLibrary() *Library {
-	return &Library {
+	return &Library{
 		fonts: make(map[string]*sfnt.Font),
 	}
 }
@@ -49,14 +49,16 @@ func (self *Library) HasFont(name string) bool {
 //
 // If you don't know what are the names of your fonts, there are a few
 // ways to figure it out:
-//  - Add the fonts into the font library and print their names with
-//    [Library.EachFont]().
-//  - Use the [GetName]() function directly on a font.
-//  - Open a font with the OS's default font viewer; the name is usually
-//    on the title and/or first line of text.
+//   - Add the fonts into the font library and print their names with
+//     [Library.EachFont]().
+//   - Use the [GetName]() function directly on a font.
+//   - Open a font with the OS's default font viewer; the name is usually
+//     on the title and/or first line of text.
 func (self *Library) GetFont(name string) *sfnt.Font {
 	font, found := self.fonts[name]
-	if found { return font }
+	if found {
+		return font
+	}
 	return nil
 }
 
@@ -70,7 +72,9 @@ func (self *Library) GetFont(name string) *sfnt.Font {
 // functions (e.g. [Library.ParseFromBytes]()) would be preferable.
 func (self *Library) AddFont(font *sfnt.Font) (string, error) {
 	name, err := GetName(font)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	return name, self.addNewFont(font, name)
 }
 
@@ -84,7 +88,9 @@ func (self *Library) AddFont(font *sfnt.Font) (string, error) {
 // [Library.EachFont]().
 func (self *Library) RemoveFont(name string) bool {
 	_, found := self.fonts[name]
-	if !found { return false }
+	if !found {
+		return false
+	}
 	delete(self.fonts, name)
 	return true
 }
@@ -96,7 +102,9 @@ func (self *Library) RemoveFont(name string) bool {
 // [ErrAlreadyPresent] will be returned.
 func (self *Library) ParseFromPath(path string) (string, error) {
 	font, name, err := ParseFromPath(path)
-	if err != nil { return name, err }
+	if err != nil {
+		return name, err
+	}
 	return name, self.addNewFont(font, name)
 }
 
@@ -105,7 +113,9 @@ func (self *Library) ParseFromPath(path string) (string, error) {
 // doubt, pass a copy (e.g. ParseFromBytes(append([]byte(nil), data))).
 func (self *Library) ParseFromBytes(fontBytes []byte) (string, error) {
 	font, name, err := ParseFromBytes(fontBytes)
-	if err != nil { return name, err }
+	if err != nil {
+		return name, err
+	}
 	return name, self.addNewFont(font, name)
 }
 
@@ -115,7 +125,9 @@ func (self *Library) ParseFromBytes(fontBytes []byte) (string, error) {
 var ErrAlreadyPresent = errors.New("font already present in the library")
 
 func (self *Library) addNewFont(font *sfnt.Font, name string) error {
-	if self.HasFont(name) { return ErrAlreadyPresent }
+	if self.HasFont(name) {
+		return ErrAlreadyPresent
+	}
 	self.fonts[name] = font
 	return nil
 }
@@ -133,15 +145,18 @@ var ErrBreakEach = errors.New("EachFont() early break")
 // Otherwise, [Library.EachFont]() will always return nil.
 //
 // Example code to print the names of all the fonts in the library:
-//   library.EachFont(func(name string, _ *etxt.Font) error {
-//       fmt.Println(name)
-//       return nil
-//   })
+//
+//	library.EachFont(func(name string, _ *sfnt.Font) error {
+//	    fmt.Println(name)
+//	    return nil
+//	})
 func (self *Library) EachFont(fontFunc func(string, *sfnt.Font) error) error {
 	for name, font := range self.fonts {
 		err := fontFunc(name, font)
 		if err != nil {
-			if err == ErrBreakEach { return nil }
+			if err == ErrBreakEach {
+				return nil
+			}
 			return err
 		}
 	}
@@ -154,24 +169,34 @@ func (self *Library) EachFont(fontFunc func(string, *sfnt.Font) error) error {
 // that might happen during the process.
 func (self *Library) ParseAllFromPath(dirName string) (added, skipped int, err error) {
 	absDirPath, err := filepath.Abs(dirName)
-	if err != nil { return 0, 0, err }
+	if err != nil {
+		return 0, 0, err
+	}
 
 	err = filepath.WalkDir(absDirPath,
 		func(path string, info fs.DirEntry, err error) error {
-			if err != nil { return err }
+			if err != nil {
+				return err
+			}
 			if info.IsDir() {
-				if path == absDirPath { return nil }
+				if path == absDirPath {
+					return nil
+				}
 				return fs.SkipDir
 			}
 
 			valid := hasValidFontExtension(path)
-			if !valid { return nil }
+			if !valid {
+				return nil
+			}
 			_, err = self.ParseFromPath(path)
 			if err == ErrAlreadyPresent {
 				skipped += 1
 				return nil
 			}
-			if err == nil { added += 1 }
+			if err == nil {
+				added += 1
+			}
 			return err
 		})
 	return added, skipped, err
@@ -181,7 +206,9 @@ func (self *Library) ParseAllFromPath(dirName string) (added, skipped int, err e
 // This is mainly provided to support [embed.FS] and embedded fonts.
 func (self *Library) ParseFromFS(filesys fs.FS, path string) (string, error) {
 	font, name, err := ParseFromFS(filesys, path)
-	if err != nil { return name, err }
+	if err != nil {
+		return name, err
+	}
 	return name, self.addNewFont(font, name)
 }
 
@@ -189,25 +216,33 @@ func (self *Library) ParseFromFS(filesys fs.FS, path string) (string, error) {
 // This is mainly provided to support [embed.FS] and embedded fonts.
 func (self *Library) ParseAllFromFS(filesys fs.FS, dirName string) (added, skipped int, err error) {
 	entries, err := fs.ReadDir(filesys, dirName)
-	if err != nil { return 0, 0, err }
+	if err != nil {
+		return 0, 0, err
+	}
 
 	if dirName == "." {
 		dirName = ""
-	} else if len(dirName) == 0 || dirName[len(dirName) - 1] != '/' {
+	} else if len(dirName) == 0 || dirName[len(dirName)-1] != '/' {
 		dirName += "/"
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() { continue }
+		if entry.IsDir() {
+			continue
+		}
 		valid := hasValidFontExtension(entry.Name())
-		if !valid { continue }
+		if !valid {
+			continue
+		}
 		path := dirName + entry.Name()
 		_, err = self.ParseFromFS(filesys, path)
 		if err == ErrAlreadyPresent {
 			skipped += 1
 			continue
 		}
-		if err != nil { return added, skipped, err }
+		if err != nil {
+			return added, skipped, err
+		}
 		added += 1
 	}
 	return added, skipped, nil

@@ -1,16 +1,17 @@
 package etxt
 
-import "golang.org/x/image/font/sfnt"
-
-import "github.com/tinne26/etxt/fract"
+import (
+	"github.com/tinne26/etxt/fract"
+	"golang.org/x/image/font/sfnt"
+)
 
 // Precondition: lineBreakX is properly quantized already. lineBreakNth has been
 // preincremented, for example with drawInternalValues.increaseLineBreakNth()
 func (self *Renderer) advanceLine(position fract.Point, lineBreakX fract.Unit, lineBreakNth int) fract.Point {
 	prevFractY := position.Y.FractShift()
-	position.X  = lineBreakX
+	position.X = lineBreakX
 	position.Y += self.getOpLineAdvance(lineBreakNth)
-	position.Y  = position.Y.QuantizeUp(fract.Unit(self.state.vertQuantization))
+	position.Y = position.Y.QuantizeUp(fract.Unit(self.state.vertQuantization))
 	if self.cacheHandler != nil && position.Y.FractShift() != prevFractY {
 		self.cacheHandler.NotifyFractChange(position)
 	}
@@ -32,9 +33,10 @@ func (self *Renderer) internalGlyphDraw(target Target, glyphIndex sfnt.GlyphInde
 // used without position, so maybe we could add that too and shorten
 // some code. but unclear.
 type drawInternalValues struct {
-	lineBreakNth int
-	prevFractX fract.Unit
-	prevGlyphIndex sfnt.GlyphIndex
+	lineBreakNth      int
+	prevFractX        fract.Unit
+	prevGlyphIndex    sfnt.GlyphIndex
+	lineChangeDetails LineChangeDetails
 }
 
 func (self *drawInternalValues) interruptKerning() {
@@ -42,7 +44,7 @@ func (self *drawInternalValues) interruptKerning() {
 }
 
 func (self *drawInternalValues) increaseLineBreakNth() {
-	self.lineBreakNth = maxInt(1, self.lineBreakNth + 1)
+	self.lineBreakNth = maxInt(1, self.lineBreakNth+1)
 }
 
 func (self *Renderer) drawRuneLTR(target Target, position fract.Point, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
@@ -101,7 +103,7 @@ func (self *Renderer) drawGlyphRTL(target Target, position fract.Point, currGlyp
 			self.cacheHandler.NotifyFractChange(position)
 		}
 	}
-	
+
 	// draw glyph
 	self.internalGlyphDraw(target, currGlyphIndex, position)
 

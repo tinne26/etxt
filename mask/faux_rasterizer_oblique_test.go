@@ -15,25 +15,25 @@ func TestFauxMinusOneSkew(t *testing.T) {
 }
 
 func TestFauxOblique(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		skew float32
-		in []float64
-		out []uint8
+		in   []float64
+		out  []uint8
 	}{
 		{
 			skew: 1.0,
-			in: []float64{ 0, -1, /**/ 1, -1, /**/ 1, 1, /**/ 0, 1 },
-			out: []uint8{ 0, 128, 128, /**/ 128, 128, 0 },
+			in:   []float64{0, -1 /**/, 1, -1 /**/, 1, 1 /**/, 0, 1},
+			out:  []uint8{0, 128, 128 /**/, 128, 128, 0},
 		},
 		{
 			skew: -1.0,
-			in: []float64{ 0, -1, /**/ 1, -1, /**/ 1, 1, /**/ 0, 1 },
-			out: []uint8{ 128, 128, 0, /**/ 0, 128, 128 },
+			in:   []float64{0, -1 /**/, 1, -1 /**/, 1, 1 /**/, 0, 1},
+			out:  []uint8{128, 128, 0 /**/, 0, 128, 128},
 		},
 		{
 			skew: 1.0,
-			in: []float64{ 0, -2, /**/ 1, -2, /**/ 1, 2, /**/ 0, 2 },
-			out: []uint8{ 0, 0, 0, 128, 128, /**/ 0, 0, 128, 128, 0, /**/ 0, 128, 128, 0, 0, /**/ 128, 128, 0, 0, 0 },
+			in:   []float64{0, -2 /**/, 1, -2 /**/, 1, 2 /**/, 0, 2},
+			out:  []uint8{0, 0, 0, 128, 128 /**/, 0, 0, 128, 128, 0 /**/, 0, 128, 128, 0, 0 /**/, 128, 128, 0, 0, 0},
 		},
 	}
 
@@ -46,7 +46,9 @@ func TestFauxOblique(t *testing.T) {
 		}
 		segments := polySegments(test.in)
 		mask, err := rast.Rasterize(segments, fract.Point{})
-		if err != nil { t.Fatalf("unexpected error: %s", err) }
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
 		if !eqSliceUint8(mask.Pix, test.out) {
 			exportTest("oblique_fail.png", mask)
 			t.Fatalf("test #%d mistmatch: expected %v, got %v", i, test.out, mask.Pix)

@@ -28,11 +28,14 @@ func TestCompleteness(t *testing.T) {
 }
 
 var testWarnings string
+
 func ensureTestAssetsLoaded() {
 	// assets load access control
 	assetsLoadMutex.Lock()
 	defer assetsLoadMutex.Unlock()
-	if testAssetsLoaded { return }
+	if testAssetsLoaded {
+		return
+	}
 	testAssetsLoaded = true
 
 	// parse embedded directory and check for useful fonts
@@ -46,32 +49,36 @@ func ensureTestAssetsLoaded() {
 	var mainFontName string
 	for _, entry := range entries {
 		entryName := entry.Name()
-		if !hasValidFontExtension(entryName) { continue }
+		if !hasValidFontExtension(entryName) {
+			continue
+		}
 		path := testFontsDir + "/" + entryName
 		font, fontName, err := ParseFromFS(testfs, path)
 		if err != nil {
 			fmt.Printf("TESTS INIT: %s", err)
 			os.Exit(1)
 		}
-		
+
 		if testFontA == nil {
 			testFontA = font
 			testPathA = entryName
 			mainFontName = fontName
 		} else {
-			if mainFontName == fontName { continue }
+			if mainFontName == fontName {
+				continue
+			}
 			testFontB = font
 			break
 		}
 	}
-	
+
 	// test missing data warnings
 	if testFontA == nil {
 		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 0)\n" +
-		               "WARNING: Most tests will be skipped\n"
+			"WARNING: Most tests will be skipped\n"
 	} else if testFontB == nil {
 		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 1)\n" +
-		               "WARNING: Some tests will be skipped\n"
+			"WARNING: Some tests will be skipped\n"
 	}
 }
 

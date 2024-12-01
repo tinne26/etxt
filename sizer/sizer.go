@@ -13,10 +13,10 @@ import "github.com/tinne26/etxt/fract"
 //
 // You rarely need to care about sizers, but they can be useful
 // in the following cases:
-//  - Customize line height or advances.
-//  - Disable kerning or adjust horizontal spacing.
-//  - Make full size adjustments for a custom rasterizer (e.g.,
-//    a rasterizer that puts glyphs into boxes, bubbles or frames).
+//   - Customize line height or advances.
+//   - Disable kerning or adjust horizontal spacing.
+//   - Make full size adjustments for a custom rasterizer (e.g.,
+//     a rasterizer that puts glyphs into boxes, bubbles or frames).
 type Sizer interface {
 	// Notice: while Ascent(), Descent() and LineGap() may
 	//         seem superfluous, they can be necessary for
@@ -46,7 +46,7 @@ type Sizer interface {
 
 	// Utility method equivalent to Ascent() + Descent() + LineGap().
 	LineHeight(*Font, *Buffer, fract.Unit) fract.Unit
-	
+
 	// Returns the line advance of the given font at the given size.
 	//
 	// The given font and the size must be consistent with the
