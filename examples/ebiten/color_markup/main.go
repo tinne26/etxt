@@ -34,6 +34,7 @@ type Game struct {
 	direction    etxt.Direction
 	align        etxt.Align
 	content      string
+	maxLineLen   int
 	clrProcessor ColorProcessor
 	x, y         int
 }
@@ -80,6 +81,13 @@ func (self *Game) Update() error {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		self.x, self.y = ebiten.CursorPosition()
 	}
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+		x, _ := ebiten.CursorPosition()
+		self.maxLineLen = int(math.Abs(2 * float64(x-self.x)))
+		if self.maxLineLen < 96 {
+			self.maxLineLen = 96
+		}
+	}
 
 	return nil
 }
@@ -90,6 +98,10 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	scale := ebiten.DeviceScaleFactor()
 	w, h := bounds.Dx(), bounds.Dy()
 	canvas.Fill(color.RGBA{3, 2, 0, 255})
+	wrapAreaLeft := self.x - self.maxLineLen/2
+	wrapAreaRight := wrapAreaLeft + self.maxLineLen
+	sub := canvas.SubImage(image.Rect(wrapAreaLeft, 0, wrapAreaRight, h))
+	sub.(*ebiten.Image).Fill(color.RGBA{16, 16, 9, 255})
 	line := fract.IntsToRect(self.x, 0, self.x+1, h).Clip(canvas)
 	line.Fill(color.RGBA{32, 32, 18, 255})
 	line = fract.IntsToRect(0, self.y, w, self.y+1).Clip(canvas)
@@ -113,7 +125,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	self.text.SetAlign(self.align)
 	self.text.SetDirection(self.direction)
 	self.clrProcessor.SetContent(self.content)
-	self.clrProcessor.DrawWithWrap(self.text, canvas, self.x, self.y, w-w/4)
+	self.clrProcessor.DrawWithWrap(self.text, canvas, self.x, self.y, self.maxLineLen)
 }
 
 func main() {
@@ -144,12 +156,13 @@ func main() {
 	ebiten.SetWindowSize(640, 480)
 	scale := ebiten.DeviceScaleFactor()
 	err = ebiten.RunGame(&Game{
-		text:      renderer,
-		align:     etxt.Center,
-		direction: etxt.LeftToRight,
-		content:   Content,
-		x:         int(320 * scale),
-		y:         int(240 * scale),
+		text:       renderer,
+		align:      etxt.Center,
+		direction:  etxt.LeftToRight,
+		content:    Content,
+		maxLineLen: 500,
+		x:          int(320 * scale),
+		y:          int(240 * scale),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -171,7 +184,6 @@ type ColorProcessor struct {
 	changes     []ColorChange
 
 	opRenderer   *etxt.Renderer
-	opCanvas     *ebiten.Image
 	opIndex      int
 	opChange     int
 	opNextEnd    int
@@ -235,7 +247,6 @@ func (self *ColorProcessor) DrawWithWrap(renderer *etxt.Renderer, canvas *ebiten
 	// configure for draw
 	renderer.Glyph().SetDrawFunc(self.drawFn)
 	renderer.Glyph().SetLineChangeFunc(self.lineChangeFn)
-	self.opCanvas = canvas
 	self.opRenderer = renderer
 	self.opIndex = 0
 	self.opChange = -1
@@ -251,7 +262,6 @@ func (self *ColorProcessor) DrawWithWrap(renderer *etxt.Renderer, canvas *ebiten
 	renderer.DrawWithWrap(canvas, self.postContent, x, y, widthLimit)
 
 	// state clean-up
-	self.opCanvas = nil
 	self.opRenderer = nil
 	renderer.Glyph().SetDrawFunc(nil)
 	renderer.Glyph().SetLineChangeFunc(nil)
@@ -265,16 +275,12 @@ func (self *ColorProcessor) drawFn(canvas *ebiten.Image, glyphIndex sfnt.GlyphIn
 }
 
 func (self *ColorProcessor) lineChangeFn(lineChangeDetails etxt.LineChangeDetails) {
-	// TODO: I need to draw the wrap area to see if I'm really eliding or not
-	// if lineChangeDetails.ElidedSpace {
-	// 	self.increaseOpIndex()
-	// }
+	if lineChangeDetails.ElidedSpace {
+		self.increaseOpIndex()
+	}
 	if !lineChangeDetails.IsWrap {
 		self.increaseOpIndex()
 	}
-	pt := self.opLastOrigin.ImagePoint()
-	sub := self.opCanvas.SubImage(image.Rect(pt.X, pt.Y, pt.X+4, pt.Y+4)).(*ebiten.Image)
-	sub.Fill(color.RGBA{255, 0, 255, 255})
 }
 
 func (self *ColorProcessor) increaseOpIndex() {

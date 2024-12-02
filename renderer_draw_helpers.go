@@ -47,6 +47,24 @@ func (self *drawInternalValues) increaseLineBreakNth() {
 	self.lineBreakNth = maxInt(1, self.lineBreakNth+1)
 }
 
+func (self *drawInternalValues) updateLineChangeFromWrapMeasure(runeCount int, lastRune rune) {
+	self.lineChangeDetails.ElidedSpace = false
+	self.lineChangeDetails.IsWrap = true
+	if lastRune == ' ' {
+		self.lineChangeDetails.ElidedSpace = (runeCount > 1)
+	}
+	if lastRune == '\n' || lastRune == -1 {
+		self.lineChangeDetails.IsWrap = false
+	}
+}
+
+func (self *drawInternalValues) numElisions() int {
+	if self.lineChangeDetails.ElidedSpace {
+		return 1
+	}
+	return 0
+}
+
 func (self *Renderer) drawRuneLTR(target Target, position fract.Point, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
 	glyph := self.getGlyphIndex(self.state.activeFont, codePoint)
 	return self.drawGlyphLTR(target, position, glyph, iv)

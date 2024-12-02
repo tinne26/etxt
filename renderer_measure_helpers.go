@@ -141,19 +141,16 @@ func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, te
 }
 
 // returns the width unquantized, without accounting for final wrapped spaces.
-func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit, lcd *LineChangeDetails) (ltrStringIterator, fract.Unit, int, rune) {
+func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit) (ltrStringIterator, fract.Unit, int, rune) {
 	var x, lastSafeWidth fract.Unit
 	var runeCount, lastSafeCount int
 	var safeIterator ltrStringIterator
 	var prevGlyphIndex sfnt.GlyphIndex
-	lcd.ElidedSpace = false
-	lcd.IsWrap = true
 
 	horzQuant := fract.Unit(self.state.horzQuantization)
 	for {
 		codePoint := iterator.Next(text)
 		if codePoint == -1 || codePoint == '\n' {
-			lcd.IsWrap = false
 			return iterator, x, runeCount, codePoint
 		}
 
@@ -194,9 +191,7 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 					}
 					return iterator, x, 1, codePoint
 				} else {
-					if codePoint == ' ' {
-						lcd.ElidedSpace = true
-					} else {
+					if codePoint != ' ' {
 						iterator.Unroll(codePoint)
 					}
 					return iterator, memoX, runeCount - 1, codePoint
@@ -212,19 +207,16 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 }
 
 // returns the width unquantized, without accounting for final wrapped spaces.
-func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit, lcd *LineChangeDetails) (ltrStringIterator, fract.Unit, int, rune) {
+func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit) (ltrStringIterator, fract.Unit, int, rune) {
 	var x, lastSafeWidth fract.Unit // values will be negative while looping
 	var runeCount, lastSafeCount int
 	var safeIterator ltrStringIterator
 	var prevGlyphIndex sfnt.GlyphIndex
-	lcd.ElidedSpace = false
-	lcd.IsWrap = true
 
 	horzQuant := fract.Unit(self.state.horzQuantization)
 	for {
 		codePoint := iterator.Next(text)
 		if codePoint == -1 || codePoint == '\n' {
-			lcd.IsWrap = false
 			return iterator, -x, runeCount, codePoint
 		}
 
@@ -264,9 +256,7 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 					}
 					return iterator, -x, 1, codePoint
 				} else {
-					if codePoint == ' ' {
-						lcd.ElidedSpace = true
-					} else {
+					if codePoint != ' ' {
 						iterator.Unroll(codePoint)
 					}
 					return iterator, -memoX, runeCount - 1, codePoint

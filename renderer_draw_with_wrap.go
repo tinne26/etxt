@@ -127,12 +127,11 @@ func (self *Renderer) trimNonVisibleWithWrap(text string, widthLimit, y, minBase
 }
 
 func (self *Renderer) trimNonVisibleWithWrapLTR(text string, widthLimit, y, minBaselineY fract.Unit) (string, int) {
-	var lineChangeDetails LineChangeDetails
 	var lineBreakNth int = -1
 	var iterator ltrStringIterator
 	var lastRune rune
 	for {
-		iterator, _, _, lastRune = self.helperMeasureWrapLineLTR(iterator, text, widthLimit, &lineChangeDetails)
+		iterator, _, _, lastRune = self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
 		if lastRune == '\n' {
 			lineBreakNth = maxInt(1, lineBreakNth+1)
 		} else {
@@ -150,12 +149,11 @@ func (self *Renderer) trimNonVisibleWithWrapLTR(text string, widthLimit, y, minB
 }
 
 func (self *Renderer) trimNonVisibleWithWrapRTL(text string, widthLimit, y, minBaselineY fract.Unit) (string, int) {
-	var lineChangeDetails LineChangeDetails
 	var lineBreakNth int = -1
 	var iterator ltrStringIterator
 	var lastRune rune
 	for {
-		iterator, _, _, lastRune = self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit, &lineChangeDetails)
+		iterator, _, _, lastRune = self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
 		if lastRune == '\n' {
 			lineBreakNth = maxInt(1, lineBreakNth+1)
 		} else {
@@ -188,9 +186,13 @@ func (self *Renderer) fractDrawWithWrapLeftLTR(target Target, text string, x, y,
 	for { // for each wrap line
 		// Notice: this approach is not optimal. One could write a helperDrawWrapLineLTR
 		//         directly. Same goes for the other 3 horz align + text dir variants.
-		_, _, runeCount, lastRune := self.helperMeasureWrapLineLTR(iterator, text, widthLimit, &iv.lineChangeDetails)
-		if runeCount > 0 {
-			position, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount)
+		_, _, runeCount, lastRune := self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
+		iv.updateLineChangeFromWrapMeasure(runeCount, lastRune)
+		position, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount-iv.numElisions())
+		if iv.lineChangeDetails.ElidedSpace {
+			if iterator.Next(text) != ' ' {
+				panic("broken code")
+			}
 		}
 
 		// stop here or advance line
@@ -222,10 +224,14 @@ func (self *Renderer) fractDrawWithWrapLeftRTL(target Target, text string, x, y,
 	iv.prevFractX = x.FractShift()
 	iv.lineBreakNth = -1
 	for { // for each wrap line
-		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit, &iv.lineChangeDetails)
-		if runeCount > 0 {
-			position.X = x + lineWidth
-			position, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount)
+		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
+		iv.updateLineChangeFromWrapMeasure(runeCount, lastRune)
+		position.X = x + lineWidth
+		position, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount-iv.numElisions())
+		if iv.lineChangeDetails.ElidedSpace {
+			if iterator.Next(text) != ' ' {
+				panic("broken code")
+			}
 		}
 
 		// stop here or advance line
@@ -257,10 +263,14 @@ func (self *Renderer) fractDrawWithWrapRightLTR(target Target, text string, x, y
 	iv.prevFractX = x.FractShift()
 	iv.lineBreakNth = -1
 	for { // for each wrap line
-		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineLTR(iterator, text, widthLimit, &iv.lineChangeDetails)
-		if runeCount > 0 {
-			position.X = startX - lineWidth
-			position, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount)
+		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
+		iv.updateLineChangeFromWrapMeasure(runeCount, lastRune)
+		position.X = startX - lineWidth
+		position, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount-iv.numElisions())
+		if iv.lineChangeDetails.ElidedSpace {
+			if iterator.Next(text) != ' ' {
+				panic("broken code")
+			}
 		}
 
 		// stop here or advance line
@@ -292,9 +302,13 @@ func (self *Renderer) fractDrawWithWrapRightRTL(target Target, text string, x, y
 	iv.prevFractX = x.FractShift()
 	iv.lineBreakNth = -1
 	for { // for each wrap line
-		_, _, runeCount, lastRune := self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit, &iv.lineChangeDetails)
-		if runeCount > 0 {
-			position, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount)
+		_, _, runeCount, lastRune := self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
+		iv.updateLineChangeFromWrapMeasure(runeCount, lastRune)
+		position, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount-iv.numElisions())
+		if iv.lineChangeDetails.ElidedSpace {
+			if iterator.Next(text) != ' ' {
+				panic("broken code")
+			}
 		}
 
 		// stop here or advance line
@@ -325,10 +339,14 @@ func (self *Renderer) fractDrawWithWrapCenterLTR(target Target, text string, x, 
 	iv.prevFractX = x.FractShift()
 	iv.lineBreakNth = -1
 	for { // for each wrap line
-		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineLTR(iterator, text, widthLimit, &iv.lineChangeDetails)
+		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
+		iv.updateLineChangeFromWrapMeasure(runeCount, lastRune)
 		position.X = x - (lineWidth >> 1)
-		if runeCount > 0 {
-			_, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount)
+		_, iv, iterator = self.helperDrawLineLTR(target, position, iv, iterator, text, runeCount-iv.numElisions())
+		if iv.lineChangeDetails.ElidedSpace {
+			if iterator.Next(text) != ' ' {
+				panic("broken code")
+			}
 		}
 
 		// stop here or advance line
@@ -360,10 +378,14 @@ func (self *Renderer) fractDrawWithWrapCenterRTL(target Target, text string, x, 
 	iv.prevFractX = x.FractShift()
 	iv.lineBreakNth = -1
 	for { // for each wrap line
-		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit, &iv.lineChangeDetails)
-		if runeCount > 0 {
-			position.X = x + (lineWidth >> 1)
-			position, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount)
+		_, lineWidth, runeCount, lastRune := self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
+		iv.updateLineChangeFromWrapMeasure(runeCount, lastRune)
+		position.X = x + (lineWidth >> 1)
+		position, iv, iterator = self.helperDrawLineReverseLTR(target, position, iv, iterator, text, runeCount-iv.numElisions())
+		if iv.lineChangeDetails.ElidedSpace {
+			if iterator.Next(text) != ' ' {
+				panic("broken code")
+			}
 		}
 
 		// stop here or advance line

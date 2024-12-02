@@ -169,14 +169,13 @@ func (self *Renderer) fractMeasureRTL(text string) fract.Rect {
 func (self *Renderer) fractMeasureWrapLTR(text string, widthLimit fract.Unit) fract.Rect {
 	var iterator ltrStringIterator
 	var lastRune rune
-	var lineChangeDetails LineChangeDetails
 	var lineBreakNth int = -1
 	var width, height, lineWidth fract.Unit
 	var lineBreaksOnly bool = true
 	vertQuant := fract.Unit(self.state.vertQuantization)
 
 	for { // measure text line by line
-		iterator, lineWidth, _, lastRune = self.helperMeasureWrapLineLTR(iterator, text, widthLimit, &lineChangeDetails)
+		iterator, lineWidth, _, lastRune = self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
 		if lineWidth > 0 {
 			if lineWidth > width {
 				width = lineWidth
@@ -203,14 +202,13 @@ func (self *Renderer) fractMeasureWrapLTR(text string, widthLimit fract.Unit) fr
 func (self *Renderer) fractMeasureWrapRTL(text string, widthLimit fract.Unit) fract.Rect {
 	var iterator ltrStringIterator
 	var lastRune rune
-	var lineChangeDetails LineChangeDetails
 	var lineBreakNth int = -1
 	var width, height, lineWidth fract.Unit
 	var lineBreaksOnly bool = true
 	vertQuant := fract.Unit(self.state.vertQuantization)
 
 	for { // measure text line by line
-		iterator, lineWidth, _, lastRune = self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit, &lineChangeDetails)
+		iterator, lineWidth, _, lastRune = self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
 		if lineWidth > 0 {
 			if lineWidth > width {
 				width = lineWidth
