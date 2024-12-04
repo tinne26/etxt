@@ -19,13 +19,13 @@ go run github.com/tinne26/etxt/examples/ebiten/colorful@latest path/to/your_font
 Alternatively, if you are feeling lazy, you can visit https://tinne26.github.io/etxt-examples/ for some web-based example ports. Or you can check a few `gtxt` results below:
 
 ### gtxt/aligns
-![](https://raw.githubusercontent.com/tinne26/etxt/v0.0.9-alpha.7/docs/img/gtxt_aligns.png)
+![](https://raw.githubusercontent.com/tinne26/etxt/v0.0.9-alpha.8/docs/img/gtxt_aligns.png)
 
 ### gtxt/quantization
-![](https://raw.githubusercontent.com/tinne26/etxt/v0.0.9-alpha.7/docs/img/gtxt_quantization.png)
+![](https://raw.githubusercontent.com/tinne26/etxt/v0.0.9-alpha.8/docs/img/gtxt_quantization.png)
 
 ### gtxt/outline_cheap
-![](https://raw.githubusercontent.com/tinne26/etxt/v0.0.9-alpha.7/docs/img/gtxt_outline_cheap.png)
+![](https://raw.githubusercontent.com/tinne26/etxt/v0.0.9-alpha.8/docs/img/gtxt_outline_cheap.png)
 
 ### gtxt/mirror
-![](https://raw.githubusercontent.com/tinne26/etxt/v0.0.9-alpha.7/docs/img/gtxt_mirror.png)
+![](https://raw.githubusercontent.com/tinne26/etxt/v0.0.9-alpha.8/docs/img/gtxt_mirror.png)

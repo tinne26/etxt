@@ -1,8 +1,10 @@
 package cache
 
-import "golang.org/x/image/font/sfnt"
-import "github.com/tinne26/etxt/fract"
-import "github.com/tinne26/etxt/mask"
+import (
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+	"golang.org/x/image/font/sfnt"
+)
 
 // A [GlyphCacheHandler] acts as an intermediator between a glyph cache
 // and another object, typically a [Renderer], to give the later a clear
@@ -13,7 +15,7 @@ import "github.com/tinne26/etxt/mask"
 // Glyph cache handlers can't be used concurrently unless the concrete
 // implementation explicitly says otherwise.
 //
-// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7#Renderer
+// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.8#Renderer
 type GlyphCacheHandler interface {
 
 	// --- configuration notification methods ---

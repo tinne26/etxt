@@ -19,6 +19,6 @@
 //
 // To learn more, make sure to check the [examples]!
 //
-// [examples]: https://github.com/tinne26/etxt/tree/v0.0.9-alpha.7/examples
+// [examples]: https://github.com/tinne26/etxt/tree/v0.0.9-alpha.8/examples
 // [Ebitengine]: https://ebitengine.org
 package etxt

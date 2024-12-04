@@ -19,7 +19,7 @@ By default, **etxt** does full glyph quantization (aligns glyphs to the pixel gr
 
 ## Visual comparison
 
-Here's an example from [examples/gtxt/quantization](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/examples/gtxt/quantization/main.go):
-![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/img/gtxt_quantization.png?raw=true)
+Here's an example from [examples/gtxt/quantization](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/examples/gtxt/quantization/main.go):
+![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/img/gtxt_quantization.png?raw=true)
 
 The differences are visible if you start comparing the lines letter by letter, but they are also not major enough to be obvious if you aren't focusing on them. Different sizes and fonts may produce different results. For example, monospaced fonts and fonts in a pixelated style may look more consistent with quantization, while fonts with more natural or hand drawn styles will almost always flow better without full horizontal quantization.

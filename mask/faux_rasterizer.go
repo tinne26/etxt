@@ -1,13 +1,14 @@
 package mask
 
-import "math/bits"
-import "image"
-import "image/draw"
+import (
+	"image"
+	"image/draw"
+	"math/bits"
 
-import "golang.org/x/image/vector"
-import "golang.org/x/image/font/sfnt"
-
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+	"golang.org/x/image/font/sfnt"
+	"golang.org/x/image/vector"
+)
 
 var _ Rasterizer = (*FauxRasterizer)(nil)
 
@@ -109,7 +110,7 @@ func (self *FauxRasterizer) GetSkewFactor() float32 {
 // and update the padding with the value of [FauxRasterizer.GetExtraWidth](),
 // for example.
 //
-// [sizer.PaddedAdvanceSizer]: https://pkg.go.dev/github.com/tinne26/etxt/sizer@v0.0.9-alpha.7#PaddedAdvanceSizer
+// [sizer.PaddedAdvanceSizer]: https://pkg.go.dev/github.com/tinne26/etxt/sizer@v0.0.9-alpha.8#PaddedAdvanceSizer
 func (self *FauxRasterizer) SetExtraWidth(extraWidth float32) {
 	// normalize and store new skewing factor
 	if extraWidth <= 0 {
@@ -218,8 +219,8 @@ func (self *FauxRasterizer) Rasterize(outline sfnt.Segments, origin fract.Point)
 // [Renderer] use. This is provided so you can link a custom [sizer.Sizer] to
 // the rasterizer and get notified when its configuration changes.
 //
-// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7#Renderer
-// [sizer.Sizer]: https://pkg.go.dev/github.com/tinne26/etxt/sizer@v0.0.9-alpha.7#Sizer
+// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.8#Renderer
+// [sizer.Sizer]: https://pkg.go.dev/github.com/tinne26/etxt/sizer@v0.0.9-alpha.8#Sizer
 func (self *FauxRasterizer) SetAuxOnChangeFunc(onChange func(*FauxRasterizer)) {
 	self.auxOnChange = onChange
 }

@@ -6,7 +6,7 @@ While this package focuses on glyph rendering, these algorithms are suitable for
 ## The problem
 Given a vectorial outline, we want to rasterize it (convert the outline to a raster image, which is a grid of square pixels). Here's an example of outlines and raster:
 
-![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/img/outline_vs_raster.png?raw=true)
+![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/img/outline_vs_raster.png?raw=true)
 
 We will call the resulting raster image a *mask*, as it only contains information about the opacity of each pixel, not about their colors. Colors can be chosen and applied later, at a separate step.
 
@@ -48,11 +48,11 @@ There are multiple answers to each of these questions:
 ## Marking outline boundaries
 Let's say we have a glyph like this:
 
-![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/img/glyph_filled.png?raw=true)
+![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/img/glyph_filled.png?raw=true)
 
 Now, starting from the left side, we start going towards the right and each time we cross an outline boundary, we mark it. The result would be something like this:
 
-![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/img/glyph_edges.png?raw=true)
+![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/img/glyph_edges.png?raw=true)
 
 Well, that's the core idea that will help us solve our problem. Each time we issue a `LineTo` command to define a boundary segment for a contour, we will follow the line, see which pixels it crosses, and somehow store that information.
 
@@ -64,7 +64,7 @@ First, to account for clockwise and counter-clockwise directions and make "holes
 
 If we use different colors for positive and negative changes, the result would now look like this:
 
-![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/img/glyph_sign.png?raw=true)
+![](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/img/glyph_sign.png?raw=true)
 
 The important part is that different directions result in values of opposite sign (e.g.: you could make "up" be negative and "down" positive instead).
 
@@ -78,7 +78,7 @@ To illustrate the concept more practically, let's imagine we have a mask with a 
 - If we create an outline that starts at `(0, 0)` and goes to `(0, 1)`, `(1, 1)`, `(0, 1)` and finally back to the start (creating a pixel-sized square), since the first `(0, 0) -> (0, 1)` boundary crosses the pixel vertically in full and does so from its horizontal start, we would set the opacity of that pixel to 1. Horizontal boundaries like `(0, 1) -> (1, 1)`, instead, *don't change opacity*. The other vertical boundary going back to `y = 0` would decrease the opacity, but it would do so in the next pixel to the right, not on the current one.
 - If we made a narrower rectangle starting at `x = 0.5`, the vertical area would still be fully traversed, but now since the boundary starts at half the pixel, we would only set its value to half the opacity. But this extremely important! Since we have fully traversed the vertical area, the opacity of the next pixels (going to the right) would have to become 100% later anyway! As an **invariant**, *each crossing that we mark has to add opacity proportional to how much we moved vertically*. Since the current pixel can't take 100% opacity, only 50%, the remaining 50% would go to the next one. This may sound strange at the beginning, but if you apply these rules consistently you can use the pixel opacities as accumulator values and determine the opacity of each pixel by scanning them from left to right (well, technically the magnitude; the opacity sign may vary).
 
-I'd explain more, but at this point you have enough context and jumping directly [into the code](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/emask/edge_marker.go) may be the best next step.
+I'd explain more, but at this point you have enough context and jumping directly [into the code](https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/emask/edge_marker.go) may be the best next step.
 
 ## Limitations
 This algorithm works decently in general, but notice that what happens inside a pixel can only be balanced, not distinguished. For example, if we define a 1x1 square in the middle of four pixels, we will get 25% opacity from each pixel. That's the best we can do, ok... but if you repeat the process 4 times, the 4 pixels will all get to 100% opacity. This wouldn't happen in a continuous space, but since pixels can't tell where lines start or end within them (discrete space), they can't tell it's always the same area being covered and the result "overflows".

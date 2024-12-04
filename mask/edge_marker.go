@@ -8,7 +8,7 @@ import "math"
 // seen in EdgeMarkerRasterizer's Rasterize() method too.
 //
 // The algorithms are documented and contextualized here:
-// >> https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/rasterize-outlines.md
+// >> https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/rasterize-outlines.md
 //
 // The zero value is usable, but curves will not be segmented smoothly.
 // You should manually SetCurveThreshold() and SetMaxCurveSplits() to
