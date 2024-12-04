@@ -66,7 +66,10 @@ func (self *drawInternalValues) numElisions() int {
 }
 
 func (self *Renderer) drawRuneLTR(target Target, position fract.Point, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	glyph := self.getGlyphIndex(self.state.activeFont, codePoint)
+	glyph, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+	if skip {
+		return position, iv
+	}
 	return self.drawGlyphLTR(target, position, glyph, iv)
 }
 
@@ -98,7 +101,10 @@ func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyp
 }
 
 func (self *Renderer) drawRuneRTL(target Target, position fract.Point, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	glyph := self.getGlyphIndex(self.state.activeFont, codePoint)
+	glyph, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+	if skip {
+		return position, iv
+	}
 	return self.drawGlyphRTL(target, position, glyph, iv)
 }
 

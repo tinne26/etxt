@@ -1,9 +1,11 @@
 package mask
 
-import "image"
+import (
+	"image"
 
-import "golang.org/x/image/font/sfnt"
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+	"golang.org/x/image/font/sfnt"
+)
 
 var _ Rasterizer = (*EdgeMarkerRasterizer)(nil)
 
@@ -20,7 +22,7 @@ var _ Rasterizer = (*EdgeMarkerRasterizer)(nil)
 // through [EdgeMarkerRasterizer.SetCurveThreshold](0.1) and
 // [EdgeMarkerRasterizer.SetMaxCurveSplits](8).
 //
-// [well-documented]: https://github.com/tinne26/etxt/blob/main/docs/rasterize-outlines.md
+// [well-documented]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.7/docs/rasterize-outlines.md
 type EdgeMarkerRasterizer struct {
 	// All relevant algorithms are implemented inside the unexported
 	// edgeMarker type (see mask/edge_marker.go), except for final

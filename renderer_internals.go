@@ -1,24 +1,31 @@
 package etxt
 
-import "strconv"
+import (
+	"strconv"
 
-import "golang.org/x/image/font/sfnt"
-import "golang.org/x/image/math/fixed"
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+	"golang.org/x/image/font/sfnt"
+	"golang.org/x/image/math/fixed"
+)
 
-import "github.com/tinne26/etxt/fract"
-import "github.com/tinne26/etxt/mask"
-
-func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) sfnt.GlyphIndex {
-	index, err := font.GlyphIndex(&self.buffer, codePoint)
+// The bool indicates whether the glyph should be skipped.
+func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) (index sfnt.GlyphIndex, skip bool) {
+	var err error
+	index, err = font.GlyphIndex(&self.buffer, codePoint)
 	if err != nil {
 		panic("font.GlyphIndex error: " + err.Error())
 	}
 	if index == 0 {
-		msg := "glyph index for '" + string(codePoint) + "' ["
-		msg += runeToUnicodeCode(codePoint) + "] missing"
-		panic(msg)
+		if self.missHandlerFn != nil {
+			index, skip = self.missHandlerFn(font, codePoint)
+		} else {
+			msg := "glyph index for '" + string(codePoint) + "' ["
+			msg += runeToUnicodeCode(codePoint) + "] missing"
+			panic(msg)
+		}
 	}
-	return index
+	return index, skip
 }
 
 func (self *Renderer) withTextDirSign(value fract.Unit) fract.Unit {

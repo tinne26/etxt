@@ -83,7 +83,14 @@ func (self *Game) Update() error {
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
 		x, _ := ebiten.CursorPosition()
-		self.maxLineLen = int(math.Abs(2 * float64(x-self.x)))
+		switch self.align.Horz() {
+		case etxt.HorzCenter:
+			self.maxLineLen = int(math.Abs(2 * float64(x-self.x)))
+		case etxt.Left:
+			self.maxLineLen = x - self.x
+		case etxt.Right:
+			self.maxLineLen = self.x - x
+		}
 		if self.maxLineLen < 96 {
 			self.maxLineLen = 96
 		}
@@ -98,8 +105,16 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	scale := ebiten.DeviceScaleFactor()
 	w, h := bounds.Dx(), bounds.Dy()
 	canvas.Fill(color.RGBA{3, 2, 0, 255})
-	wrapAreaLeft := self.x - self.maxLineLen/2
-	wrapAreaRight := wrapAreaLeft + self.maxLineLen
+	var wrapAreaLeft, wrapAreaRight int
+	switch self.align.Horz() {
+	case etxt.HorzCenter:
+		wrapAreaLeft = self.x - self.maxLineLen/2
+	case etxt.Left:
+		wrapAreaLeft = self.x
+	case etxt.Right:
+		wrapAreaLeft = self.x - self.maxLineLen
+	}
+	wrapAreaRight = wrapAreaLeft + self.maxLineLen
 	sub := canvas.SubImage(image.Rect(wrapAreaLeft, 0, wrapAreaRight, h))
 	sub.(*ebiten.Image).Fill(color.RGBA{16, 16, 9, 255})
 	line := fract.IntsToRect(self.x, 0, self.x+1, h).Clip(canvas)

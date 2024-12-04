@@ -45,11 +45,12 @@ type Renderer struct {
 	state            restorableState
 	restorableStates []restorableState
 
-	cacheHandler cache.GlyphCacheHandler
-	customDrawFn func(Target, sfnt.GlyphIndex, fract.Point)
-	lineChangeFn func(LineChangeDetails)
-	fonts        []*sfnt.Font
-	buffer       sfnt.Buffer
+	cacheHandler  cache.GlyphCacheHandler
+	customDrawFn  func(Target, sfnt.GlyphIndex, fract.Point)
+	lineChangeFn  func(LineChangeDetails)
+	missHandlerFn func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool)
+	fonts         []*sfnt.Font
+	buffer        sfnt.Buffer
 }
 
 // Creates a new [Renderer], initialized with reasonable default values.

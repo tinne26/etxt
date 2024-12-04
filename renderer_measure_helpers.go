@@ -86,21 +86,22 @@ func (self *Renderer) helperMeasureLineLTR(iterator ltrStringIterator, text stri
 		}
 
 		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+		currGlyphIndex, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+		if !skip {
+			// apply kerning unless no previous rune (line start)
+			if runeCount > 0 {
+				width += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
+				width = width.QuantizeUp(horzQuant)
+			}
 
-		// apply kerning unless no previous rune (line start)
-		if runeCount > 0 {
-			width += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-			width = width.QuantizeUp(horzQuant)
+			// (here we would draw if we wanted to)
+
+			// advance
+			width += self.getOpAdvance(currGlyphIndex)
+
+			// update tracking variables
+			prevGlyphIndex = currGlyphIndex
 		}
-
-		// (here we would draw if we wanted to)
-
-		// advance
-		width += self.getOpAdvance(currGlyphIndex)
-
-		// update tracking variables
-		prevGlyphIndex = currGlyphIndex
 		runeCount += 1
 	}
 }
@@ -119,23 +120,24 @@ func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, te
 		}
 
 		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+		currGlyphIndex, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+		if !skip {
+			// advance
+			width -= self.getOpAdvance(currGlyphIndex)
 
-		// advance
-		width -= self.getOpAdvance(currGlyphIndex)
+			// apply kerning unless at line start
+			if runeCount > 0 {
+				width -= self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
+			}
 
-		// apply kerning unless at line start
-		if runeCount > 0 {
-			width -= self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
+			// we need to quantize here inconditionally due to the previous advance
+			width = width.QuantizeUp(horzQuant)
+
+			// (here we would draw if we wanted to)
+
+			// update tracking variables
+			prevGlyphIndex = currGlyphIndex
 		}
-
-		// we need to quantize here inconditionally due to the previous advance
-		width = width.QuantizeUp(horzQuant)
-
-		// (here we would draw if we wanted to)
-
-		// update tracking variables
-		prevGlyphIndex = currGlyphIndex
 		runeCount += 1
 	}
 }
@@ -155,49 +157,52 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 		}
 
 		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+		currGlyphIndex, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+		if skip {
+			runeCount += 1
+		} else {
+			// apply kerning unless at line start
+			memoX := x
+			if runeCount > 0 {
+				x += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
+				x = x.QuantizeUp(horzQuant)
+			}
 
-		// apply kerning unless at line start
-		memoX := x
-		if runeCount > 0 {
-			x += self.getOpKernBetween(prevGlyphIndex, currGlyphIndex)
-			x = x.QuantizeUp(horzQuant)
-		}
+			// advance
+			x += self.getOpAdvance(currGlyphIndex)
 
-		// advance
-		x += self.getOpAdvance(currGlyphIndex)
+			// (here we would draw if we wanted to)
 
-		// (here we would draw if we wanted to)
-
-		// stop if outside wrapLimit
-		runeCount += 1
-		if codePoint == ' ' {
-			lastSafeCount = runeCount
-			lastSafeWidth = memoX
-			safeIterator = iterator
-		}
-		if x > widthLimit && x.QuantizeUp(horzQuant) > widthLimit { // *
-			// * the correctness of the quantized check is actually debatable, but it
-			//   does make for better consistency between measure and measureWithWrap,
-			//   which seems more relevant in practical scenarios
-			if lastSafeCount == 0 { // special case, show as much of first word as possible
-				if runeCount == 1 {
-					next := iterator.PeekNext(text)
-					if next == -1 || next == '\n' {
-						codePoint = next
+			// stop if outside wrapLimit
+			runeCount += 1
+			if codePoint == ' ' {
+				lastSafeCount = runeCount
+				lastSafeWidth = memoX
+				safeIterator = iterator
+			}
+			if x > widthLimit && x.QuantizeUp(horzQuant) > widthLimit { // *
+				// * the correctness of the quantized check is actually debatable, but it
+				//   does make for better consistency between measure and measureWithWrap,
+				//   which seems more relevant in practical scenarios
+				if lastSafeCount == 0 { // special case, show as much of first word as possible
+					if runeCount == 1 {
+						next := iterator.PeekNext(text)
+						if next == -1 || next == '\n' {
+							codePoint = next
+						}
+						if next == '\n' {
+							iterator.Next(text)
+						}
+						return iterator, x, 1, codePoint
+					} else {
+						if codePoint != ' ' {
+							iterator.Unroll(codePoint)
+						}
+						return iterator, memoX, runeCount - 1, codePoint
 					}
-					if next == '\n' {
-						iterator.Next(text)
-					}
-					return iterator, x, 1, codePoint
 				} else {
-					if codePoint != ' ' {
-						iterator.Unroll(codePoint)
-					}
-					return iterator, memoX, runeCount - 1, codePoint
+					return safeIterator, lastSafeWidth, lastSafeCount, ' '
 				}
-			} else {
-				return safeIterator, lastSafeWidth, lastSafeCount, ' '
 			}
 		}
 
@@ -221,48 +226,51 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 		}
 
 		// get glyph index
-		currGlyphIndex := self.getGlyphIndex(self.state.activeFont, codePoint)
+		currGlyphIndex, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+		if skip {
+			runeCount += 1
+		} else {
+			// advance
+			memoX := x
+			x -= self.getOpAdvance(currGlyphIndex)
 
-		// advance
-		memoX := x
-		x -= self.getOpAdvance(currGlyphIndex)
+			// apply kerning unless at line start
+			if runeCount > 0 {
+				x -= self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
+			}
 
-		// apply kerning unless at line start
-		if runeCount > 0 {
-			x -= self.getOpKernBetween(currGlyphIndex, prevGlyphIndex)
-		}
+			// we need to quantize here inconditionally due to the previous advance
+			x = x.QuantizeUp(horzQuant)
 
-		// we need to quantize here inconditionally due to the previous advance
-		x = x.QuantizeUp(horzQuant)
+			// (here we would draw if we wanted to)
 
-		// (here we would draw if we wanted to)
-
-		// stop if outside wrapLimit
-		runeCount += 1
-		if codePoint == ' ' {
-			lastSafeCount = runeCount
-			lastSafeWidth = -memoX
-			safeIterator = iterator
-		}
-		if x < -widthLimit && x.QuantizeUp(horzQuant) < -widthLimit {
-			if lastSafeCount == 0 { // special case, show as much of first word as possible
-				if runeCount == 1 {
-					next := iterator.PeekNext(text)
-					if next == -1 || next == '\n' {
-						codePoint = next
+			// stop if outside wrapLimit
+			runeCount += 1
+			if codePoint == ' ' {
+				lastSafeCount = runeCount
+				lastSafeWidth = -memoX
+				safeIterator = iterator
+			}
+			if x < -widthLimit && x.QuantizeUp(horzQuant) < -widthLimit {
+				if lastSafeCount == 0 { // special case, show as much of first word as possible
+					if runeCount == 1 {
+						next := iterator.PeekNext(text)
+						if next == -1 || next == '\n' {
+							codePoint = next
+						}
+						if next == '\n' {
+							iterator.Next(text)
+						}
+						return iterator, -x, 1, codePoint
+					} else {
+						if codePoint != ' ' {
+							iterator.Unroll(codePoint)
+						}
+						return iterator, -memoX, runeCount - 1, codePoint
 					}
-					if next == '\n' {
-						iterator.Next(text)
-					}
-					return iterator, -x, 1, codePoint
 				} else {
-					if codePoint != ' ' {
-						iterator.Unroll(codePoint)
-					}
-					return iterator, -memoX, runeCount - 1, codePoint
+					return safeIterator, lastSafeWidth, lastSafeCount, ' '
 				}
-			} else {
-				return safeIterator, lastSafeWidth, lastSafeCount, ' '
 			}
 		}
 

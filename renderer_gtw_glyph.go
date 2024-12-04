@@ -85,11 +85,30 @@ func (self *RendererGlyph) SetLineChangeFunc(lineChangeFn func(LineChangeDetails
 	self.lineChangeFn = lineChangeFn
 }
 
-// Obtains the glyph index for the given rune in the current renderer's
-// font. Panics if the glyph index can't be found.
+// Basic handlers for [RendererGlyph.SetMissHandler]().
+var (
+	OnMissSkip   = func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool) { return 0, true }
+	OnMissNotdef = func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool) { return 0, false }
+)
+
+// By default, when drawing, if etxt can't map a given code point to a suitable
+// glyph, the renderer will panic. Setting a missHandler allows you to override
+// this behavior. The returned bool by onMiss can be true if you wish to skip the
+// character completely, omitting it and continuing as if nothing happened.
 //
-// If you need to know whether the glyph mapping exists or not, consider
-// [font.GetMissingRunes]() instead... or the manual approach:
+// For some common implementations, see [OnMissSkip] and [OnMissNotdef]. More complex
+// approaches include logging and attempting to transliterate non-ASCII characters
+// to their closest ASCII look-alikes.
+func (self *RendererGlyph) SetMissHandler(missHandler func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool)) {
+	self.missHandlerFn = missHandler
+}
+
+// Obtains the glyph index for the given rune in the current renderer's
+// font. This method returns 0 if the glyph mapping doesn't exist. The
+// [RendererGlyph.SetMissHandler]() configuration is not considered here.
+//
+// If you need more details about missing code points, consider
+// [font.GetMissingRunes](), or the manual approach:
 //
 //	buffer := renderer.GetBuffer()
 //	font := renderer.GetFont()
@@ -99,7 +118,7 @@ func (self *RendererGlyph) SetLineChangeFunc(lineChangeFn func(LineChangeDetails
 //
 // [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.7/font#GetMissingRunes
 func (self *RendererGlyph) GetRuneIndex(codePoint rune) sfnt.GlyphIndex {
-	return (*Renderer)(self).glyphRuneIndex(codePoint)
+	return (*Renderer)(self).glyphGetRuneIndex(codePoint)
 }
 
 // Caches the given glyph with the current font and scaled size.
@@ -149,8 +168,13 @@ func (self *Renderer) glyphDrawMask(target Target, mask GlyphMask, origin fract.
 	self.defaultDrawFunc(target, origin, mask)
 }
 
-func (self *Renderer) glyphRuneIndex(codePoint rune) sfnt.GlyphIndex {
-	return self.getGlyphIndex(self.state.activeFont, codePoint)
+// Notice: this method doesn't consider miss handlers *by spec*.
+func (self *Renderer) glyphGetRuneIndex(codePoint rune) sfnt.GlyphIndex {
+	index, err := self.state.activeFont.GlyphIndex(&self.buffer, codePoint)
+	if err != nil {
+		panic("font.GlyphIndex error: " + err.Error())
+	}
+	return index
 }
 
 func (self *Renderer) glyphCacheIndex(index sfnt.GlyphIndex) {

@@ -1,7 +1,9 @@
 package etxt
 
-import "golang.org/x/image/font/sfnt"
-import "github.com/tinne26/etxt/fract"
+import (
+	"github.com/tinne26/etxt/fract"
+	"golang.org/x/image/font/sfnt"
+)
 
 // TODO: add tests comparing with Draw().
 
@@ -101,7 +103,10 @@ func (self *Feed) Reset() {
 // Quantization will be checked before every drawing operation and adjusted
 // if necessary (even vertical quantization).
 func (self *Feed) Draw(target Target, codePoint rune) {
-	self.DrawGlyph(target, self.Renderer.Glyph().GetRuneIndex(codePoint))
+	index, skip := self.Renderer.getGlyphIndex(self.Renderer.GetFont(), codePoint)
+	if !skip {
+		self.DrawGlyph(target, index)
+	}
 }
 
 // Same as [Feed.Draw](), but taking a glyph index instead of a rune.
@@ -129,7 +134,10 @@ func (self *Feed) Advance(codePoint rune) {
 	if codePoint == '\n' {
 		self.LineBreak()
 	} else {
-		self.AdvanceGlyph(self.Renderer.Glyph().GetRuneIndex(codePoint))
+		index, skip := self.Renderer.getGlyphIndex(self.Renderer.GetFont(), codePoint)
+		if !skip {
+			self.AdvanceGlyph(index)
+		}
 	}
 }
 
