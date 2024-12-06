@@ -1,19 +1,20 @@
 package main
 
-import "os"
-import "log"
-import "fmt"
-import "math"
-import "image/color"
-import "math/rand"
-import "regexp"
+import (
+	"fmt"
+	"image/color"
+	"log"
+	"math"
+	"math/rand"
+	"os"
+	"regexp"
 
-import "github.com/hajimehoshi/ebiten/v2"
-
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/mask"
-import "github.com/tinne26/etxt/fract"
-import "github.com/tinne26/etxt/font"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+)
 
 // This example showcases how to use etxt feeds to create a
 // custom and complex text renderer that supports formatting
@@ -34,12 +35,13 @@ const Text = "Hey, hey... are you \\i{there}?\\pause{}\n\nLately, \\#50CB78{colo
 // --- typewriter code ---
 
 // - helper types -
-const BasicPause  = 4
+const BasicPause = 4
 const PeriodPause = 36
-const CommaPause  = 20
+const CommaPause = 20
 const ManualPause = 24
 
 type FormatType int
+
 const (
 	FmtSize FormatType = iota
 	FmtColor
@@ -51,7 +53,7 @@ const (
 
 type FormatUndo struct {
 	formatType FormatType
-	data uint64
+	data       uint64
 }
 
 var colorRegexp = regexp.MustCompile(`\A#([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})\z`)
@@ -60,13 +62,13 @@ const MaxFormatDepth = 16
 
 // - actual typewriter type -
 type Typewriter struct {
-	renderer *etxt.Renderer
-	content string
-	maxIndex int // how far we are into the display of `content`
-	pause int // how many pause updates are left before showing the next char
+	renderer      *etxt.Renderer
+	content       string
+	maxIndex      int // how far we are into the display of `content`
+	pause         int // how many pause updates are left before showing the next char
 	minPauseIndex int // helper to allow manual pauses
-	shaking bool
-	backtrack [MaxFormatDepth]FormatUndo
+	shaking       bool
+	backtrack     [MaxFormatDepth]FormatUndo
 }
 
 func NewTypewriter(font *etxt.Font, size float64, content string) *Typewriter {
@@ -77,10 +79,10 @@ func NewTypewriter(font *etxt.Font, size float64, content string) *Typewriter {
 	renderer.Utils().SetCache8MiB()
 	renderer.SetSize(size)
 	renderer.SetAlign(etxt.Top | etxt.Left)
-	return &Typewriter {
+	return &Typewriter{
 		renderer: renderer,
-		content: content,
-		pause: PeriodPause,
+		content:  content,
+		pause:    PeriodPause,
 	}
 }
 
@@ -97,10 +99,14 @@ func (self *Typewriter) Update() {
 		self.pause = 0
 		if self.maxIndex < len(self.content) {
 			switch self.content[self.maxIndex] {
-			case '.': self.pause = PeriodPause
-			case '?': self.pause = PeriodPause
-			case ',': self.pause = CommaPause
-			default : self.pause = BasicPause
+			case '.':
+				self.pause = PeriodPause
+			case '?':
+				self.pause = PeriodPause
+			case ',':
+				self.pause = CommaPause
+			default:
+				self.pause = BasicPause
 			}
 			self.maxIndex += 1
 		}
@@ -117,7 +123,7 @@ func (self *Typewriter) Draw(target *ebiten.Image) {
 
 	defer func() {
 		for formatDepth > 0 {
-			self.undoFormat(self.backtrack[formatDepth - 1])
+			self.undoFormat(self.backtrack[formatDepth-1])
 			formatDepth -= 1
 		}
 	}()
@@ -136,11 +142,13 @@ func (self *Typewriter) Draw(target *ebiten.Image) {
 			// nothing, the style has already been applied
 			allowStop = false
 		case '}': // close braces (only allowed for formats)
-			undo := self.backtrack[formatDepth - 1]
+			undo := self.backtrack[formatDepth-1]
 			self.undoFormat(undo)
 			formatDepth -= 1
 		case ' ':
-			if !atLineStart { feed.Advance(' ') }
+			if !atLineStart {
+				feed.Advance(' ')
+			}
 		case '\n':
 			feed.LineBreak()
 			atLineStart = true
@@ -152,15 +160,21 @@ func (self *Typewriter) Draw(target *ebiten.Image) {
 			}
 
 			// abort if we are going beyond the proper text area
-			if feed.Position.Y.ToIntCeil() >= bounds.Max.Y { return }
+			if feed.Position.Y.ToIntCeil() >= bounds.Max.Y {
+				return
+			}
 
 			// draw each character individually
 			for i, codePoint := range fragment {
-				if index + i >= self.maxIndex { return }
+				if index+i >= self.maxIndex {
+					return
+				}
 				if self.shaking {
 					preY := feed.Position.Y
 					vibr := fract.Unit(rand.Intn(96))
-					if rand.Intn(2) == 0 { vibr = -vibr }
+					if rand.Intn(2) == 0 {
+						vibr = -vibr
+					}
 					feed.Position.Y += vibr
 					feed.Draw(target, codePoint)
 					feed.Position.Y = preY
@@ -186,13 +200,13 @@ func (self *Typewriter) nextFragment(startIndex int) (string, int) {
 		switch codePoint {
 		case ' ', '\n', '{', '}':
 			if byteIndex == 0 {
-				return self.content[startIndex : startIndex + 1], 1
+				return self.content[startIndex : startIndex+1], 1
 			} else {
-				return self.content[startIndex : startIndex + byteIndex], byteIndex
+				return self.content[startIndex : startIndex+byteIndex], byteIndex
 			}
 		case '\\':
 			if byteIndex > 0 {
-				return self.content[startIndex : startIndex + byteIndex], byteIndex
+				return self.content[startIndex : startIndex+byteIndex], byteIndex
 			}
 		}
 	}
@@ -200,51 +214,57 @@ func (self *Typewriter) nextFragment(startIndex int) (string, int) {
 }
 
 func (self *Typewriter) applyFormat(format string, index int) FormatUndo {
-	if len(format) <= 0 { panic("invalid format with zero length") }
-	if format[0] != '\\' { panic("formats must start with backslash, but got '" + format + "'") }
+	if len(format) <= 0 {
+		panic("invalid format with zero length")
+	}
+	if format[0] != '\\' {
+		panic("formats must start with backslash, but got '" + format + "'")
+	}
 	format = format[1:]
 	switch format {
 	case "i", "italic", "italics":
 		fauxRast := self.renderer.Glyph().GetRasterizer().(*mask.FauxRasterizer)
 		factor := fauxRast.GetSkewFactor()
 		fauxRast.SetSkewFactor(factor + 0.22)
-		return FormatUndo{ FmtItalic, storeFloat64AsUint64(float64(factor)) }
+		return FormatUndo{FmtItalic, storeFloat64AsUint64(float64(factor))}
 	case "b", "bold":
 		fauxRast := self.renderer.Glyph().GetRasterizer().(*mask.FauxRasterizer)
 		factor := fauxRast.GetExtraWidth()
 		fauxRast.SetExtraWidth(factor + 1.0)
-		return FormatUndo{ FmtBold, storeFloat64AsUint64(float64(factor)) }
+		return FormatUndo{FmtBold, storeFloat64AsUint64(float64(factor))}
 	case "shake":
 		self.shaking = true
-		return FormatUndo{ FmtShake, 0 }
+		return FormatUndo{FmtShake, 0}
 	case "pause":
 		if self.minPauseIndex <= index {
 			self.pause = ManualPause
 			self.minPauseIndex = index + 1
 		}
-		return FormatUndo{ FmtPause, 0 }
+		return FormatUndo{FmtPause, 0}
 	case "bigger":
 		size := self.renderer.Fract().GetSize()
 		self.renderer.Fract().SetSize(size + 128)
-		return FormatUndo{ FmtSize, storeFractAsUint64(size) }
+		return FormatUndo{FmtSize, storeFractAsUint64(size)}
 		// note: if we were doing this right, we would have to compute
 		//       the whole line in advance, pick the max height and
 		//       adjust with that.
 	case "smaller":
 		size := self.renderer.Fract().GetSize()
-		if size > (5*64) {
+		if size > (5 * 64) {
 			self.renderer.Fract().SetSize(size - 128)
 		}
-		return FormatUndo{ FmtSize, storeFractAsUint64(size) }
+		return FormatUndo{FmtSize, storeFractAsUint64(size)}
 	default:
 		matches := colorRegexp.FindStringSubmatch(format)
-		if matches == nil { panic("unexpected format '" + format + "'") }
+		if matches == nil {
+			panic("unexpected format '" + format + "'")
+		}
 		r := parseHexColor(matches[1])
 		g := parseHexColor(matches[2])
 		b := parseHexColor(matches[3])
 		oldColor := self.renderer.GetColor().(color.RGBA)
 		self.renderer.SetColor(color.RGBA{r, g, b, 255})
-		return FormatUndo{ FmtColor, storeRgbaAsUint64(oldColor) }
+		return FormatUndo{FmtColor, storeRgbaAsUint64(oldColor)}
 	}
 }
 
@@ -279,7 +299,9 @@ func parseHexColor(cc string) uint8 {
 
 // unsafe but fast, already checked with regexp
 func runeDigit(r uint8) uint8 {
-	if r > '9' { return uint8(r) - 55 }
+	if r > '9' {
+		return uint8(r) - 55
+	}
 	return uint8(r) - 48
 }
 
@@ -297,20 +319,20 @@ func loadRgbaFromUint64(u uint64) color.RGBA {
 	c.R = uint8((u >> 24) & 0xFF)
 	return c
 }
-func storeFractAsUint64(f fract.Unit) uint64 { return uint64(uint32(f)) }
+func storeFractAsUint64(f fract.Unit) uint64  { return uint64(uint32(f)) }
 func loadFractFromUint64(u uint64) fract.Unit { return fract.Unit(uint32(u)) }
-func storeFloat64AsUint64(f float64)  uint64 { return math.Float64bits(f)     }
-func loadFloat64FromUint64(u uint64) float64 { return math.Float64frombits(u) }
+func storeFloat64AsUint64(f float64) uint64   { return math.Float64bits(f) }
+func loadFloat64FromUint64(u uint64) float64  { return math.Float64frombits(u) }
 
 // --- actual game ---
 
-type Game struct { typewriter *Typewriter }
+type Game struct{ typewriter *Typewriter }
 
 func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	self.typewriter.renderer.SetScale(scale) // relevant for HiDPI
-	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
-	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	canvasWidth := int(math.Ceil(float64(winWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(winHeight) * scale))
 	return canvasWidth, canvasHeight
 }
 
@@ -325,14 +347,14 @@ func (self *Game) Update() error {
 
 func (self *Game) Draw(canvas *ebiten.Image) {
 	// dark background
-	canvas.Fill(color.RGBA{ 0, 0, 20, 255 })
+	canvas.Fill(color.RGBA{0, 0, 20, 255})
 
 	// determine positioning and draw
 	w, h := canvas.Size()
 	scale := ebiten.DeviceScaleFactor()
-	offset1 := int(16*scale)
-	offset2 := int(32*scale)
-	area := fract.IntsToRect(offset1, offset1, w - offset2, h - offset2)
+	offset1 := int(16 * scale)
+	offset2 := int(32 * scale)
+	area := fract.IntsToRect(offset1, offset1, w-offset2, h-offset2)
 	self.typewriter.Draw(area.Clip(canvas))
 }
 
@@ -346,13 +368,17 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/typewriter")
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowResizable(true)
-	err = ebiten.RunGame(&Game { NewTypewriter(sfntFont, 18, Text) })
-	if err != nil { log.Fatal(err) }
+	err = ebiten.RunGame(&Game{NewTypewriter(sfntFont, 18, Text)})
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -1,12 +1,13 @@
 package etxt
 
-import "image/color"
+import (
+	"image/color"
 
-import "golang.org/x/image/font/sfnt"
-
-import "github.com/tinne26/etxt/mask"
-import "github.com/tinne26/etxt/sizer"
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+	"github.com/tinne26/etxt/sizer"
+	"golang.org/x/image/font/sfnt"
+)
 
 type restorableState struct {
 	fontColor  color.Color

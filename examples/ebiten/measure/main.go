@@ -1,16 +1,17 @@
 package main
 
-import "os"
-import "log"
-import "fmt"
-import "math"
-import "image/color"
+import (
+	"fmt"
+	"image/color"
+	"log"
+	"math"
+	"os"
 
-import "github.com/hajimehoshi/ebiten/v2"
-import "github.com/hajimehoshi/ebiten/v2/inpututil"
-
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/font"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+)
 
 // This example allows you to interactively write text in an Ebitengine
 // program and see how the measurement rect for the text changes. You
@@ -19,23 +20,23 @@ import "github.com/tinne26/etxt/font"
 //   go run github.com/tinne26/etxt/examples/ebiten/measure@latest path/to/font.ttf
 
 type Game struct {
-	text *etxt.Renderer
-	content []rune // not very efficient, but AppendInputChars uses runes
+	text     *etxt.Renderer
+	content  []rune // not very efficient, but AppendInputChars uses runes
 	wrapMode bool
 }
 
 func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	self.text.SetScale(scale) // relevant for HiDPI
-	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
-	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	canvasWidth := int(math.Ceil(float64(winWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(winHeight) * scale))
 	return canvasWidth, canvasHeight
 }
 
 func (self *Game) Update() error {
 	var keyRepeat = func(key ebiten.Key) bool {
 		ticks := inpututil.KeyPressDuration(key)
-		return ticks == 1 || (ticks > 14 && (ticks - 14) % 9 == 0)
+		return ticks == 1 || (ticks > 14 && (ticks-14)%9 == 0)
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyControlLeft) || inpututil.IsKeyJustPressed(ebiten.KeyControlRight) {
@@ -43,7 +44,7 @@ func (self *Game) Update() error {
 	}
 
 	if keyRepeat(ebiten.KeyBackspace) && len(self.content) >= 1 {
-		self.content = self.content[0 : len(self.content) - 1]
+		self.content = self.content[0 : len(self.content)-1]
 	} else if keyRepeat(ebiten.KeyEnter) {
 		self.content = append(self.content, '\n')
 	} else {
@@ -55,16 +56,16 @@ func (self *Game) Update() error {
 
 func (self *Game) Draw(canvas *ebiten.Image) {
 	// dark background
-	canvas.Fill(color.RGBA{ 2, 1, 0, 255 })
+	canvas.Fill(color.RGBA{2, 1, 0, 255})
 
 	// get canvas size and basic coords
 	bounds := canvas.Bounds()
 	w, h := bounds.Dx(), bounds.Dy()
-	pad := int((ebiten.DeviceScaleFactor()*float64(h))/64)
+	pad := int((ebiten.DeviceScaleFactor() * float64(h)) / 64)
 	x, y := pad*2, pad*2
-	
+
 	//  highlight text's area rectangle and draw text
-	areaColor := color.RGBA{ 8, 72, 88, 255 }
+	areaColor := color.RGBA{8, 72, 88, 255}
 	content := string(self.content)
 	if self.wrapMode { // measure and draw
 		maxLineWidth := w - 2*x
@@ -89,7 +90,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	} else {
 		info = fmt.Sprintf("%d glyphs - %.2fFPS | Line Wrap Off [CTRL]", len(self.content), fps)
 	}
-	self.text.Draw(canvas, info, w - pad, h - pad)
+	self.text.Draw(canvas, info, w-pad, h-pad)
 }
 
 func main() {
@@ -102,7 +103,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -118,8 +121,10 @@ func main() {
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	err = ebiten.RunGame(&Game{
-		text: renderer, 
+		text:    renderer,
 		content: []rune("Interactive text"),
 	})
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 }

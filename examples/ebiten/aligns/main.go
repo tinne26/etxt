@@ -19,18 +19,18 @@ import "github.com/tinne26/etxt/font"
 //   go run github.com/tinne26/etxt/examples/ebiten/aligns@latest path/to/font.ttf
 
 type Game struct {
-	text *etxt.Renderer
+	text        *etxt.Renderer
 	contentType int
-	direction etxt.Direction
-	align etxt.Align
-	x, y int
+	direction   etxt.Direction
+	align       etxt.Align
+	x, y        int
 }
 
 func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	self.text.SetScale(scale) // relevant for HiDPI
-	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
-	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	canvasWidth := int(math.Ceil(float64(winWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(winHeight) * scale))
 	return canvasWidth, canvasHeight
 }
 
@@ -81,25 +81,26 @@ func (self *Game) Update() error {
 }
 
 const NumContentTypes = 5
+
 func (self *Game) Draw(canvas *ebiten.Image) {
 	// dark background and position lines
 	bounds := canvas.Bounds()
 	scale := ebiten.DeviceScaleFactor()
 	w, h := bounds.Dx(), bounds.Dy()
-	canvas.Fill(color.RGBA{ 3, 2, 0, 255 })
-	line := fract.IntsToRect(self.x, 0, self.x + 1, h).Clip(canvas)
-	line.Fill(color.RGBA{ 32, 32, 18, 255 })
-	line  = fract.IntsToRect(0, self.y, w, self.y + 1).Clip(canvas)
-	line.Fill(color.RGBA{ 32, 32, 18, 255 })
+	canvas.Fill(color.RGBA{3, 2, 0, 255})
+	line := fract.IntsToRect(self.x, 0, self.x+1, h).Clip(canvas)
+	line.Fill(color.RGBA{32, 32, 18, 255})
+	line = fract.IntsToRect(0, self.y, w, self.y+1).Clip(canvas)
+	line.Fill(color.RGBA{32, 32, 18, 255})
 
 	// draw helper text
-	pad := int(10*scale)
+	pad := int(10 * scale)
 	info := "[H] Horz. Align " + self.align.Horz().String() + "\n"
 	info += "[V] Vert. Align " + self.align.Vert().String() + "\n"
 	info += "[T] Text type\n"
 	info += "[D] Text direction (" + self.direction.String() + ")\n"
 	info += "(Click anywhere to change drawing coordinates)"
-	self.text.Draw(canvas, info, pad, h - pad)
+	self.text.Draw(canvas, info, pad, h-pad)
 
 	// draw aligned text
 	self.text.Utils().AssertMaxStoredStates(0)
@@ -136,7 +137,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -152,18 +155,20 @@ func main() {
 	ebiten.SetWindowSize(640, 480)
 	scale := ebiten.DeviceScaleFactor()
 	err = ebiten.RunGame(&Game{
-		text: renderer,
-		align: etxt.Center,
+		text:      renderer,
+		align:     etxt.Center,
 		direction: etxt.LeftToRight,
-		x: int(320*scale),
-		y: int(240*scale),
+		x:         int(320 * scale),
+		y:         int(240 * scale),
 	})
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // --- helper code for aligns ---
 
-var horzAligns = []etxt.Align{ etxt.Left, etxt.HorzCenter, etxt.Right }
+var horzAligns = []etxt.Align{etxt.Left, etxt.HorzCenter, etxt.Right}
 var vertAligns = []etxt.Align{
 	etxt.Top, etxt.CapLine, etxt.Midline, etxt.VertCenter, etxt.Baseline,
 	etxt.Bottom, etxt.LastBaseline,
@@ -171,16 +176,20 @@ var vertAligns = []etxt.Align{
 
 func nextAlign(aligns []etxt.Align, align etxt.Align) etxt.Align {
 	for n, nthAlign := range aligns {
-		if nthAlign != align { continue }
-		return aligns[(n + 1) % len(aligns)]
+		if nthAlign != align {
+			continue
+		}
+		return aligns[(n+1)%len(aligns)]
 	}
 	panic("failed to find next align")
 }
 
 func prevAlign(aligns []etxt.Align, align etxt.Align) etxt.Align {
 	for n, nthAlign := range aligns {
-		if nthAlign != align { continue }
-		return aligns[n - 1 % len(aligns)]
+		if nthAlign != align {
+			continue
+		}
+		return aligns[n-1%len(aligns)]
 	}
 	panic("failed to find previous align")
 }

@@ -11,7 +11,7 @@ func (self *DefaultCache) getKeysAsDebugStr() string {
 	strList := make([]string, 0, 8)
 	charCount := 0
 	self.mutex.RLock()
-	for key, _ := range self.cachedMasks {
+	for key := range self.cachedMasks {
 		str := strconv.FormatUint(key[0], 10) + "-" + strconv.FormatUint(key[1], 10) + "-" + strconv.FormatUint(key[2], 10)
 		charCount += len(str) + 1
 		strList = append(strList, str)

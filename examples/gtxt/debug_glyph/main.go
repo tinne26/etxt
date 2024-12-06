@@ -2,17 +2,18 @@
 
 package main
 
-import "os"
-import "log"
-import "fmt"
-import "image"
+import (
+	"fmt"
+	"image"
+	"log"
+	"os"
 
-import "golang.org/x/image/font/sfnt"
-
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/fract"
-import "github.com/tinne26/etxt/mask"
-import "github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+	"golang.org/x/image/font/sfnt"
+)
 
 // More than an example, this is something I use when debugging effects
 // and rasterizers to print mask glyph data directly and be able to
@@ -30,7 +31,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -58,12 +61,12 @@ func main() {
 				fmt.Printf("%04d: [ ", y)
 				for x := bounds.Min.X; x < bounds.Max.X; x++ {
 					_, _, _, a := mask.At(x, y).RGBA()
-					fmt.Printf("%03d ", a >> 8)
+					fmt.Printf("%03d ", a>>8)
 				}
 				fmt.Printf("]\n")
 			}
 		})
-	
+
 	// create a target image big enough. while it's not technically used on
 	// our custom debugging function, etxt would panic on a nil image or may
 	// optimize the draw away if the target is empty or non-intersecting

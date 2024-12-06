@@ -1,8 +1,10 @@
 package mask
 
-import "image"
+import (
+	"image"
 
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+)
 
 // Given the glyph bounds and an origin position indicating the subpixel
 // positioning (only lowest bits will be taken into account), it returns
@@ -31,11 +33,11 @@ func figureOutBounds(bounds fract.Rect, origin fract.Point) (int, int, fract.Poi
 // images with a specific color).
 func fastFillFloat64(buffer []float64, value float64) {
 	if len(buffer) <= 24 { // no-copy case
-		for i, _ := range buffer {
+		for i := range buffer {
 			buffer[i] = value
 		}
 	} else { // copy case
-		for i, _ := range buffer[:16] {
+		for i := range buffer[:16] {
 			buffer[i] = value
 		}
 		for i := 16; i < len(buffer); i *= 2 {

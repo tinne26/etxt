@@ -1,7 +1,9 @@
 package sizer
 
-import . "golang.org/x/image/font/sfnt"
-import "github.com/tinne26/etxt/fract"
+import (
+	"github.com/tinne26/etxt/fract"
+	. "golang.org/x/image/font/sfnt"
+)
 
 var _ Sizer = (*PaddedKernSizer)(nil)
 

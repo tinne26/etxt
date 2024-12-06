@@ -2,12 +2,15 @@
 
 package etxt
 
-import "image"
-import "image/color"
+import (
+	"image"
+	"image/color"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/tinne26/etxt/fract"
+)
 
 //import "golang.org/x/image/font/sfnt"
-import "github.com/hajimehoshi/ebiten/v2"
-import "github.com/tinne26/etxt/fract"
 
 // Alias to allow compiling the package without Ebitengine (-tags gtxt).
 //

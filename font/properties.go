@@ -1,8 +1,11 @@
 package font
 
-import "golang.org/x/image/font/sfnt"
-import "sync/atomic"
-import "errors"
+import (
+	"errors"
+	"sync/atomic"
+
+	"golang.org/x/image/font/sfnt"
+)
 
 // A common error returned by font property getter functions.
 var ErrNotFound = errors.New("font property not found or empty")

@@ -2,21 +2,23 @@
 
 package main
 
-import "os"
-import "image"
-import "image/color"
-import "image/png"
-import "path/filepath"
-import "log"
-import "fmt"
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"log"
+	"os"
+	"path/filepath"
 
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+)
 
 // Must be compiled with '-tags gtxt'
 
 const Alpha = 255 // can be changed (e.g. 144) if you want to see how
-                  // color modes work with semi-transparency too
+// color modes work with semi-transparency too
 
 func main() {
 	// get font path
@@ -28,7 +30,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -42,26 +46,27 @@ func main() {
 	target := image.NewRGBA(image.Rect(0, 0, 720, 300))
 	for i := 0; i < 720*100*4; i += 4 { // first 100 lines cyan
 		//target.Pix[i + 0] = 0
-		target.Pix[i + 1] = 255
-		target.Pix[i + 2] = 255
-		target.Pix[i + 3] = 255
+		target.Pix[i+1] = 255
+		target.Pix[i+2] = 255
+		target.Pix[i+3] = 255
 	}
-	for i := 720*100*4; i < 720*200*4; i += 4 { // next 100 lines magenta
-		target.Pix[i + 0] = 255
+	for i := 720 * 100 * 4; i < 720*200*4; i += 4 { // next 100 lines magenta
+		target.Pix[i+0] = 255
 		//target.Pix[i + 1] = 0
-		target.Pix[i + 2] = 255
-		target.Pix[i + 3] = 255
+		target.Pix[i+2] = 255
+		target.Pix[i+3] = 255
 	}
-	for i := 720*200*4; i < 720*300*4; i += 4 { // next 100 lines yellow
-		target.Pix[i + 0] = 255
-		target.Pix[i + 1] = 255
+	for i := 720 * 200 * 4; i < 720*300*4; i += 4 { // next 100 lines yellow
+		target.Pix[i+0] = 255
+		target.Pix[i+1] = 255
 		//target.Pix[i + 2] = 0
-		target.Pix[i + 3] = 255
+		target.Pix[i+3] = 255
 	}
 
 	// draw first row of blend modes
 	offX, offY := 180, 100
-	x := offX/2 ; y := offY/2
+	x := offX / 2
+	y := offY / 2
 	renderer.SetColor(color.RGBA{0, 0, 0, Alpha})
 	renderer.Draw(target, "over", x, y)
 
@@ -79,7 +84,7 @@ func main() {
 
 	// draw second row of blend modes
 	y += offY
-	x  = offX/2
+	x = offX / 2
 	renderer.SetColor(color.RGBA{0, Alpha, Alpha, Alpha})
 	renderer.SetBlendMode(etxt.BlendSub)
 	renderer.Draw(target, "subtract", x, y)
@@ -98,7 +103,7 @@ func main() {
 
 	// draw third row of blend modes
 	y += offY
-	x  = offX/2
+	x = offX / 2
 	renderer.SetColor(color.RGBA{Alpha, 0, 0, Alpha})
 	renderer.SetBlendMode(etxt.BlendOver)
 	renderer.Draw(target, "over", x, y)
@@ -117,13 +122,21 @@ func main() {
 
 	// store image as png
 	filename, err := filepath.Abs("gtxt_blend_modes.png")
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Output image: %s\n", filename)
 	file, err := os.Create(filename)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = png.Encode(file, target)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = file.Close()
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Print("Program exited successfully.\n")
 }

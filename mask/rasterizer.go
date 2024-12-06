@@ -1,9 +1,11 @@
 package mask
 
-import "image"
+import (
+	"image"
 
-import "golang.org/x/image/font/sfnt"
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+	"golang.org/x/image/font/sfnt"
+)
 
 // Rasterizer is an interface for 2D vector graphics rasterization to an
 // alpha mask. This interface is offered as an open alternative to the

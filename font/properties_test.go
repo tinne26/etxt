@@ -1,7 +1,9 @@
 package font
 
-import "strings"
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestGetProperties(t *testing.T) {
 	ensureTestAssetsLoaded()

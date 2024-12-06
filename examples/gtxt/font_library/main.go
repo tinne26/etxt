@@ -1,13 +1,14 @@
 package main
 
-import "os"
-import "path/filepath"
-import "log"
-import "fmt"
+import (
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 
-import "golang.org/x/image/font/sfnt"
-
-import "github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/font"
+	"golang.org/x/image/font/sfnt"
+)
 
 // Must be compiled with '-tags gtxt'.
 // This example expects a path to a font directory as the first
@@ -24,7 +25,9 @@ func main() {
 
 	// print given font directory
 	fontDir, err := filepath.Abs(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Reading font directory: %s\n", fontDir)
 
 	// create font library

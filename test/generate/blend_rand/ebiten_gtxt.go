@@ -2,17 +2,18 @@
 
 package main
 
-import "os"
-import "fmt"
-import "math/rand"
-import "strconv"
-import "image"
-import "image/color"
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"math/rand"
+	"os"
+	"strconv"
 
-import "github.com/hajimehoshi/ebiten/v2"
-
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/fract"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/fract"
+)
 
 // See etxt/testdata_generate.go for details.
 // Must be generated from base etxt directory, so testdata
@@ -20,9 +21,10 @@ import "github.com/tinne26/etxt/fract"
 
 var contents []byte = []byte("package etxt\n\nfunc init() {\n\ttestdata[\"blend_rand_ebiten_gtxt\"] = []byte{")
 
-type Game struct {}
+type Game struct{}
+
 func (self *Game) Layout(w, h int) (int, int) { return w, h }
-func (self *Game) Draw(*ebiten.Image) {}
+func (self *Game) Draw(*ebiten.Image)         {}
 func (self *Game) Update() error {
 	renderer := etxt.NewRenderer()
 	target := ebiten.NewImage(8, 8)
@@ -33,19 +35,19 @@ func (self *Game) Update() error {
 	for y := 0; y < 8; y++ {
 		for x := 0; x < 8; x++ {
 			a := rng.Intn(256)
-			r, g, b := rng.Intn(a + 1), rng.Intn(a + 1), rng.Intn(a + 1)
+			r, g, b := rng.Intn(a+1), rng.Intn(a+1), rng.Intn(a+1)
 			rngColor := color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 			renderer.SetColor(rngColor)
 			renderer.Glyph().DrawMask(target, mask, fract.IntsToPoint(x, y))
 		}
 	}
-	
+
 	buffer := make([]byte, 8*8*4)
 	target.ReadPixels(buffer)
 	for i, value := range buffer {
-		if i % 32 == 0 {
+		if i%32 == 0 {
 			contents = append(contents, '\n', '\t', '\t')
-		} else if i % 4 == 0 {
+		} else if i%4 == 0 {
 			contents = append(contents, '/', '*', '*', '/', ' ')
 		}
 		contents = append(contents, []byte(strconv.Itoa(int(value)))...)
@@ -59,12 +61,16 @@ func (self *Game) Update() error {
 func main() {
 	const filename = "testdata_blend_rand_ebiten_gtxt_test.go"
 	fmt.Print("Generating '" + filename + "'... ")
-	
+
 	err := ebiten.RunGame(&Game{})
-	if err != nil { fatal(err) }
+	if err != nil {
+		fatal(err)
+	}
 
 	file, err := os.Create(filename)
-	if err != nil { fatal(err) }
+	if err != nil {
+		fatal(err)
+	}
 	_, err = file.Write(contents)
 	if err != nil {
 		_ = os.Remove(filename)
@@ -75,6 +81,6 @@ func main() {
 }
 
 func fatal(err error) {
-	fmt.Fprint(os.Stderr, "\nERROR: " + err.Error() + "\n")
+	fmt.Fprint(os.Stderr, "\nERROR: "+err.Error()+"\n")
 	os.Exit(1)
 }

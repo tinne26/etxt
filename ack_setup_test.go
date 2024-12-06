@@ -3,15 +3,17 @@ package etxt
 // This file contains a fake test ensuring that test assets are available,
 // setups a few important variables and provides some helper methods.
 
-import "os"
-import "fmt"
-import "embed"
-import "sync"
-import "sort"
-import "testing"
+import (
+	"embed"
+	"fmt"
+	"os"
+	"sort"
+	"sync"
+	"testing"
 
-import "github.com/tinne26/etxt/font"
-import "golang.org/x/image/font/sfnt"
+	"github.com/tinne26/etxt/font"
+	"golang.org/x/image/font/sfnt"
+)
 
 //go:embed font/test/*
 var testfs embed.FS

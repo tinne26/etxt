@@ -2,11 +2,13 @@ package mask
 
 // Helper functions for testing.
 
-import "math"
-import "math/rand"
+import (
+	"math"
+	"math/rand"
 
-import "golang.org/x/image/math/fixed"
-import "golang.org/x/image/font/sfnt"
+	"golang.org/x/image/font/sfnt"
+	"golang.org/x/image/math/fixed"
+)
 
 func similarFloat64Slices(a []float64, b []float64) bool {
 	if len(a) != len(b) {
@@ -98,7 +100,7 @@ func polySegments(coords []float64) sfnt.Segments {
 
 func newSegment(op sfnt.SegmentOp, x1, y1, x2, y2, x3, y3 fixed.Int26_6) sfnt.Segment {
 	return sfnt.Segment{Op: op, Args: [3]fixed.Point26_6{
-		fixed.Point26_6{x1, y1}, fixed.Point26_6{x2, y2}, fixed.Point26_6{x3, y3},
+		{x1, y1}, {x2, y2}, {x3, y3},
 	},
 	}
 }

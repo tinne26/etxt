@@ -1,9 +1,12 @@
 package sizer
 
-import "strconv"
-import . "golang.org/x/image/font/sfnt"
-import "golang.org/x/image/math/fixed"
-import "github.com/tinne26/etxt/fract"
+import (
+	"strconv"
+
+	"github.com/tinne26/etxt/fract"
+	. "golang.org/x/image/font/sfnt"
+	"golang.org/x/image/math/fixed"
+)
 
 var _ Sizer = (*DefaultSizer)(nil)
 

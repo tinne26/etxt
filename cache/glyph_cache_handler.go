@@ -15,7 +15,7 @@ import (
 // Glyph cache handlers can't be used concurrently unless the concrete
 // implementation explicitly says otherwise.
 //
-// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.8#Renderer
+// [Renderer]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
 type GlyphCacheHandler interface {
 
 	// --- configuration notification methods ---

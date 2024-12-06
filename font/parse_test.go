@@ -1,10 +1,12 @@
 package font
 
-import "io"
-import "io/fs"
-import "errors"
-import "strings"
-import "testing"
+import (
+	"errors"
+	"io"
+	"io/fs"
+	"strings"
+	"testing"
+)
 
 type fakeFS struct{}
 

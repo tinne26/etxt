@@ -1,9 +1,12 @@
 package font
 
-import "io"
-import "errors"
-import "testing"
-import "golang.org/x/image/font/sfnt"
+import (
+	"errors"
+	"io"
+	"testing"
+
+	"golang.org/x/image/font/sfnt"
+)
 
 func TestLibrary(t *testing.T) {
 	lib := NewLibrary()

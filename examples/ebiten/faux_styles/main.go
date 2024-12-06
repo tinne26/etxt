@@ -1,19 +1,20 @@
 package main
 
-import "os"
-import "log"
-import "fmt"
-import "math"
-import "strings"
-import "image/color"
+import (
+	"fmt"
+	"image/color"
+	"log"
+	"math"
+	"os"
+	"strings"
 
-import "github.com/hajimehoshi/ebiten/v2"
-
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/mask"
-import "github.com/tinne26/etxt/sizer"
-import "github.com/tinne26/etxt/font"
-import "github.com/tinne26/etxt/fract"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+	"github.com/tinne26/etxt/sizer"
+)
 
 // This example shows how to use different mask rasterizers in order to
 // get faux bold and faux oblique text, while also modifying some advanced
@@ -25,47 +26,57 @@ const MainText = "The lazy programmer jumps\nover the brown codebase."
 type Game struct {
 	fauxRenderer *etxt.Renderer
 	helpRenderer *etxt.Renderer
-	italicAngle float64 // native italic angle for the font
+	italicAngle  float64 // native italic angle for the font
 
-	skewFactor float32 // [-1, 1]
-	extraWidth float32 // [0, 10]
+	skewFactor   float32 // [-1, 1]
+	extraWidth   float32 // [0, 10]
 	sinceLastKey int
-	quantized bool
+	quantized    bool
 
 	usingCustomSizer bool
-	fauxSizer sizer.Sizer
-	defaultSizer sizer.Sizer
+	fauxSizer        sizer.Sizer
+	defaultSizer     sizer.Sizer
 }
 
 func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	self.fauxRenderer.SetScale(scale) // relevant for HiDPI
 	self.helpRenderer.SetScale(scale) // relevant for HiDPI
-	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
-	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	canvasWidth := int(math.Ceil(float64(winWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(winHeight) * scale))
 	return canvasWidth, canvasHeight
 }
 
 func (self *Game) Update() error {
 	// update counter to prevent excessive key repeat triggering
 	self.sinceLastKey += 1
-	
+
 	// left/right to modify skew (oblique)
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		if self.applyArrowSkewChange(+1) { return nil }
+		if self.applyArrowSkewChange(+1) {
+			return nil
+		}
 	} else if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		if self.applyArrowSkewChange(-1) { return nil }
+		if self.applyArrowSkewChange(-1) {
+			return nil
+		}
 	}
 
 	// up/down to modify width (bold)
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
-		if self.applyArrowBoldChange(+1) { return nil}
+		if self.applyArrowBoldChange(+1) {
+			return nil
+		}
 	} else if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		if self.applyArrowBoldChange(-1) { return nil}
+		if self.applyArrowBoldChange(-1) {
+			return nil
+		}
 	}
 
 	// skip toggles and options if sinceLastKey is too recent
-	if self.sinceLastKey <= 20 { return nil }
+	if self.sinceLastKey <= 20 {
+		return nil
+	}
 
 	// sizer switch
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
@@ -99,7 +110,7 @@ func (self *Game) Update() error {
 		//       do they do to measure angles. Maybe they don't even measure
 		//       them, but if they are wrong by only 2 degrees consider
 		//       yourself lucky...
-		newSkew := float32(self.italicAngle/45.0)
+		newSkew := float32(self.italicAngle / 45.0)
 		if newSkew != self.skewFactor {
 			self.skewFactor = newSkew
 			self.refreshSkew()
@@ -124,7 +135,9 @@ func (self *Game) Update() error {
 
 // logic to modify the skewFactor (for oblique text)
 func (self *Game) applyArrowSkewChange(sign int) bool {
-	if self.sinceLastKey < 10 { return false }
+	if self.sinceLastKey < 10 {
+		return false
+	}
 
 	var skewAbsChange float32
 	if ebiten.IsKeyPressed(ebiten.KeyShift) {
@@ -136,13 +149,19 @@ func (self *Game) applyArrowSkewChange(sign int) bool {
 	var newSkew float32
 	if sign >= 0 {
 		newSkew = self.skewFactor + skewAbsChange
-		if newSkew > 1.0 { newSkew = 1.0 }
+		if newSkew > 1.0 {
+			newSkew = 1.0
+		}
 	} else {
 		newSkew = self.skewFactor - skewAbsChange
-		if newSkew < -1.0 { newSkew = -1.0 }
+		if newSkew < -1.0 {
+			newSkew = -1.0
+		}
 	}
 
-	if newSkew == self.skewFactor { return false }
+	if newSkew == self.skewFactor {
+		return false
+	}
 	self.skewFactor = newSkew
 	self.refreshSkew()
 	self.sinceLastKey = 0
@@ -151,7 +170,9 @@ func (self *Game) applyArrowSkewChange(sign int) bool {
 
 // logic to modify the extraWidth (for faux-bold text)
 func (self *Game) applyArrowBoldChange(sign int) bool {
-	if self.sinceLastKey < 20 { return false }
+	if self.sinceLastKey < 20 {
+		return false
+	}
 
 	var boldAbsChange float32
 	if ebiten.IsKeyPressed(ebiten.KeyShift) {
@@ -163,13 +184,19 @@ func (self *Game) applyArrowBoldChange(sign int) bool {
 	var newBold float32
 	if sign >= 0 {
 		newBold = self.extraWidth + boldAbsChange
-		if newBold > 10.0 { newBold = 10.0 }
+		if newBold > 10.0 {
+			newBold = 10.0
+		}
 	} else {
 		newBold = self.extraWidth - boldAbsChange
-		if newBold <  0.0 { newBold =  0.0 }
+		if newBold < 0.0 {
+			newBold = 0.0
+		}
 	}
 
-	if newBold == self.extraWidth { return false }
+	if newBold == self.extraWidth {
+		return false
+	}
 	self.extraWidth = newBold
 	self.refreshBold()
 	self.sinceLastKey = 0
@@ -190,7 +217,7 @@ func (self *Game) refreshBold() {
 
 func (self *Game) Draw(screen *ebiten.Image) {
 	// dark background
-	screen.Fill(color.RGBA{ 0, 0, 0, 255 })
+	screen.Fill(color.RGBA{0, 0, 0, 255})
 
 	// draw main text
 	w, h := screen.Size()
@@ -222,7 +249,7 @@ func (self *Game) Draw(screen *ebiten.Image) {
 	info.WriteString("[press R to Reset]\n")
 
 	// draw helper info
-	self.helpRenderer.Draw(screen, info.String(), w/2, h - h/3)
+	self.helpRenderer.Draw(screen, info.String(), w/2, h-h/3)
 }
 
 func main() {
@@ -235,16 +262,18 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create faux rasterizer and sizer
 	fauxRast := &mask.FauxRasterizer{}
-	customSizer  := &sizer.PaddedAdvanceSizer{}
+	customSizer := &sizer.PaddedAdvanceSizer{}
 
 	// link custom sizer to fauxRast
 	fauxRast.SetAuxOnChangeFunc(func(*mask.FauxRasterizer) {
-		padding := float64(fauxRast.GetExtraWidth())*0.5 // factor should be between ~[0.5, 1.0]
+		padding := float64(fauxRast.GetExtraWidth()) * 0.5 // factor should be between ~[0.5, 1.0]
 		customSizer.SetPadding(fract.FromFloat64(padding))
 	})
 
@@ -269,18 +298,22 @@ func main() {
 	// get original italic angle information
 	postTable := sfntFont.PostTable()
 	italicAngle := math.NaN()
-	if postTable != nil { italicAngle = postTable.ItalicAngle }
+	if postTable != nil {
+		italicAngle = postTable.ItalicAngle
+	}
 
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/faux_styles")
 	ebiten.SetWindowSize(640, 480)
-	err = ebiten.RunGame(&Game {
+	err = ebiten.RunGame(&Game{
 		fauxRenderer: renderer,
 		helpRenderer: helpRend,
-		quantized: true,
-		fauxSizer: customSizer,
+		quantized:    true,
+		fauxSizer:    customSizer,
 		defaultSizer: renderer.GetSizer(),
-		italicAngle: italicAngle,
+		italicAngle:  italicAngle,
 	})
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 }

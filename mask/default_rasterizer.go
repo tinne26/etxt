@@ -1,11 +1,13 @@
 package mask
 
-import "image"
-import "image/draw"
+import (
+	"image"
+	"image/draw"
 
-import "golang.org/x/image/vector"
-import "golang.org/x/image/font/sfnt"
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+	"golang.org/x/image/font/sfnt"
+	"golang.org/x/image/vector"
+)
 
 var _ Rasterizer = (*DefaultRasterizer)(nil)
 

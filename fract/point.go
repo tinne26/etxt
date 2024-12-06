@@ -1,7 +1,9 @@
 package fract
 
-import "image"
-import "strconv"
+import (
+	"image"
+	"strconv"
+)
 
 // A pair of [Unit] coordinates. Commonly used during rendering
 // processes to keep track of the pen position within the rendering

@@ -1,15 +1,17 @@
 package mask
 
-import "os"
-import "time"
-import "math/rand"
-import "strconv"
-import "image"
-import "image/png"
-import "image/color"
-import "testing"
+import (
+	"image"
+	"image/color"
+	"image/png"
+	"math/rand"
+	"os"
+	"strconv"
+	"testing"
+	"time"
 
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+)
 
 func TestEdgeVsDefaultRasterizerTriangle(t *testing.T) {
 	const avgCmpTolerance = 4.0 // alpha value per 255

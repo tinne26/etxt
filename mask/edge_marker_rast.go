@@ -22,7 +22,7 @@ var _ Rasterizer = (*EdgeMarkerRasterizer)(nil)
 // through [EdgeMarkerRasterizer.SetCurveThreshold](0.1) and
 // [EdgeMarkerRasterizer.SetMaxCurveSplits](8).
 //
-// [well-documented]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/rasterize-outlines.md
+// [well-documented]: https://github.com/tinne26/etxt/blob/v0.0.9/docs/rasterize-outlines.md
 type EdgeMarkerRasterizer struct {
 	// All relevant algorithms are implemented inside the unexported
 	// edgeMarker type (see mask/edge_marker.go), except for final

@@ -2,17 +2,19 @@
 
 package main
 
-import "os"
-import "sort"
-import "image"
-import "image/color"
-import "image/png"
-import "path/filepath"
-import "log"
-import "fmt"
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"log"
+	"os"
+	"path/filepath"
+	"sort"
 
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+)
 
 // Must be compiled with '-tags gtxt'.
 // This example expects a path to a font directory as the first
@@ -29,7 +31,9 @@ func main() {
 
 	// print given font directory
 	fontDir, err := filepath.Abs(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Reading font directory: %s\n", fontDir)
 
 	// create font library, parsing fonts in the given directory
@@ -54,19 +58,25 @@ func main() {
 			renderer.SetFont(font)
 			rect := renderer.Measure(fontName)
 			height += rect.IntHeight()
-			if rect.IntWidth() > width { width = rect.IntWidth() }
+			if rect.IntWidth() > width {
+				width = rect.IntWidth()
+			}
 			names = append(names, fontName)
 			return nil
 		})
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// add some padding to the computed width and height
-	width  += 16
+	width += 16
 	height += 12
 
 	// create a target image and fill it with white
 	outImage := image.NewRGBA(image.Rect(0, 0, width, height))
-	for i := 0; i < width*height*4; i++ { outImage.Pix[i] = 255 }
+	for i := 0; i < width*height*4; i++ {
+		outImage.Pix[i] = 255
+	}
 
 	// draw each font name in order
 	sort.Strings(names)
@@ -74,20 +84,28 @@ func main() {
 	for _, name := range names {
 		renderer.SetFont(fontLib.GetFont(name)) // select the proper font
 		h := renderer.Measure(name).IntHeight()
-		y += h/2 // advance half of the line height
+		y += h / 2                                // advance half of the line height
 		renderer.Draw(outImage, name, width/2, y) // draw font centered
-		y += h - h/2 // advance remaining line height
+		y += h - h/2                              // advance remaining line height
 	}
 
 	// store image as png
 	filename, err := filepath.Abs("gtxt_each_font.png")
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Output image: %s\n", filename)
 	file, err := os.Create(filename)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = png.Encode(file, outImage)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = file.Close()
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Print("Program exited successfully.\n")
 }

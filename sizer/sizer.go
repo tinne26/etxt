@@ -1,7 +1,9 @@
 package sizer
 
-import . "golang.org/x/image/font/sfnt"
-import "github.com/tinne26/etxt/fract"
+import (
+	"github.com/tinne26/etxt/fract"
+	. "golang.org/x/image/font/sfnt"
+)
 
 // When drawing or traversing glyphs, we need some information
 // related to the "font metrics". For example, how much we need

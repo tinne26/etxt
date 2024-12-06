@@ -1,20 +1,21 @@
 package main
 
-import "os"
-import "log"
-import "fmt"
-import "time"
-import "math"
-import "math/rand"
-import "image"
-import "image/color"
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"log"
+	"math"
+	"math/rand"
+	"os"
+	"time"
 
-import "github.com/hajimehoshi/ebiten/v2"
-import "github.com/hajimehoshi/ebiten/v2/inpututil"
-
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/font"
-import "github.com/tinne26/etxt/fract"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/fract"
+)
 
 // This example shows how to create a cutout effect, where instead
 // of filling the text with a specific color, we create a see-through
@@ -36,7 +37,7 @@ import "github.com/tinne26/etxt/fract"
 const MainText = "COMPLETE\nSYSTEM\nFAILURE"
 const MainFontSize = 94
 
-var runePool = []rune {
+var runePool = []rune{
 	'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
 	'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
@@ -46,45 +47,45 @@ var runePool = []rune {
 }
 
 type Game struct {
-	backRenderer *etxt.Renderer
-	frontRenderer *etxt.Renderer
-	backLines [][]rune
-	offscreen *ebiten.Image
-	backOnly bool
-	glitchRects [2]image.Rectangle
+	backRenderer    *etxt.Renderer
+	frontRenderer   *etxt.Renderer
+	backLines       [][]rune
+	offscreen       *ebiten.Image
+	backOnly        bool
+	glitchRects     [2]image.Rectangle
 	glitchesEnabled bool
-	lastWidth int
-	lastHeight int
+	lastWidth       int
+	lastHeight      int
 }
 
 func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	self.backRenderer.SetScale(scale) // relevant for HiDPI
 	self.frontRenderer.SetScale(scale)
-	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
-	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	canvasWidth := int(math.Ceil(float64(winWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(winHeight) * scale))
 	self.lastWidth, self.lastHeight = canvasWidth, canvasHeight
 	return canvasWidth, canvasHeight
 }
 
 func (self *Game) ensureBackLinesContent() {
 	const HeightFactor = 0.9
-	const WidthFactor  = 1.2
+	const WidthFactor = 1.2
 
 	buffer := self.backRenderer.GetBuffer()
-	font   := self.backRenderer.GetFont()
-	size   := self.backRenderer.Fract().GetScaledSize()
-	sizer  := self.backRenderer.GetSizer()
+	font := self.backRenderer.GetFont()
+	size := self.backRenderer.Fract().GetScaledSize()
+	sizer := self.backRenderer.GetSizer()
 	lineHeight := sizer.LineHeight(font, buffer, size)
 	mIndex := self.backRenderer.Glyph().GetRuneIndex('M')
 	mWidth := sizer.GlyphAdvance(font, buffer, size, mIndex)
-	
+
 	numLines := int(float64(self.lastHeight)/(lineHeight.ToFloat64()*HeightFactor) - 1)
 	numChars := int(float64(self.lastWidth)/(mWidth.ToFloat64()*WidthFactor) - 1)
 
 	// expand or collapse to the correct number of lines
 	if len(self.backLines) > numLines {
-		self.backLines = self.backLines[0 : numLines]
+		self.backLines = self.backLines[0:numLines]
 	}
 	for len(self.backLines) < numLines {
 		self.backLines = append(self.backLines, make([]rune, 0, numChars))
@@ -92,9 +93,11 @@ func (self *Game) ensureBackLinesContent() {
 
 	// expand or collapse to the correct number of runes per line
 	for i := 0; i < len(self.backLines); i++ {
-		if len(self.backLines[i]) == numChars { continue }
+		if len(self.backLines[i]) == numChars {
+			continue
+		}
 		if len(self.backLines[i]) > numChars {
-			self.backLines[i] = self.backLines[i][0 : numChars]
+			self.backLines[i] = self.backLines[i][0:numChars]
 		}
 		for len(self.backLines[i]) < numChars {
 			codePoint := runePool[rand.Intn(len(runePool))]
@@ -119,7 +122,7 @@ func (self *Game) Update() error {
 	self.ensureBackLinesContent()
 	randMaxOpen := len(runePool)
 	for _, line := range self.backLines {
-		for i, _ := range line {
+		for i := range line {
 			if rand.Float64() < 0.0625 { // change runes arbitrarily
 				line[i] = runePool[rand.Intn(randMaxOpen)]
 			}
@@ -130,7 +133,7 @@ func (self *Game) Update() error {
 	for i, rect := range self.glitchRects {
 		self.glitchRects[i] = self.refreshGlitchRect(rect)
 	}
-	
+
 	return nil
 }
 
@@ -147,7 +150,7 @@ func (self *Game) refreshGlitchRect(rect image.Rectangle) image.Rectangle {
 				w = rand.Intn(self.lastHeight/8) + self.lastHeight/64
 				h = rand.Intn(self.lastHeight/2) + self.lastHeight/8
 			}
-			return image.Rect(ox, oy, ox + w, oy + h)
+			return image.Rect(ox, oy, ox+w, oy+h)
 		}
 	} else if rand.Float64() < 0.14 {
 		return image.Rect(0, 0, 0, 0)
@@ -159,26 +162,28 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	// get canvas basic metrics
 	bounds := canvas.Bounds()
 	w, h := bounds.Dx(), bounds.Dy()
-	
+
 	// dark background
-	canvas.Fill(color.RGBA{ 0, 0, 0, 255 })
+	canvas.Fill(color.RGBA{0, 0, 0, 255})
 
 	// draw background text
 	// ... the main idea is to draw line by line while positioning
 	//     the glyphs manually, more or less centered.
 	buffer := self.backRenderer.GetBuffer()
-	font   := self.backRenderer.GetFont()
-	size   := self.backRenderer.Fract().GetScaledSize()
-	sizer  := self.backRenderer.GetSizer()
+	font := self.backRenderer.GetFont()
+	size := self.backRenderer.Fract().GetScaledSize()
+	sizer := self.backRenderer.GetSizer()
 	lineHeight := sizer.LineHeight(font, buffer, size)
-	ascent     := sizer.Ascent(font, buffer, size)
+	ascent := sizer.Ascent(font, buffer, size)
 	yShift := ascent - lineHeight/2
 
 	numLines := len(self.backLines)
 	var numChars int
-	if numLines > 0 { numChars = len(self.backLines[0]) }
-	xAdvance := fract.FromFloat64(float64(w)/float64(numChars + 1))
-	yAdvance := fract.FromFloat64(float64(h)/float64(numLines + 1))
+	if numLines > 0 {
+		numChars = len(self.backLines[0])
+	}
+	xAdvance := fract.FromFloat64(float64(w) / float64(numChars+1))
+	yAdvance := fract.FromFloat64(float64(h) / float64(numLines+1))
 	var position fract.Point = fract.UnitsToPoint(xAdvance, yAdvance)
 	for _, line := range self.backLines {
 		for _, codePoint := range line {
@@ -241,7 +246,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// for this example we will create two renderers instead
@@ -261,7 +268,7 @@ func main() {
 	frontRenderer.SetFont(sfntFont)
 	frontRenderer.SetAlign(etxt.Center)
 	frontRenderer.SetColor(color.RGBA{0, 244, 0, 244}) // [1]
-	frontRenderer.SetBlendMode(ebiten.BlendXor) // **the critical part**
+	frontRenderer.SetBlendMode(ebiten.BlendXor)        // **the critical part**
 	// [1] I generally like the textures created by slight translucency,
 	//     but you can also use 255 for the solid color (or 0 to see the
 	//     background weirdness in all its glory).
@@ -270,8 +277,10 @@ func main() {
 	ebiten.SetWindowTitle("etxt/examples/ebiten/cutout")
 	ebiten.SetWindowSize(640, 480)
 	err = ebiten.RunGame(&Game{
-		backRenderer: backRenderer,
+		backRenderer:  backRenderer,
 		frontRenderer: frontRenderer,
 	})
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 }

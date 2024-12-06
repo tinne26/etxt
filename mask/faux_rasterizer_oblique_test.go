@@ -1,8 +1,10 @@
 package mask
 
-import "testing"
+import (
+	"testing"
 
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+)
 
 func TestFauxMinusOneSkew(t *testing.T) {
 	// minus one skew is represented with a zero, and it's easy to mess up initialization

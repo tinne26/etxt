@@ -1,9 +1,12 @@
 package font
 
-import "io/fs"
-import "errors"
-import "path/filepath"
-import "golang.org/x/image/font/sfnt"
+import (
+	"errors"
+	"io/fs"
+	"path/filepath"
+
+	"golang.org/x/image/font/sfnt"
+)
 
 // A collection of fonts accessible by name.
 //

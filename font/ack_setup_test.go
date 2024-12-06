@@ -3,12 +3,15 @@ package font
 // This file contains a fake test ensuring that test assets are available,
 // setups a few important variables and provides some helper methods.
 
-import "os"
-import "fmt"
-import "embed"
-import "sync"
-import "testing"
-import "golang.org/x/image/font/sfnt"
+import (
+	"embed"
+	"fmt"
+	"os"
+	"sync"
+	"testing"
+
+	"golang.org/x/image/font/sfnt"
+)
 
 //go:embed test/*
 var testfs embed.FS

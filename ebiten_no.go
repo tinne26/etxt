@@ -20,11 +20,13 @@ package etxt
 // programs and the gtxt tag at the same time. It just tends to be a most
 // terrible idea.
 
-import "image"
-import "image/draw"
-import "image/color"
+import (
+	"image"
+	"image/color"
+	"image/draw"
 
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+)
 
 type Target = draw.Image
 type GlyphMask = *image.Alpha

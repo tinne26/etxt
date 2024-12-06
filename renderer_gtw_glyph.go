@@ -18,12 +18,12 @@ import (
 // advisable to be familiar with [RendererFract] and the [etxt/fract]
 // subpackage before diving in.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.8#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
 type RendererGlyph Renderer
 
 // [Gateway] to [RendererGlyph] functionality.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.8#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
 func (self *Renderer) Glyph() *RendererGlyph {
 	return (*RendererGlyph)(self)
 }
@@ -62,8 +62,8 @@ func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 // function is generally unsafe and many behaviors are undefined.
 // Only the text color can be safely changed at the moment.
 //
-// [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/examples/ebiten/colorful/main.go
-// [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/examples/ebiten/shaking/main.go
+// [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/v0.0.9/examples/ebiten/colorful/main.go
+// [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/v0.0.9/examples/ebiten/shaking/main.go
 func (self *RendererGlyph) SetDrawFunc(drawFn func(Target, sfnt.GlyphIndex, fract.Point)) {
 	// Note: we could actually allow the font and the sizer to be changed, but this
 	//       has implications on measuring. We wouldn't be able to measure properly,
@@ -117,7 +117,7 @@ func (self *RendererGlyph) SetMissHandler(missHandler func(*sfnt.Font, rune) (sf
 //	if err != nil { /* handle */ }
 //	if index == 0 { /* handle notdef glyph */ }
 //
-// [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9-alpha.8/font#GetMissingRunes
+// [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9/font#GetMissingRunes
 func (self *RendererGlyph) GetRuneIndex(codePoint rune) sfnt.GlyphIndex {
 	return (*Renderer)(self).glyphGetRuneIndex(codePoint)
 }

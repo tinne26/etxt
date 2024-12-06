@@ -39,8 +39,8 @@ import (
 // If you need further help or guidance, consider reading ["advice on
 // renderers"] and going through the code in the [examples] folder.
 //
-// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/renderer.md
-// [examples]: https://github.com/tinne26/etxt/tree/v0.0.9-alpha.8/examples
+// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.9/docs/renderer.md
+// [examples]: https://github.com/tinne26/etxt/tree/v0.0.9/examples
 type Renderer struct {
 	state            restorableState
 	restorableStates []restorableState
@@ -93,7 +93,7 @@ func NewRenderer() *Renderer {
 // See also [Renderer.SetScale]() for proper handling of high
 // resolution text and display scaling.
 //
-// [general reference]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/px-size.md
+// [general reference]: https://github.com/tinne26/etxt/blob/v0.0.9/docs/px-size.md
 func (self *Renderer) SetSize(size float64) {
 	// TODO: test with size zero for draws and measures and all that,
 	//       as well as fractional but almost zero sizes. the rounding
@@ -122,7 +122,7 @@ func (self *Renderer) GetSize() float64 {
 // The scale must be non-negative. By default, [NewRenderer]()
 // initializes it to 1.0.
 //
-// [this guide]: https://github.com/tinne26/etxt/blob/v0.0.9-alpha.8/docs/display-scaling.md
+// [this guide]: https://github.com/tinne26/etxt/blob/v0.0.9/docs/display-scaling.md
 func (self *Renderer) SetScale(scale float64) {
 	self.fractSetScale(fract.FromFloat64Up(scale))
 }
@@ -173,7 +173,7 @@ func (self *Renderer) GetDirection() Direction {
 //   - If you need a quick font for testing, take on from [github.com/tinne26/fonts]
 //     (e.g. lbrtsans.Font()).
 //
-// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.9-alpha.8#Library
+// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.9#Library
 // [github.com/tinne26/fonts]: https://github.com/tinne26/fonts
 func (self *Renderer) SetFont(font *sfnt.Font) {
 	// ensure there's enough space in the fonts slice

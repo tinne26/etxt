@@ -1,11 +1,13 @@
 package font
 
-import "os"
-import "io"
-import "io/fs"
-import "errors"
+import (
+	"errors"
+	"io"
+	"io/fs"
+	"os"
 
-import "golang.org/x/image/font/sfnt"
+	"golang.org/x/image/font/sfnt"
+)
 
 // Similar to [sfnt.Parse](), but also including the font name
 // in the returned values. The bytes must not be modified while

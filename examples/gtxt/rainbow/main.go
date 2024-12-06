@@ -34,7 +34,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -49,28 +51,30 @@ func main() {
 	outImage := image.NewRGBA(image.Rect(0, 0, width, 64))
 	for y := 0; y < 64; y++ {
 		lvl := 255 - uint8(y*8)
-		if y >= 32 { lvl = 255 - lvl }
+		if y >= 32 {
+			lvl = 255 - lvl
+		}
 		for x := 0; x < width; x++ {
 			outImage.Set(x, y, color.RGBA{lvl, lvl, lvl, 255})
 		}
 	}
 
 	// prepare rainbow colors
-	colors := []color.RGBA {
-		color.RGBA{ R: 255, G:   0, B:   0, A: 255 }, // red
-		color.RGBA{ R: 255, G: 165, B:   0, A: 255 }, // orange
-		color.RGBA{ R: 255, G: 255, B:   0, A: 255 }, // yellow
-		color.RGBA{ R:   0, G: 255, B:   0, A: 255 }, // green
-		color.RGBA{ R:   0, G:   0, B: 255, A: 255 }, // blue
-		color.RGBA{ R:  75, G:   0, B: 130, A: 255 }, // indigo
-		color.RGBA{ R: 238, G: 130, B: 238, A: 255 }, // violet
+	colors := []color.RGBA{
+		{R: 255, G: 0, B: 0, A: 255},     // red
+		{R: 255, G: 165, B: 0, A: 255},   // orange
+		{R: 255, G: 255, B: 0, A: 255},   // yellow
+		{R: 0, G: 255, B: 0, A: 255},     // green
+		{R: 0, G: 0, B: 255, A: 255},     // blue
+		{R: 75, G: 0, B: 130, A: 255},    // indigo
+		{R: 238, G: 130, B: 238, A: 255}, // violet
 	}
 
 	// set custom rendering function
 	colorIndex := 0
 	renderer.Glyph().SetDrawFunc(
 		func(target etxt.Target, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
-			renderer.SetColor(colors[colorIndex % 7])
+			renderer.SetColor(colors[colorIndex%7])
 			mask := renderer.Glyph().LoadMask(glyphIndex, origin)
 			renderer.Glyph().DrawMask(target, mask, origin)
 			colorIndex += 1
@@ -81,13 +85,21 @@ func main() {
 
 	// store result as png
 	filename, err := filepath.Abs("gtxt_rainbow.png")
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Output image: %s\n", filename)
 	file, err := os.Create(filename)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = png.Encode(file, outImage)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = file.Close()
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Print("Program exited successfully.\n")
 }

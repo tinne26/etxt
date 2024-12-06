@@ -1,10 +1,14 @@
 package fract
 
-import "testing"
-import "math"
-import crand "crypto/rand"
-import mrand "math/rand"
-import "encoding/binary"
+import (
+	"math"
+	"testing"
+
+	crand "crypto/rand"
+
+	"encoding/binary"
+	mrand "math/rand"
+)
 
 func TestToFloat64(t *testing.T) {
 	tests := []struct {

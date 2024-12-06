@@ -1,8 +1,10 @@
 package mask
 
-import "time"
-import "math/rand"
-import "testing"
+import (
+	"math/rand"
+	"testing"
+	"time"
+)
 
 // TODO: may want to add tests proving the correct omission of redundant onChange notifications.
 

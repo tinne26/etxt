@@ -2,15 +2,17 @@
 
 package main
 
-import "os"
-import "fmt"
-import "image"
-import "math/rand"
-import "strconv"
-import "image/color"
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"math/rand"
+	"os"
+	"strconv"
 
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/fract"
+)
 
 // See etxt/testdata_generate.go for details.
 // Must be generated from base etxt directory, so testdata
@@ -32,17 +34,17 @@ func main() {
 	for y := 0; y < 8; y++ {
 		for x := 0; x < 8; x++ {
 			a := rng.Intn(256)
-			r, g, b := rng.Intn(a + 1), rng.Intn(a + 1), rng.Intn(a + 1)
+			r, g, b := rng.Intn(a+1), rng.Intn(a+1), rng.Intn(a+1)
 			rngColor := color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 			renderer.SetColor(rngColor)
 			renderer.Glyph().DrawMask(target, mask, fract.IntsToPoint(x, y))
 		}
 	}
-	
+
 	for i, value := range target.Pix {
-		if i % 32 == 0 {
+		if i%32 == 0 {
 			contents = append(contents, '\n', '\t', '\t')
-		} else if i % 4 == 0 {
+		} else if i%4 == 0 {
 			contents = append(contents, '/', '*', '*', '/', ' ')
 		}
 		contents = append(contents, []byte(strconv.Itoa(int(value)))...)
@@ -51,7 +53,9 @@ func main() {
 	contents = append(contents, []byte("\n\t}\n}\n")...)
 
 	file, err := os.Create(filename)
-	if err != nil { fatal(err) }
+	if err != nil {
+		fatal(err)
+	}
 	_, err = file.Write(contents)
 	if err != nil {
 		_ = os.Remove(filename)
@@ -62,7 +66,7 @@ func main() {
 }
 
 func fatal(err error) {
-	fmt.Fprint(os.Stderr, "\nERROR: " + err.Error() + "\n")
+	fmt.Fprint(os.Stderr, "\nERROR: "+err.Error()+"\n")
 	os.Exit(1)
 }
 

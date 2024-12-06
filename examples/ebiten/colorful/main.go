@@ -1,17 +1,18 @@
 package main
 
-import "os"
-import "log"
-import "fmt"
-import "math"
-import "image/color"
+import (
+	"fmt"
+	"image/color"
+	"log"
+	"math"
+	"os"
 
-import "github.com/hajimehoshi/ebiten/v2"
-import "golang.org/x/image/font/sfnt"
-
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/fract"
-import "github.com/tinne26/etxt/font"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/fract"
+	"golang.org/x/image/font/sfnt"
+)
 
 // This example draws some text with a color changing effect,
 // where each letter changes color progressively. You can
@@ -32,7 +33,7 @@ import "github.com/tinne26/etxt/font"
 
 type Game struct {
 	text *etxt.Renderer
-	
+
 	// text color variables
 	red   float64
 	green float64
@@ -43,23 +44,23 @@ type Game struct {
 func (self *Game) Layout(winWidth int, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	self.text.SetScale(scale) // relevant for HiDPI
-	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
-	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
+	canvasWidth := int(math.Ceil(float64(winWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(winHeight) * scale))
 	return canvasWidth, canvasHeight
 }
 
 func (self *Game) Update() error {
 	// progressively change the values used in Draw to
 	// determine letter colors, using different speeds
-	self.red   -= 0.0202
+	self.red -= 0.0202
 	self.green -= 0.0168
-	self.blue  -= 0.0227
+	self.blue -= 0.0227
 	return nil
 }
 
 func (self *Game) Draw(screen *ebiten.Image) {
 	// dark background
-	screen.Fill(color.RGBA{ 0, 0, 0, 255 })
+	screen.Fill(color.RGBA{0, 0, 0, 255})
 
 	// draw text
 	bounds := screen.Bounds()
@@ -72,10 +73,10 @@ func (self *Game) Draw(screen *ebiten.Image) {
 func (self *Game) drawColorfulGlyph(target etxt.Target, glyphIndex sfnt.GlyphIndex, origin fract.Point) {
 	// derive the color for the current letter from the initial/ values on
 	// each color channel, the current offset, and the sine function
-	r := (math.Sin(self.red + self.shift) + 1.0)/2.0
-	g := (math.Sin(self.green + self.shift) + 1.0)/2.0
-	b := (math.Sin(self.blue + self.shift) + 1.0)/2.0
-	textColor := color.RGBA{uint8(r*255), uint8(g*255), uint8(b*255), 255}
+	r := (math.Sin(self.red+self.shift) + 1.0) / 2.0
+	g := (math.Sin(self.green+self.shift) + 1.0) / 2.0
+	b := (math.Sin(self.blue+self.shift) + 1.0) / 2.0
+	textColor := color.RGBA{uint8(r * 255), uint8(g * 255), uint8(b * 255), 255}
 	self.text.SetColor(textColor) // *
 	// * Not all renderer properties are safe to change while drawing,
 	//   but color is one of the exceptions.
@@ -98,7 +99,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -110,10 +113,10 @@ func main() {
 
 	// create game struct
 	game := &Game{
-		text: renderer,
-		red: -5.54,
+		text:  renderer,
+		red:   -5.54,
 		green: -4.3,
-		blue: -6.4,
+		blue:  -6.4,
 	}
 
 	// override default text renderer draw function
@@ -123,5 +126,7 @@ func main() {
 	ebiten.SetWindowTitle("etxt/examples/ebiten/colorful")
 	ebiten.SetWindowSize(640, 480)
 	err = ebiten.RunGame(game)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 }

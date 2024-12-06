@@ -1,18 +1,19 @@
 package main
 
-import "os"
-import "log"
-import "fmt"
-import "math"
-import "image/color"
+import (
+	"fmt"
+	"image/color"
+	"log"
+	"math"
+	"os"
 
-import "github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/fract"
+)
 
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/font"
-import "github.com/tinne26/etxt/fract"
-
-// This example shows how to combine a couple draws and some 
+// This example shows how to combine a couple draws and some
 // very basic logic in order to create a simple effect when
 // hovering text with the mouse. There are still a few interesting
 // details here and there if you are still getting started with
@@ -25,17 +26,17 @@ import "github.com/tinne26/etxt/fract"
 const HoverText = "Hover me please!"
 
 type Game struct {
-	text *etxt.Renderer
-	focus float64
-	canvasWidth int
+	text         *etxt.Renderer
+	focus        float64
+	canvasWidth  int
 	canvasHeight int
 }
 
 func (self *Game) Layout(winWidth, winHeight int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	self.text.SetScale(scale) // relevant for HiDPI
-	self.canvasWidth  = int(math.Ceil(float64(winWidth)*scale))
-	self.canvasHeight = int(math.Ceil(float64(winHeight)*scale))
+	self.canvasWidth = int(math.Ceil(float64(winWidth) * scale))
+	self.canvasHeight = int(math.Ceil(float64(winHeight) * scale))
 	return self.canvasWidth, self.canvasHeight
 }
 
@@ -51,10 +52,14 @@ func (self *Game) Update() error {
 	cursorPt := fract.IntsToPoint(ebiten.CursorPosition())
 	if targetRect.Contains(cursorPt) {
 		self.focus += 0.05
-		if self.focus > 1.0 { self.focus = 1.0 }
+		if self.focus > 1.0 {
+			self.focus = 1.0
+		}
 	} else {
 		self.focus -= 0.05
-		if self.focus < 0.0 { self.focus = 0.0 }
+		if self.focus < 0.0 {
+			self.focus = 0.0
+		}
 	}
 
 	return nil
@@ -65,13 +70,13 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	const MaxOffsetY = 4 // max shadow y offset
 
 	// dark background
-	canvas.Fill(color.RGBA{ 0, 0, 0, 255 })
+	canvas.Fill(color.RGBA{0, 0, 0, 255})
 
 	// draw text
 	if self.focus > 0 {
 		self.text.SetColor(color.RGBA{200, 0, 200, 200}) // sharp shadow
 		scale := ebiten.DeviceScaleFactor()
-		hx := self.canvasWidth/2  + int(self.focus*MaxOffsetX*scale)
+		hx := self.canvasWidth/2 + int(self.focus*MaxOffsetX*scale)
 		hy := self.canvasHeight/2 + int(self.focus*MaxOffsetY*scale)
 		self.text.Draw(canvas, HoverText, hx, hy)
 	}
@@ -90,7 +95,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -103,6 +110,8 @@ func main() {
 	// run the game
 	ebiten.SetWindowTitle("etxt/examples/ebiten/hover_shadow")
 	ebiten.SetWindowSize(640, 480)
-	err = ebiten.RunGame(&Game{ text: renderer })
-	if err != nil { log.Fatal(err) }
+	err = ebiten.RunGame(&Game{text: renderer})
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -1,7 +1,9 @@
 package fract
 
-import "testing"
-import "math"
+import (
+	"math"
+	"testing"
+)
 
 func TestFromFloat64(t *testing.T) {
 	nzr := math.Copysign(0, -1) // negative zero

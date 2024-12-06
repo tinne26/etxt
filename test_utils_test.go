@@ -1,9 +1,11 @@
 package etxt
 
-import "os"
-import "fmt"
-import "image"
-import "image/png"
+import (
+	"fmt"
+	"image"
+	"image/png"
+	"os"
+)
 
 func doesNotPanic(function func()) (didNotPanic bool) {
 	didNotPanic = true
