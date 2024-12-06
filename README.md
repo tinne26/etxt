@@ -42,7 +42,8 @@ var Words = []string {
 type Game struct { text *etxt.Renderer ; wordIndex float64 }
 
 func (self *Game) Layout(winWidth int, winHeight int) (int, int) {
-	scale := ebiten.DeviceScaleFactor()
+	scale := ebiten.DeviceScaleFactor() // *
+	// * ebiten.Monitor().DeviceScaleFactor() in >=v2.7.0
 	self.text.SetScale(scale) // relevant for HiDPI
 	canvasWidth  := int(math.Ceil(float64(winWidth)*scale))
 	canvasHeight := int(math.Ceil(float64(winHeight)*scale))
