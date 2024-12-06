@@ -22,10 +22,9 @@ import (
 // character uncovering of the text and a few others. Notice
 // that this example is only trying to show how to use feeds
 // in a non-trivial way, not trying to show how to write the
-// best solution to the specific problems it deals with;
-// RendererTwine.Draw() can already be used right out of
-// the box to solve most of the problems demonstrated in this
-// example.
+// best solution to the specific problems it deals with. The
+// ebiten/color_markup example might be more useful in some
+// cases.
 //
 // You can run this example with:
 //   go run github.com/tinne26/etxt/examples/ebiten/typewriter@latest path/to/font.ttf

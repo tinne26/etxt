@@ -12,9 +12,8 @@ import (
 // and modifying positions or configurations in between.
 //
 // As a rule of thumb, you should only resort to feeds if
-// neither [Renderer.Draw](), [RendererTwine.Draw]() nor
-// [RendererGlyph.SetDrawFunc]() give you enough control to do
-// what you want.
+// neither [Renderer.Draw]() nor [RendererGlyph.SetDrawFunc]()
+// give you enough control to do what you want.
 type Feed struct {
 	Renderer       *Renderer       // associated renderer
 	Position       fract.Point     // the feed's working pen position or origin

@@ -23,6 +23,6 @@ type restorableState struct {
 	scale       fract.Unit
 	logicalSize fract.Unit
 	scaledSize  fract.Unit
-	fontIndex   FontIndex
+	fontIndex   fontIndex
 	blendMode   BlendMode
 }

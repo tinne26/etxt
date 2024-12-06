@@ -18,10 +18,9 @@ type Font = sfnt.Font
 // to any unicode code point (rune).
 //
 // This type is a direct alias of [sfnt.GlyphIndex] so you don't have
-// to import a separate package when working with [TwineMotionFunc] or
-// custom functions for [RendererGlyph.SetDrawFunc](). Everywhere else
-// in the documentation [sfnt.GlyphIndex] is used, but they are completely
-// interchangeable.
+// to import a separate package when working with custom functions
+// for [RendererGlyph.SetDrawFunc](). Everywhere else in the documentation
+// [sfnt.GlyphIndex] is used, but they are completely interchangeable.
 type GlyphIndex = sfnt.GlyphIndex
 
 // See [RendererTwine.RegisterFont]() and related functions.
@@ -35,10 +34,10 @@ type GlyphIndex = sfnt.GlyphIndex
 //	    BoldFont
 //	    ItalicFont
 //	)
-type FontIndex uint8
+type fontIndex uint8
 
 // Special value for [RendererTwine.RegisterFont]().
-const NextFontIndex FontIndex = 255
+//const NextFontIndex FontIndex = 255
 
 // Quantization levels are used to control the trade-off between
 // memory usage and glyph positioning precision. Less theoretically:
