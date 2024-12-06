@@ -8,7 +8,7 @@ import (
 
 // [Gateway] to [RendererFract] functionality.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
 func (self *Renderer) Fract() *RendererFract {
 	return (*RendererFract)(self)
 }

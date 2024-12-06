@@ -23,7 +23,7 @@ type RendererGlyph Renderer
 
 // [Gateway] to [RendererGlyph] functionality.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
 func (self *Renderer) Glyph() *RendererGlyph {
 	return (*RendererGlyph)(self)
 }

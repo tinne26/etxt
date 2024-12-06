@@ -13,7 +13,7 @@ import (
 
 // [Gateway] to [RendererUtils] functionality.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
 func (self *Renderer) Utils() *RendererUtils {
 	return (*RendererUtils)(self)
 }
@@ -86,9 +86,8 @@ func (self *RendererUtils) SetFontBytes(data []byte) error {
 // [RendererUtils.RestoreState]() in last-in first-out order.
 //
 // The stored state includes the following properties:
-//   - [Align], color, size, scale, [BlendMode], [FontIndex],
-//     active font, rasterizer, sizer, quantization and
-//     text [Direction].
+//   - [Align], color, size, scale, [BlendMode], rasterizer,
+//     sizer, quantization and text [Direction].
 //
 // Notably, custom rendering functions, inactive fonts
 // and the cache handler are not stored.
