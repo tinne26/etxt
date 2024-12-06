@@ -2,16 +2,18 @@
 
 package main
 
-import "os"
-import "image"
-import "image/color"
-import "image/png"
-import "path/filepath"
-import "log"
-import "fmt"
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"log"
+	"os"
+	"path/filepath"
 
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+)
 
 // Must be compiled with '-tags gtxt'
 
@@ -25,7 +27,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -46,21 +50,30 @@ func main() {
 
 	// draw quantized text
 	TextSample := "Horizontally quantized vs unquantized text."
-	renderer.Draw(outImage, TextSample + " [quantized]", 8, 8)
+	renderer.Fract().SetHorzQuantization(etxt.QtFull)
+	renderer.Draw(outImage, TextSample+" [quantized]", 8, 8)
 
 	// disable horizontal quantization and draw again
 	renderer.Fract().SetHorzQuantization(etxt.QtNone)
-	renderer.Draw(outImage, TextSample + " [unquantized]", 8, 32)
+	renderer.Draw(outImage, TextSample+" [unquantized]", 8, 32)
 
 	// store image as png
 	filename, err := filepath.Abs("gtxt_quantization.png")
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Output image: %s\n", filename)
 	file, err := os.Create(filename)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = png.Encode(file, outImage)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = file.Close()
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Print("Program exited successfully.\n")
 }

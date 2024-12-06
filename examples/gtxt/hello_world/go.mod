@@ -2,7 +2,7 @@ module github.com/tinne26/etxt/examples/gtxt/hello_world
 
 go 1.18
 
-require github.com/tinne26/etxt v0.0.9-alpha.6.0.20231220162842-a6e6b2dda706
+require github.com/tinne26/etxt v0.0.9-alpha.8
 
 require (
 	github.com/ebitengine/purego v0.3.0 // indirect

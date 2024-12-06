@@ -2,32 +2,34 @@
 
 package main
 
-import "os"
-import "image"
-import "image/color"
-import "image/png"
-import "path/filepath"
-import "log"
-import "fmt"
-import "math/rand"
-import "time"
-import "strings"
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"log"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+)
 
 // Must be compiled with '-tags gtxt'
 
 func main() {
 	// we want random sentences in order to find the text size dynamically,
 	// so we start declaring different text fragments to combine later
-	who  := []string {
+	who := []string{
 		"my doggy", "methuselah", "the king", "the queen", "mr. skywalker",
 		"your little pony", "my banana", "gopher", "jigglypuff", "evil jin",
 		"the genius programmer", "your boyfriend", "the last samurai",
 		"the cute robot", "your ancestor's ghost",
 	}
-	what := []string {
+	what := []string{
 		"climbs a tree", "writes a book", "stares at you", "commissions naughty art",
 		"smiles", "takes scenery pics", "pays the bill", "practices times tables",
 		"prays", "runs to take cover", "joins the chat", "downvotes your post",
@@ -36,7 +38,7 @@ func main() {
 		"spies the neighbours", "solves the hardest equation", "discusses geopolitics",
 		"gets mad at you for crossing the street",
 	}
-	how := []string {
+	how := []string{
 		"while dancing", "in style", "while undressing", "while getting high",
 		"maniacally", "early in the morning", "right at the last moment",
 		"as the world ends", "without much fuss", "bare-chested", "periodically",
@@ -53,7 +55,9 @@ func main() {
 
 	// parse font
 	sfntFont, fontName, err := font.ParseFromPath(os.Args[1])
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Font loaded: %s\n", fontName)
 
 	// create and configure renderer
@@ -66,7 +70,7 @@ func main() {
 
 	// generate the random sentences
 	rand.Seed(time.Now().UnixNano())
-	sentences := make([]string, 2 + rand.Intn(6))
+	sentences := make([]string, 2+rand.Intn(6))
 	fmt.Printf("Generating %d sentences...\n", len(sentences))
 	for i := 0; i < len(sentences); i++ {
 		sentence := who[rand.Intn(len(who))] + " "
@@ -82,20 +86,30 @@ func main() {
 
 	// create target image and fill it with white
 	outImage := image.NewRGBA(image.Rect(0, 0, w, h))
-	for i := 0; i < w*h*4; i++ { outImage.Pix[i] = 255 }
+	for i := 0; i < w*h*4; i++ {
+		outImage.Pix[i] = 255
+	}
 
 	// draw the sentences
 	renderer.Draw(outImage, fullText, w/2, h/2)
 
 	// store image as png
-	filename, err := filepath.Abs("gtxt_rect_size.png")
-	if err != nil { log.Fatal(err) }
+	filename, err := filepath.Abs("gtxt_measure.png")
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Output image: %s\n", filename)
 	file, err := os.Create(filename)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = png.Encode(file, outImage)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = file.Close()
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Print("Program exited successfully.\n")
 }
