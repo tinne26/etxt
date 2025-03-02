@@ -1,6 +1,6 @@
 # Display scaling
 
-One of the most common mistakes among Ebitengine game devs is failing to use [`ebiten.DeviceScaleFactor()`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#DeviceScaleFactor) correctly. There are some reasons for this:
+One of the most common mistakes among Ebitengine game devs is failing to use [`ebiten.Monitor().DeviceScaleFactor()`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#MonitorType.DeviceScaleFactor). There are some reasons for this:
 - We tend to forget that pixel size and density can vary between monitors.
 - Ebitengine treats display scaling as an optional feature instead of as a primary concern.
 - UI frameworks for Ebitengine also have an unhealthy tendency to neglect display scaling.
@@ -16,22 +16,20 @@ There are two main ways in which you may want to scale your text:
 
 The first one is scaling text based on the `DeviceScaleFactor()`, but preserving text size regardless of the window size. This is common for general GUI applications. You may make the window bigger or smaller, but you still want the text to be rendered at the same size. *Text size is independent from the window size*.
 
-To achieve this, you simply need to apply `Renderer.SetScale(ebiten.DeviceScaleFactor())` on the `Game.Layout()` function or similar:
+To achieve this, you simply need to apply `Renderer.SetScale(ebiten.Monitor().DeviceScaleFactor())` on the `Game.Layout()` function or similar:
 ```Golang
 func (game *Game) Layout(_, _ int) (int, int) { panic("use Ebitengine >=v2.5.0") }
 func (game *Game) LayoutF(logicWinWidth, logicWinHeight float64) (float64, float64) {
-	scale := ebiten.DeviceScaleFactor()
+	scale := ebiten.Monitor().DeviceScaleFactor()
 	game.TextRenderer.SetScale(scale)
-	canvasWidth  := math.Ceil(logicWinWidth*scale)
-	canvasHeight := math.Ceil(logicWinHeight*scale)
-	return canvasWidth, canvasHeight
+	return logicWinWidth*scale, logicWinHeight*scale
 }
 ```
 
 The second approach is having text size scale along the window size, as it happens in many games. You make the window bigger? Everything gets bigger. You make the window smaller? Everything get smaller. *Text size is proportional to the window size*.
 
 In this case, you have to do two or three things:
-1. Apply `ebiten.DeviceScaleFactor()` on the `Game.Layout` function to get a canvas of the maximum possible resolution.
+1. Apply `ebiten.Monitor().DeviceScaleFactor()` on the `Game.Layout` function to get a canvas of the maximum possible resolution.
 2. If your game graphics are made with pixel art and you expect a specific canvas size for them, draw that on an offscreen and then project it to the high-resolution canvas.
 3. Draw your text directly on the high-resolution canvas. Your text scale should be set to `HighResolution/LogicalResolution`. For example, if your logical canvas for pixel art is 640x360, but you are projecting to a screen of resolution 1920x1080, your scaling factor would be `3.0`. There can be many intricacies here if you want to do stretching, integer scaling or stuff like that, but this is the main idea.
 
