@@ -1,9 +1,9 @@
 # Display scaling
 
-One of the most common mistakes among Ebitengine game devs is failing to use [`ebiten.Monitor().DeviceScaleFactor()`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#MonitorType.DeviceScaleFactor). There are some reasons for this:
+One of the most common mistakes among Ebitengine game devs is failing to use [`ebiten.Monitor().DeviceScaleFactor()`](https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2#MonitorType.DeviceScaleFactor) correctly. There are some reasons for this:
 - We tend to forget that pixel size and density can vary between monitors.
 - Ebitengine treats display scaling as an optional feature instead of as a primary concern.
-- UI frameworks for Ebitengine also have an unhealthy tendency to neglect display scaling.
+- UI frameworks for Ebitengine have an unhealthy tendency to neglect display scaling ([`hajimehoshi/guigui`](https://github.com/hajimehoshi/guigui) changing it though!).
 - Almost no one understands how `Game.Layout` really works.
 
 A common victim of all this? Text. The solution? Learn how `Game.Layout` works by [reading this guide](https://github.com/tinne26/kage-desk/blob/main/docs/tutorials/ebitengine_game.md#layout).
