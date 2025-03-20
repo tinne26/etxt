@@ -48,19 +48,9 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 	lineHeight := self.getOpLineHeight()
 	vertAlign := self.state.align.Vert()
 	switch vertAlign {
-	case Top:
-		y = (y + self.getOpAscent()).QuantizeUp(vertQuant)
-	case CapLine:
-		capHeight := self.getSlowOpCapHeight()
-		y = (y + capHeight).QuantizeUp(vertQuant)
-	case Midline:
-		xheight := self.getSlowOpXHeight()
-		y = (y + xheight).QuantizeUp(vertQuant)
 	case VertCenter:
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
 		y = (y + self.getOpAscent() - (height >> 1)).QuantizeUp(vertQuant)
-	case Baseline:
-		y = y.QuantizeUp(vertQuant)
 	case LastBaseline:
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
 		qtLineHeight := lineHeight.QuantizeUp(vertQuant)
@@ -69,10 +59,10 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 		}
 		y = (y - height).QuantizeUp(vertQuant)
 	case Bottom:
-		height := self.helperMeasureHeight(text)
+		height := self.fractMeasureWithWrap(text, widthLimit).Height()
 		y = (y + self.getOpAscent() - height).QuantizeUp(vertQuant)
 	default:
-		panic(vertAlign)
+		y = (y + self.getDistToBaselineFract(vertAlign)).QuantizeUp(vertQuant)
 	}
 
 	// Note: skipping text portions based on visibility can be a

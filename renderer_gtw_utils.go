@@ -57,6 +57,20 @@ func (self *RendererUtils) GetLineHeight() float64 {
 	return (*Renderer)(self).utilsGetLineHeight()
 }
 
+// Utility method that returns the signed distance between the baseline
+// and the given vertical align anchor for the current text configuration.
+//
+// You can expect the offset from Top to Baseline to be greater than the
+// offset from MidLine to Baseline, the offset from Baseline to Baseline
+// to be always 0, and the offset from Bottom to Baseline to be a negative
+// value smaller in magnitude than Top to Baseline (normally).
+//
+// Notice that VertCenter and Bottom will assume the height of a single line,
+// and LastBaseline will return 0 like Baseline.
+func (self *RendererUtils) GetDistToBaseline(vertAlign Align) float64 {
+	return (*Renderer)(self).utilsGetDistToBaseline(vertAlign)
+}
+
 // Sets default values for any uninitialized properties that are
 // required to make the renderer produce visible results, except
 // for the font. Notice that this also excludes the cache handler.
@@ -149,6 +163,31 @@ func (self *Renderer) utilsSetFontBytes(data []byte) error {
 
 func (self *Renderer) utilsGetLineHeight() float64 {
 	return self.state.fontSizer.LineHeight(self.state.activeFont, &self.buffer, self.state.scaledSize).ToFloat64()
+}
+
+func (self *Renderer) utilsGetDistToBaseline(vertAlign Align) float64 {
+	return self.getDistToBaselineFract(vertAlign).ToFloat64()
+}
+
+func (self *Renderer) getDistToBaselineFract(vertAlign Align) fract.Unit {
+	switch vertAlign.Vert() {
+	case Top:
+		return self.getOpAscent()
+	case CapLine:
+		return self.getSlowOpCapHeight()
+	case Midline:
+		return self.getSlowOpXHeight()
+	case VertCenter:
+		return self.getOpAscent() - (self.getOpLineHeight() >> 1)
+	case Baseline:
+		return 0
+	case LastBaseline:
+		return 0
+	case Bottom:
+		return self.getOpAscent() - self.getOpLineHeight()
+	default:
+		panic(vertAlign)
+	}
 }
 
 func (self *Renderer) utilsFillMissingProperties() {
