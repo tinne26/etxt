@@ -1,17 +1,18 @@
 package main
 
-import "os"
-import "log"
-import "fmt"
-import "math"
-import "image/color"
+import (
+	"fmt"
+	"image/color"
+	"log"
+	"math"
+	"os"
 
-import "github.com/hajimehoshi/ebiten/v2/inpututil"
-import "github.com/hajimehoshi/ebiten/v2"
-
-import "github.com/tinne26/etxt"
-import "github.com/tinne26/etxt/fract"
-import "github.com/tinne26/etxt/font"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/tinne26/etxt"
+	"github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/fract"
+)
 
 // This example is an interactive demo for testing text aligns.
 // You can select a string, coordinate and align to see how the
@@ -23,6 +24,7 @@ type Game struct {
 	contentType int
 	direction   etxt.Direction
 	align       etxt.Align
+	maxWrapLen  int
 	x, y        int
 }
 
@@ -75,6 +77,22 @@ func (self *Game) Update() error {
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		self.x, self.y = ebiten.CursorPosition()
+	} else if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+		x, _ := ebiten.CursorPosition()
+		newWrapLen := self.x - x
+		if newWrapLen < 0 {
+			newWrapLen = -newWrapLen
+		}
+		if self.align.Horz() == etxt.HorzCenter {
+			newWrapLen *= 2
+		}
+		if newWrapLen == 0 {
+			newWrapLen = 1
+		}
+		if newWrapLen == self.maxWrapLen {
+			newWrapLen = 0 // disable wrapping
+		}
+		self.maxWrapLen = newWrapLen
 	}
 
 	return nil
@@ -83,11 +101,16 @@ func (self *Game) Update() error {
 const NumContentTypes = 5
 
 func (self *Game) Draw(canvas *ebiten.Image) {
-	// dark background and position lines
+	// dark background, wrap area and position lines
 	bounds := canvas.Bounds()
 	scale := ebiten.DeviceScaleFactor()
 	w, h := bounds.Dx(), bounds.Dy()
 	canvas.Fill(color.RGBA{3, 2, 0, 255})
+	if self.maxWrapLen > 0 {
+		leftOffset, rightOffset := self.getWrapOffsets()
+		area := fract.IntsToRect(self.x+leftOffset, 0, self.x+rightOffset, h).Clip(canvas)
+		area.Fill(color.RGBA{16, 26, 26, 255})
+	}
 	line := fract.IntsToRect(self.x, 0, self.x+1, h).Clip(canvas)
 	line.Fill(color.RGBA{32, 32, 18, 255})
 	line = fract.IntsToRect(0, self.y, w, self.y+1).Clip(canvas)
@@ -99,7 +122,7 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	info += "[V] Vert. Align " + self.align.Vert().String() + "\n"
 	info += "[T] Text type\n"
 	info += "[D] Text direction (" + self.direction.String() + ")\n"
-	info += "(Click anywhere to change drawing coordinates)"
+	info += "(Left click to change drawing coords, right click to adjust line wrapping)"
 	self.text.Draw(canvas, info, pad, h-pad)
 
 	// draw aligned text
@@ -124,7 +147,25 @@ func (self *Game) Draw(canvas *ebiten.Image) {
 	case 4:
 		content = "\\^_^/"
 	}
-	self.text.Draw(canvas, content, self.x, self.y)
+	if self.maxWrapLen > 0 {
+		self.text.DrawWithWrap(canvas, content, self.x, self.y, self.maxWrapLen)
+	} else {
+		self.text.Draw(canvas, content, self.x, self.y)
+	}
+}
+
+// Helper function for drawing the text wrap area.
+func (self *Game) getWrapOffsets() (left, right int) {
+	switch self.align.Horz() {
+	case etxt.HorzCenter:
+		return -self.maxWrapLen / 2, +self.maxWrapLen / 2
+	case etxt.Left:
+		return 0, self.maxWrapLen
+	case etxt.Right:
+		return -self.maxWrapLen, 0
+	default:
+		panic(self.align.Horz())
+	}
 }
 
 func main() {
