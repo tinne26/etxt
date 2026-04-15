@@ -64,6 +64,13 @@ func (self Point) AddPoint(point Point) Point {
 	return self
 }
 
+// Returns the floor of the point coordinates.
+func (self Point) Floor() Point {
+	self.X = self.X.Floor()
+	self.Y = self.Y.Floor()
+	return self
+}
+
 // Returns whether the current point is inside the given [Rect].
 func (self Point) In(rect Rect) bool {
 	return self.X >= rect.Min.X && self.X < rect.Max.X && self.Y >= rect.Min.Y && self.Y < rect.Max.Y
