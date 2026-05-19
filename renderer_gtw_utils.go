@@ -56,6 +56,11 @@ func (self *RendererUtils) FillMissingProperties() {
 	(*Renderer)(self).utilsFillMissingProperties()
 }
 
+// Deprecated: use [Renderer.Metrics]().LineHeight() instead.
+func (self *RendererUtils) GetLineHeight() float64 {
+	return (*Renderer)(self).getOpLineHeight().ToFloat64()
+}
+
 // Utility method to set the font by passing its raw data and letting
 // the renderer parse it. This method should be avoided if you want
 // to reuse the font data at different points in your application; in
