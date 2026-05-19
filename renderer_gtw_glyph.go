@@ -4,6 +4,7 @@ import (
 	"github.com/tinne26/etxt/fract"
 	"github.com/tinne26/etxt/mask"
 	"golang.org/x/image/font/sfnt"
+	"golang.org/x/image/math/fixed"
 )
 
 // This type exists only for documentation and structuring purposes,
@@ -45,6 +46,13 @@ func (self *RendererGlyph) DrawMask(target Target, mask GlyphMask, origin fract.
 // [RendererGlyph.SetDrawFunc]().
 func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) GlyphMask {
 	return (*Renderer)(self).glyphLoadMask(index, origin)
+}
+
+// Loads the requested glyph bounds. This is a very low level function;
+// most users requiring "glyph metrics" should prefer [sizer.Sizer]
+// Ascent, Descent, Advance and similar metrics when possible.
+func (self *RendererGlyph) LoadBounds(index sfnt.GlyphIndex) fract.Rect {
+	return (*Renderer)(self).glyphLoadBounds(index)
 }
 
 // Overrides the renderer's glyph drawing function with a custom
@@ -159,7 +167,24 @@ func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 	if self.cacheHandler != nil {
 		self.cacheHandler.NotifyFractChange(origin)
 	}
-	return self.loadGlyphMask(self.state.activeFont, index, origin)
+	return self.loadGlyphMask(index, origin)
+}
+
+func (self *Renderer) glyphLoadSegments(index sfnt.GlyphIndex) (sfnt.Segments, error) {
+	return self.state.activeFont.LoadGlyph(&self.buffer, index, fixed.Int26_6(self.state.scaledSize), nil)
+}
+
+func (self *Renderer) glyphLoadBounds(index sfnt.GlyphIndex) fract.Rect {
+	segments, err := self.glyphLoadSegments(index)
+	if err != nil {
+		return fract.Rect{}
+	}
+
+	bounds := segments.Bounds()
+	return fract.Rect{
+		Min: fract.Point{X: fract.Unit(bounds.Min.X), Y: fract.Unit(bounds.Min.Y)},
+		Max: fract.Point{X: fract.Unit(bounds.Max.X), Y: fract.Unit(bounds.Max.Y)},
+	}
 }
 
 func (self *Renderer) glyphDrawMask(target Target, mask GlyphMask, origin fract.Point) {
