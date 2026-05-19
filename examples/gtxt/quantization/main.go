@@ -17,6 +17,8 @@ import (
 
 // Must be compiled with '-tags gtxt'
 
+const TextSample = "Horizontally quantized vs unquantized text."
+
 func main() {
 	// get font path
 	if len(os.Args) != 2 {
@@ -37,25 +39,25 @@ func main() {
 	renderer.Utils().SetCache8MiB()
 	renderer.SetSize(20)
 	renderer.SetFont(sfntFont)
-	renderer.SetAlign(etxt.Top | etxt.Left)
+	renderer.SetAlign(etxt.VertCenter | etxt.Left)
 	renderer.SetColor(color.RGBA{0, 0, 0, 255}) // black
 
 	// create target image and fill it with white
-	// (you could measure text and use its proper line height
-	// to determine a more precise size for the output image)
-	outImage := image.NewRGBA(image.Rect(0, 0, 640, 64))
-	for i := 0; i < 640*64*4; i++ {
+	lineHeight := renderer.Metrics().LineHeight().ToIntCeil()
+	w := renderer.Measure(TextSample+" [unquantized]").IntWidth() + 24
+	h := lineHeight*2 + lineHeight/4
+	outImage := image.NewRGBA(image.Rect(0, 0, w, h))
+	for i := 0; i < w*h*4; i++ {
 		outImage.Pix[i] = 255
 	}
 
 	// draw quantized text
-	TextSample := "Horizontally quantized vs unquantized text."
 	renderer.Fract().SetHorzQuantization(etxt.QtFull)
-	renderer.Draw(outImage, TextSample+" [quantized]", 8, 8)
+	renderer.Draw(outImage, TextSample+" [quantized]", 8, h/3)
 
 	// disable horizontal quantization and draw again
 	renderer.Fract().SetHorzQuantization(etxt.QtNone)
-	renderer.Draw(outImage, TextSample+" [unquantized]", 8, 32)
+	renderer.Draw(outImage, TextSample+" [unquantized]", 8, h-h/3)
 
 	// store image as png
 	filename, err := filepath.Abs("gtxt_quantization.png")

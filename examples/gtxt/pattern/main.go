@@ -23,6 +23,8 @@ import (
 // specific pattern effect. The manual glyph drawing part is similar to
 // examples/gtxt/mirror.
 
+const Text = "PATTERN"
+
 func main() {
 	// get font path
 	if len(os.Args) != 2 {
@@ -47,7 +49,9 @@ func main() {
 	renderer.SetColor(color.RGBA{255, 255, 255, 255}) // white
 
 	// create target image and fill it with black
-	w, h := 360, 64
+	rect := renderer.Measure(Text)
+	mult := fract.FromFloat64(1.333)
+	w, h := rect.Width().Mul(mult).ToIntCeil(), rect.Height().Mul(mult).ToIntCeil()
 	outImage := image.NewRGBA(image.Rect(0, 0, w, h))
 	for i := 3; i < w*h*4; i += 4 {
 		outImage.Pix[i] = 255
@@ -59,7 +63,7 @@ func main() {
 			mask := renderer.Glyph().LoadMask(glyphIndex, origin)
 			drawAsPattern(outImage, mask, origin)
 		})
-	renderer.Draw(outImage, "PATTERN", 180, 32)
+	renderer.Draw(outImage, Text, w/2, h/2)
 
 	// store result as png
 	filename, err := filepath.Abs("gtxt_pattern.png")

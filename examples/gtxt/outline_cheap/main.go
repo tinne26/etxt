@@ -25,7 +25,7 @@ import (
 // instead and the gtxt/outline example.
 //
 // If you want a more advanced example on how to draw glyphs individually,
-// check gtxt/mirror instead. This example uses the renderer's DefaultDrawFunc,
+// check gtxt/mirror instead. This example uses the renderer's DrawMask func,
 // so it doesn't get into the grittiest details.
 
 func main() {

@@ -3,7 +3,7 @@ module github.com/tinne26/etxt/examples/gtxt/direction_bidi
 go 1.18
 
 require (
-	github.com/tinne26/etxt v0.0.9-alpha.8
+	github.com/tinne26/etxt v0.0.10-alpha.1
 	golang.org/x/text v0.11.0
 )
 

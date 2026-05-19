@@ -96,8 +96,9 @@ func main() {
 	}
 
 	// create target image and fill it with white
-	lineHeight := int(renderer.Utils().GetLineHeight() * 1.4) // includes some padding
-	sideMargin := 16                                          // margin for each side
+	mult := fract.FromFloat64(1.4)
+	lineHeight := renderer.Metrics().LineHeight().Mul(mult).ToIntCeil() // includes some padding
+	sideMargin := 16                                                    // margin for each side
 	width := totalLength + sideMargin*2
 	outImage := image.NewRGBA(image.Rect(0, 0, width, lineHeight))
 	for i := 0; i < width*lineHeight*4; i++ {
