@@ -51,6 +51,10 @@ type Renderer struct {
 	missHandlerFn func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool)
 	fonts         []*sfnt.Font
 	buffer        sfnt.Buffer
+
+	cachedMidHeight   fract.Unit
+	cachedCapHeight   fract.Unit
+	cachedMetricsSize fract.Unit
 }
 
 // Creates a new [Renderer], initialized with reasonable default values.
