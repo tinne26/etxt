@@ -70,9 +70,9 @@ func (self *Feed) At(x, y int) *Feed {
 	case Top:
 		self.Position.Y = (fractY + ascent).QuantizeUp(qtVert)
 	case CapLine:
-		self.Position.Y = (fractY + ascent - renderer.getSlowOpCapHeight()).QuantizeUp(qtVert)
+		self.Position.Y = (fractY + ascent - renderer.getOpCapHeight()).QuantizeUp(qtVert)
 	case Midline:
-		self.Position.Y = (fractY + ascent - renderer.getSlowOpXHeight()).QuantizeUp(qtVert)
+		self.Position.Y = (fractY + ascent - renderer.getOpMidHeight()).QuantizeUp(qtVert)
 	case VertCenter:
 		height := sizer.LineHeight(font, &renderer.buffer, renderer.state.scaledSize)
 		self.Position.Y = (fractY + ascent - (height >> 1)).QuantizeUp(qtVert)
