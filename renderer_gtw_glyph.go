@@ -49,8 +49,8 @@ func (self *RendererGlyph) LoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 }
 
 // Loads the requested glyph bounds. This is a very low level function;
-// most users requiring "glyph metrics" should prefer [sizer.Sizer]
-// Ascent, Descent, Advance and similar metrics when possible.
+// most users requiring "glyph metrics" should prefer standard metrics
+// from [Renderer.Metrics]().
 func (self *RendererGlyph) LoadBounds(index sfnt.GlyphIndex) fract.Rect {
 	return (*Renderer)(self).glyphLoadBounds(index)
 }

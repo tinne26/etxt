@@ -18,7 +18,7 @@ import (
 //	font := renderer.GetFont()
 //	buffer := renderer.GetBuffer()
 //	size := renderer.Fract().GetScaledSize()
-//	ascent := renderer.Sizer().Ascent(font, buffer, size)
+//	ascent := renderer.GetSizer().Ascent(font, buffer, size)
 //
 // [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
 type RendererMetrics Renderer
@@ -31,7 +31,7 @@ func (self *Renderer) Metrics() *RendererMetrics {
 }
 
 // Ascent returns the font ascent for the current renderer configuration.
-// This is shorthand for [Renderer.Sizer]().Ascent(...).
+// This is shorthand for [Renderer.GetSizer]().Ascent(...).
 func (self *RendererMetrics) Ascent() fract.Unit {
 	return (*Renderer)(self).getOpAscent()
 }
@@ -49,19 +49,19 @@ func (self *RendererMetrics) MidHeight() fract.Unit {
 }
 
 // Descent returns the font descent for the current renderer configuration.
-// This is shorthand for [Renderer.Sizer]().Descent(...).
+// This is shorthand for [Renderer.GetSizer]().Descent(...).
 func (self *RendererMetrics) Descent() fract.Unit {
 	return (*Renderer)(self).getOpDescent()
 }
 
 // LineHeight returns ascent + descent + lineGap for the current renderer
-// configuration. This is shorthand for [Renderer.Sizer]().LineHeight(...).
+// configuration. This is shorthand for [Renderer.GetSizer]().LineHeight(...).
 func (self *RendererMetrics) LineHeight() fract.Unit {
 	return (*Renderer)(self).getOpLineHeight()
 }
 
 // Advance returns the requested glyph's advance under the current renderer
-// configuration. This is shorthand for [Renderer.Sizer]().Advance(...).
+// configuration. This is shorthand for [Renderer.GetSizer]().Advance(...).
 func (self *RendererMetrics) Advance(glyphIndex sfnt.GlyphIndex) fract.Unit {
 	return (*Renderer)(self).getOpAdvance(glyphIndex)
 }

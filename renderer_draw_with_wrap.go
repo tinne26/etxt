@@ -62,7 +62,7 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 		height := self.fractMeasureWithWrap(text, widthLimit).Height()
 		y = (y + self.getOpAscent() - height).QuantizeUp(vertQuant)
 	default:
-		y = (y + self.getDistToBaselineFract(vertAlign)).QuantizeUp(vertQuant)
+		y = (y + self.getBaselineOffset(vertAlign)).QuantizeUp(vertQuant)
 	}
 
 	// Note: skipping text portions based on visibility can be a

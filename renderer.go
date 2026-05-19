@@ -27,6 +27,7 @@ import (
 // and keep them out of the way for most workflows that won't require them.
 // The current gateways are the following:
 //   - [Renderer.Utils](), to access non-essential but handy functions.
+//   - [Renderer.Metrics](), to access basic font metrics.
 //   - [Renderer.Fract](), to access specialized fractional positioning functionality.
 //   - [Renderer.Glyph](), to access low level functions for glyphs and
 //     glyph masks.
@@ -236,22 +237,18 @@ func (self *Renderer) GetColor() color.Color {
 
 // Returns the current [sizer.Sizer].
 //
-// The most common use for sizers is adjusting line height or glyph
-// interspacing. Outside of that, sizers can also be relevant when
-// trying to obtain information about font metrics or when making
-// custom glyph mask rasterizers; all fairly uncommon things for the
-// average user to have to worry about.
+// The most common use for sizers is adjusting line height or glyph interspacing.
+//
+// To obtain information about font metrics see [Renderer.Metrics](). That
+// gateway exposes most common values, so you rarely need the sizer itself.
 func (self *Renderer) GetSizer() sizer.Sizer {
 	return self.state.fontSizer
 }
 
 // Sets the sizer to be used on subsequent operations.
 //
-// The most common use for sizers is adjusting line height or glyph
-// interspacing. Outside of that, sizers can also be relevant when
-// trying to obtain information about font metrics or when making
-// custom glyph mask rasterizers; all fairly uncommon things for the
-// average user to have to worry about.
+// The most common use for sizers is adjusting line height or glyph interspacing.
+// See [Renderer.GetSizer]() for more details.
 func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
 	if self.state.fontSizer == fontSizer {
 		return
@@ -306,6 +303,7 @@ func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
 }
 
 // Exposes the renderer's internal [*sfnt.Buffer].
+//
 // This is unfortunately necessary for advanced interaction with
 // the [sfnt] package and the [sizer.Sizer] interface.
 func (self *Renderer) GetBuffer() *sfnt.Buffer {

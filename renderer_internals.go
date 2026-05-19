@@ -124,3 +124,26 @@ func (self *Renderer) ensureExtraMetrics() {
 		self.cachedCapHeight = fract.Unit(metrics.CapHeight)
 	}
 }
+
+// returns the signed distance between the given vert align and the baseline.
+// E.g.: Top to Baseline is positive (Ascent), Bottom to Baseline is negative.
+func (self *Renderer) getBaselineOffset(vertAlign Align) fract.Unit {
+	switch vertAlign.Vert() {
+	case Top:
+		return self.getOpAscent()
+	case CapLine:
+		return self.getOpCapHeight()
+	case Midline:
+		return self.getOpMidHeight()
+	case VertCenter:
+		return self.getOpAscent() - (self.getOpLineHeight() >> 1)
+	case Baseline:
+		return 0
+	case LastBaseline:
+		return 0
+	case Bottom:
+		return self.getOpAscent() - self.getOpLineHeight()
+	default:
+		panic(vertAlign)
+	}
+}

@@ -119,7 +119,7 @@ func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, stri
 				w2, h2 := fn(renderer, "hey ho").Size()
 				w3, h3 := fn(renderer, "hey hoo").Size()
 				w4, _ := fn(renderer, "hey ho.hey ho").Size()
-				fractLineHeight := fract.FromFloat64(renderer.Utils().GetLineHeight())
+				fractLineHeight := renderer.Metrics().LineHeight()
 				if h1 != fractLineHeight.QuantizeUp(vertQuant) {
 					t.Fatalf( // notice: this could not always be true if there's formatting
 						"expected single line height (%f) to match quantized line height (%f)",
