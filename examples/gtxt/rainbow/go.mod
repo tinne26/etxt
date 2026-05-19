@@ -3,7 +3,7 @@ module github.com/tinne26/etxt/examples/gtxt/rainbow
 go 1.18
 
 require (
-	github.com/tinne26/etxt v0.0.9-alpha.8
+	github.com/tinne26/etxt v0.0.10-alpha.2
 	golang.org/x/image v0.9.0
 )
 

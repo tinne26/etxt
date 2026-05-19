@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.5.0
-	github.com/tinne26/etxt v0.0.9-alpha.8
+	github.com/tinne26/etxt v0.0.10-alpha.2
 	github.com/tinne26/fonts/liberation/lbrtserif v0.0.0-20230317183620-0b634734e4ec
 )
 

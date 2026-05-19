@@ -2,7 +2,7 @@ module github.com/tinne26/etxt/examples/gtxt/sizer_expand
 
 go 1.18
 
-require github.com/tinne26/etxt v0.0.9-alpha.8
+require github.com/tinne26/etxt v0.0.10-alpha.2
 
 require (
 	github.com/ebitengine/purego v0.3.0 // indirect
