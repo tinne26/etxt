@@ -20,12 +20,12 @@ import (
 //	size := renderer.Fract().GetScaledSize()
 //	ascent := renderer.GetSizer().Ascent(font, buffer, size)
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10#Renderer
 type RendererMetrics Renderer
 
 // [Gateway] to [RendererMetrics] functionality.
 //
-// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10#Renderer
 func (self *Renderer) Metrics() *RendererMetrics {
 	return (*RendererMetrics)(self)
 }

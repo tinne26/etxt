@@ -47,6 +47,3 @@ High test coverage percentages don't really mean much. Some examples:
 - The whole `go generate` stuff for Ebitengine doesn't even increase coverage.
 - You often have to write many more tests than what's strictly required for coverage to be really confident that something works as intended. I have written many such tests, but many more are still missing.
 - Examples go a long way in improving my confidence that something is working, even if this isn't reflected on tests coverage.
-- Maturity of v0.0.9 API is still quite heterogeneous.
-
-v0.0.9 is still on its infancy and it's likely to be much less stable than v0.0.8. At the same time, it also fixes a few big bugs and makes many, many small quality improvements over v0.0.8.

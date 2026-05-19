@@ -13,7 +13,7 @@ import (
 
 // [Gateway] to [RendererUtils] functionality.
 //
-// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10#Renderer
 func (self *Renderer) Utils() *RendererUtils {
 	return (*RendererUtils)(self)
 }
@@ -30,8 +30,8 @@ func (self *Renderer) Utils() *RendererUtils {
 // perform certain operations. Most programs on [etxt/examples/ebiten]
 // make use of this.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.9#Renderer
-// [etxt/examples/ebiten]: https://github.com/tinne26/etxt/tree/v0.0.9/examples/ebiten
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10#Renderer
+// [etxt/examples/ebiten]: https://github.com/tinne26/etxt/tree/v0.0.10/examples/ebiten
 type RendererUtils Renderer
 
 // ---- wrapper methods ----
@@ -70,7 +70,7 @@ func (self *RendererUtils) GetLineHeight() float64 {
 // For more advanced font management functionality, see
 // [etxt/font.Library].
 //
-// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.9#Library
+// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.10#Library
 func (self *RendererUtils) SetFontBytes(data []byte) error {
 	return (*Renderer)(self).utilsSetFontBytes(data)
 }
