@@ -1,8 +1,10 @@
 package cache
 
-import "sort"
-import "strconv"
-import "testing"
+import (
+	"sort"
+	"strconv"
+	"testing"
+)
 
 // Debug method, e.g.:
 //
@@ -98,12 +100,12 @@ func TestDefaultCache(t *testing.T) {
 	}
 
 	cache.PassMask([3]uint64{0, 0, 0}, masks[0])
-	mask, found = cache.GetMask([3]uint64{0, 0, 0})
+	_, found = cache.GetMask([3]uint64{0, 0, 0})
 	if !found {
 		t.Fatal("expected mask to be added")
 	}
 
-	mask, found = cache.GetMask([3]uint64{0, 0, 2})
+	_, found = cache.GetMask([3]uint64{0, 0, 2})
 	if found {
 		t.Fatal("expected mask to be evicted")
 	}

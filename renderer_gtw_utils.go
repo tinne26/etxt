@@ -174,9 +174,9 @@ func (self *Renderer) getDistToBaselineFract(vertAlign Align) fract.Unit {
 	case Top:
 		return self.getOpAscent()
 	case CapLine:
-		return self.getSlowOpCapHeight()
+		return self.getOpCapHeight()
 	case Midline:
-		return self.getSlowOpXHeight()
+		return self.getOpMidHeight()
 	case VertCenter:
 		return self.getOpAscent() - (self.getOpLineHeight() >> 1)
 	case Baseline:

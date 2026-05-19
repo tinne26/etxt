@@ -100,7 +100,7 @@ func polySegments(coords []float64) sfnt.Segments {
 
 func newSegment(op sfnt.SegmentOp, x1, y1, x2, y2, x3, y3 fixed.Int26_6) sfnt.Segment {
 	return sfnt.Segment{Op: op, Args: [3]fixed.Point26_6{
-		{x1, y1}, {x2, y2}, {x3, y3},
+		{X: x1, Y: y1}, {X: x2, Y: y2}, {X: x3, Y: y3},
 	},
 	}
 }

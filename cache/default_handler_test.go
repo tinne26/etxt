@@ -1,9 +1,11 @@
 package cache
 
-import "testing"
+import (
+	"testing"
 
-import "github.com/tinne26/etxt/mask"
-import "github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/fract"
+	"github.com/tinne26/etxt/mask"
+)
 
 func TestDefaultHandler(t *testing.T) {
 	rast := mask.DefaultRasterizer{}
@@ -12,7 +14,7 @@ func TestDefaultHandler(t *testing.T) {
 	handler.NotifyFontChange(nil)
 	handler.NotifyRasterizerChange(&rast)
 	handler.NotifySizeChange(12 << 6)
-	handler.NotifyFractChange(fract.Point{1, 1})
+	handler.NotifyFractChange(fract.Point{X: 1, Y: 1})
 
 	if handler.Cache().CurrentSize() != 0 {
 		t.Fatal("no mask yet size != 0")

@@ -55,10 +55,14 @@ func ensureTestAssetsLoaded() {
 		name string
 	}
 	fonts := make([]FontInfo, 0, 2)
-	lib.EachFont(func(name string, sfntFont *sfnt.Font) error {
+	err = lib.EachFont(func(name string, sfntFont *sfnt.Font) error {
 		fonts = append(fonts, FontInfo{sfntFont, name})
 		return nil
 	})
+	if err != nil {
+		panic(err)
+	}
+
 	sort.Slice(fonts, func(i, j int) bool {
 		return fonts[i].name < fonts[j].name
 	})

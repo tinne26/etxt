@@ -104,62 +104,6 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 	}
 }
 
-// y must be quantized, min baseline not
-func (self *Renderer) trimNonVisibleWithWrap(text string, widthLimit, y, minBaselineY fract.Unit) (string, int) {
-	if y >= minBaselineY {
-		return text, -1
-	}
-	if self.state.textDirection == LeftToRight {
-		return self.trimNonVisibleWithWrapLTR(text, widthLimit, y, minBaselineY)
-	} else { // assume textDirection == RightToLeft
-		return self.trimNonVisibleWithWrapRTL(text, widthLimit, y, minBaselineY)
-	}
-}
-
-func (self *Renderer) trimNonVisibleWithWrapLTR(text string, widthLimit, y, minBaselineY fract.Unit) (string, int) {
-	var lineBreakNth int = -1
-	var iterator ltrStringIterator
-	var lastRune rune
-	for {
-		iterator, _, _, lastRune = self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
-		if lastRune == '\n' {
-			lineBreakNth = maxInt(1, lineBreakNth+1)
-		} else {
-			lineBreakNth = 0
-		}
-		if lastRune == -1 {
-			return "", lineBreakNth
-		}
-		y += self.getOpLineAdvance(lineBreakNth)
-		if y >= minBaselineY {
-			break
-		}
-	}
-	return iterator.StringLeft(text), lineBreakNth
-}
-
-func (self *Renderer) trimNonVisibleWithWrapRTL(text string, widthLimit, y, minBaselineY fract.Unit) (string, int) {
-	var lineBreakNth int = -1
-	var iterator ltrStringIterator
-	var lastRune rune
-	for {
-		iterator, _, _, lastRune = self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
-		if lastRune == '\n' {
-			lineBreakNth = maxInt(1, lineBreakNth+1)
-		} else {
-			lineBreakNth = 0
-		}
-		if lastRune == -1 {
-			return "", lineBreakNth
-		}
-		y += self.getOpLineAdvance(lineBreakNth)
-		if y >= minBaselineY {
-			break
-		}
-	}
-	return iterator.StringLeft(text), lineBreakNth
-}
-
 // Precondition: x and y are quantized.
 func (self *Renderer) fractDrawWithWrapLeftLTR(target Target, text string, x, y, widthLimit fract.Unit) {
 	// set up traversal variables

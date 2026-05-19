@@ -23,7 +23,7 @@ func (self *Renderer) internalGlyphDraw(target Target, glyphIndex sfnt.GlyphInde
 	if self.customDrawFn != nil {
 		self.customDrawFn(target, glyphIndex, origin)
 	} else {
-		mask := self.loadGlyphMask(self.state.activeFont, glyphIndex, origin)
+		mask := self.loadGlyphMask(glyphIndex, origin)
 		self.defaultDrawFunc(target, origin, mask)
 	}
 }
@@ -37,10 +37,6 @@ type drawInternalValues struct {
 	prevFractX        fract.Unit
 	prevGlyphIndex    sfnt.GlyphIndex
 	lineChangeDetails LineChangeDetails
-}
-
-func (self *drawInternalValues) interruptKerning() {
-	self.lineBreakNth = -1
 }
 
 func (self *drawInternalValues) increaseLineBreakNth() {
@@ -144,22 +140,6 @@ func (self *Renderer) helperDrawLineLTR(target Target, position fract.Point, iv 
 }
 
 func (self *Renderer) helperDrawLineReverseLTR(target Target, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
-	for i := 0; i < runeCount; i++ {
-		codePoint := iterator.Next(text)
-		position, iv = self.drawRuneRTL(target, position, codePoint, iv)
-	}
-	return position, iv, iterator
-}
-
-func (self *Renderer) helperDrawLineReverseRTL(target Target, position fract.Point, iv drawInternalValues, iterator rtlStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, rtlStringIterator) {
-	for i := 0; i < runeCount; i++ {
-		codePoint := iterator.Next(text)
-		position, iv = self.drawRuneLTR(target, position, codePoint, iv)
-	}
-	return position, iv, iterator
-}
-
-func (self *Renderer) helperDrawLineRTL(target Target, position fract.Point, iv drawInternalValues, iterator rtlStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, rtlStringIterator) {
 	for i := 0; i < runeCount; i++ {
 		codePoint := iterator.Next(text)
 		position, iv = self.drawRuneRTL(target, position, codePoint, iv)

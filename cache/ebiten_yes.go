@@ -24,8 +24,8 @@ func GlyphMaskByteSize(mask GlyphMask) uint32 {
 	if mask == nil {
 		return constMaskSizeFactor
 	}
-	w, h := mask.Size()
-	return maskDimsByteSize(w, h)
+	bounds := mask.Bounds()
+	return maskDimsByteSize(bounds.Dx(), bounds.Dy())
 }
 
 func maskDimsByteSize(width, height int) uint32 {

@@ -31,6 +31,9 @@ func TestLibrary(t *testing.T) {
 	}
 
 	font, name, err := ParseFromPath(testFontsDir + "/" + testPathA)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
 	if !lib.HasFont(name) {
 		t.Fatalf("expected Library to include %s", name)
 	}
@@ -43,7 +46,7 @@ func TestLibrary(t *testing.T) {
 		t.Fatal("well, well, well...")
 	}
 
-	lib.EachFont(func(fname string, _ *sfnt.Font) error {
+	_ = lib.EachFont(func(fname string, _ *sfnt.Font) error {
 		if fname != name {
 			t.Fatalf("unexpected font %s", fname)
 		}
@@ -55,7 +58,7 @@ func TestLibrary(t *testing.T) {
 	if !lib.RemoveFont(name) {
 		t.Fatal("unexpected remove failure")
 	}
-	lib.EachFont(func(fname string, _ *sfnt.Font) error {
+	_ = lib.EachFont(func(fname string, _ *sfnt.Font) error {
 		t.Fatalf("unexpected font %s", fname)
 		return nil
 	})
@@ -99,12 +102,15 @@ func TestLibrary(t *testing.T) {
 	}
 	file, err := testfs.Open(testFontsDir + "/" + testPathA)
 	if err != nil {
-		file.Close()
+		_ = file.Close()
 		panic(err)
 	}
 	bytes, err := io.ReadAll(file)
-	file.Close()
 	if err != nil {
+		_ = file.Close()
+		panic(err)
+	}
+	if err := file.Close(); err != nil {
 		panic(err)
 	}
 	fname, err = lib.ParseFromBytes(bytes)
@@ -137,7 +143,7 @@ func TestLibrary(t *testing.T) {
 		t.Fatalf("expected \"manual error test\" error, but got \"%s\" instead", err)
 	}
 
-	if doesNotPanic(func() { lib.AddFont(nil) }) {
+	if doesNotPanic(func() { _, _ = lib.AddFont(nil) }) {
 		t.Fatalf("lib.AddFont(nil) should have panicked")
 	}
 	releaseSfntBuffer(sfntBuffer) // critical cleanup after the panic

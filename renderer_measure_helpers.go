@@ -5,44 +5,6 @@ import (
 	"golang.org/x/image/font/sfnt"
 )
 
-// expects a quantized position, returns an unquantized position
-func (self *Renderer) advanceGlyphLTR(x fract.Unit, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Unit, drawInternalValues) {
-	// apply kerning unless coming from line break
-	if iv.lineBreakNth != 0 {
-		iv.lineBreakNth = 0
-	} else {
-		x += self.getOpKernBetween(iv.prevGlyphIndex, currGlyphIndex)
-	}
-	x = x.QuantizeUp(fract.Unit(self.state.horzQuantization))
-
-	// (here we would draw if we had to)
-
-	// advance
-	x += self.getOpAdvance(currGlyphIndex)
-
-	iv.prevGlyphIndex = currGlyphIndex
-	return x, iv
-}
-
-// expects a quantized position, returns a quantized position
-func (self *Renderer) advanceGlyphRTL(x fract.Unit, currGlyphIndex sfnt.GlyphIndex, iv drawInternalValues) (fract.Unit, drawInternalValues) {
-	// advance
-	x -= self.getOpAdvance(currGlyphIndex)
-
-	// apply kerning unless coming from line break
-	if iv.lineBreakNth != 0 {
-		iv.lineBreakNth = 0
-	} else {
-		x -= self.getOpKernBetween(currGlyphIndex, iv.prevGlyphIndex)
-	}
-	x = x.QuantizeUp(fract.Unit(self.state.horzQuantization))
-
-	// (here we would draw if we had to)
-
-	iv.prevGlyphIndex = currGlyphIndex
-	return x, iv
-}
-
 // Preconditions: font and sizer are not nil
 func (self *Renderer) helperMeasureHeight(text string) fract.Unit {
 	if text == "" {

@@ -31,9 +31,7 @@ func TestFauxBoldWhole(t *testing.T) {
 	for i, test := range tests {
 		rast.SetExtraWidth(float32(test.w))
 		out := make([]uint8, len(test.in))
-		for n, value := range test.in {
-			out[n] = value
-		}
+		copy(out, test.in)
 		rast.applyRowExtraWidth(out, out, 0, 999)
 		if !eqSliceUint8(out, test.out) {
 			t.Fatalf("test#%d: in %v (+%d), expected %v, got %v", i, test.in, test.w, test.out, out)
@@ -64,9 +62,7 @@ func TestFauxBoldFract(t *testing.T) {
 	for i, test := range tests {
 		rast.SetExtraWidth(test.w)
 		out := make([]uint8, len(test.in))
-		for n, value := range test.in {
-			out[n] = value
-		}
+		copy(out, test.in)
 		rast.applyRowExtraWidth(out, out, 0, 999)
 		if !eqSliceUint8(out, test.out) {
 			t.Fatalf("test#%d: in %v (+%0.1f), expected %v, got %v", i, test.in, test.w, test.out, out)

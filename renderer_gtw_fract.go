@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/tinne26/etxt/fract"
+	"golang.org/x/image/font/sfnt"
 )
 
 // [Gateway] to [RendererFract] functionality.
@@ -109,6 +110,10 @@ func (self *RendererFract) DrawWithWrap(target Target, text string, x, y fract.U
 	(*Renderer)(self).fractDrawWithWrap(target, text, x, y, fract.FromInt(widthLimit))
 }
 
+func (self *RendererFract) Metric(fn func(*Font, *sfnt.Buffer, fract.Unit) fract.Unit) fract.Unit {
+	return (*Renderer)(self).fractMetric(fn)
+}
+
 // ---- underlying implementations ----
 
 func (self *Renderer) fractSetSize(size fract.Unit) {
@@ -193,4 +198,8 @@ func validateQuantizationValue(value fract.Unit) {
 
 func (self *Renderer) fractGetQuantization() (horz, vert fract.Unit) {
 	return fract.Unit(self.state.horzQuantization), fract.Unit(self.state.vertQuantization)
+}
+
+func (self *Renderer) fractMetric(fn func(*Font, *sfnt.Buffer, fract.Unit) fract.Unit) fract.Unit {
+	return fn(self.state.activeFont, &self.buffer, self.state.scaledSize)
 }

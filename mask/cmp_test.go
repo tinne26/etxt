@@ -250,7 +250,11 @@ func exportTest(filename string, mask *image.Alpha) {
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}()
 	err = png.Encode(file, rgba)
 	if err != nil {
 		panic(err)
