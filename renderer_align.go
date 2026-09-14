@@ -135,7 +135,7 @@ const (
 
 	// Vertical aligns
 	Top          Align = 0b0000_0001 // top of font's ascent
-	CapLine      Align = 0b0000_0011 // top of font's cap height (rarely used)
+	CapLine      Align = 0b0000_0011 // top of font's cap height
 	Midline      Align = 0b0000_0010 // top of xheight (rarely used)
 	VertCenter   Align = 0b0000_1001 // middle of line height
 	Baseline     Align = 0b0000_0100 // aligned to baseline
