@@ -56,6 +56,10 @@ type Renderer struct {
 	cachedMidHeight   fract.Unit
 	cachedCapHeight   fract.Unit
 	cachedMetricsSize fract.Unit
+
+	// related to DrawBilinear
+	subPixelOffsetX float64
+	subPixelOffsetY float64
 }
 
 // Creates a new [Renderer], initialized with reasonable default values.

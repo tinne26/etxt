@@ -1,6 +1,8 @@
 package etxt
 
 import (
+	"math"
+
 	"github.com/tinne26/etxt/fract"
 )
 
@@ -13,6 +15,19 @@ import (
 // make your system more robust.
 func (self *Renderer) Draw(target Target, text string, x, y int) {
 	self.fractDraw(target, text, fract.FromInt(x), fract.FromInt(y))
+}
+
+// Draws text at an arbitrary position. The result is as close as possible to
+// using [Renderer.Draw]() on an offscreen and then translating it with
+// [ebiten.FilterLinear].
+//
+// This method is generally lower quality than fractional quantization methods,
+// but can be used to achieve smooth movement even with [QtFull] quantization.
+func (self *Renderer) DrawBilinear(target Target, text string, x, y float64) {
+	wholeX, wholeY := math.Floor(x), math.Floor(y)
+	self.subPixelOffsetX, self.subPixelOffsetY = x-wholeX, y-wholeY
+	defer func() { self.subPixelOffsetX, self.subPixelOffsetY = 0, 0 }()
+	self.fractDraw(target, text, fract.FromInt(int(wholeX)), fract.FromInt(int(wholeY)))
 }
 
 // x and y may be unquantized

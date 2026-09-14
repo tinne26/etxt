@@ -48,13 +48,20 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 		return
 	} // spaces and empty glyphs will be nil
 
-	// TODO: maybe switch to DrawTriangles, but specially, move opts out (tricky due to gtxt)
-	//       and have color set only when necessary, translations reset, blend mode set only
-	//       when necessary, etc. Or maybe not. At least write a quick benchmark to see the
-	//       impact of moving opts out.
+	// TODO: maybe switch to DrawTriangles. Reusing opts was benchmarked and isn't
+	// helpful, no allocs are saved. Caching color is a bit better, but still under
+	// 1% gain, probably not worth optimizing either.
 	opts := ebiten.DrawImageOptions{}
 	srcRect := mask.Bounds()
-	opts.GeoM.Translate(float64(origin.X.ToIntFloor()+srcRect.Min.X), float64(origin.Y.ToIntFloor()+srcRect.Min.Y))
+	// without a remainder there's nothing to resample, and nearest sampling
+	// keeps the result exactly what Draw would have produced
+	if self.subPixelOffsetX != 0 || self.subPixelOffsetY != 0 {
+		opts.Filter = ebiten.FilterLinear
+	}
+	opts.GeoM.Translate(
+		float64(origin.X.ToIntFloor()+srcRect.Min.X)+self.subPixelOffsetX,
+		float64(origin.Y.ToIntFloor()+srcRect.Min.Y)+self.subPixelOffsetY,
+	)
 	r, g, b, a := colorToFloat32(self.state.fontColor)
 	opts.ColorScale.Scale(r, g, b, a)
 	opts.Blend = self.state.blendMode
