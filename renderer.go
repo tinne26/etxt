@@ -58,8 +58,9 @@ type Renderer struct {
 	cachedMetricsSize fract.Unit
 
 	// related to DrawBilinear
-	subPixelOffsetX float64
-	subPixelOffsetY float64
+	bilinearOffsetX float64
+	bilinearOffsetY float64
+	bilinearFilter  bool // whether to use FilterLinear; even if bilinear offsets are zero
 }
 
 // Creates a new [Renderer], initialized with reasonable default values.

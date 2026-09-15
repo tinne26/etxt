@@ -25,8 +25,11 @@ func (self *Renderer) Draw(target Target, text string, x, y int) {
 // but can be used to achieve smooth movement even with [QtFull] quantization.
 func (self *Renderer) DrawBilinear(target Target, text string, x, y float64) {
 	wholeX, wholeY := math.Floor(x), math.Floor(y)
-	self.subPixelOffsetX, self.subPixelOffsetY = x-wholeX, y-wholeY
-	defer func() { self.subPixelOffsetX, self.subPixelOffsetY = 0, 0 }()
+	self.bilinearOffsetX, self.bilinearOffsetY = x-wholeX, y-wholeY
+	self.bilinearFilter = true
+	defer func() {
+		self.bilinearOffsetX, self.bilinearOffsetY, self.bilinearFilter = 0, 0, false
+	}()
 	self.fractDraw(target, text, fract.FromInt(int(wholeX)), fract.FromInt(int(wholeY)))
 }
 

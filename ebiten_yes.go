@@ -53,14 +53,12 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 	// 1% gain, probably not worth optimizing either.
 	opts := ebiten.DrawImageOptions{}
 	srcRect := mask.Bounds()
-	// without a remainder there's nothing to resample, and nearest sampling
-	// keeps the result exactly what Draw would have produced
-	if self.subPixelOffsetX != 0 || self.subPixelOffsetY != 0 {
+	if self.bilinearFilter {
 		opts.Filter = ebiten.FilterLinear
 	}
 	opts.GeoM.Translate(
-		float64(origin.X.ToIntFloor()+srcRect.Min.X)+self.subPixelOffsetX,
-		float64(origin.Y.ToIntFloor()+srcRect.Min.Y)+self.subPixelOffsetY,
+		float64(origin.X.ToIntFloor()+srcRect.Min.X)+self.bilinearOffsetX,
+		float64(origin.Y.ToIntFloor()+srcRect.Min.Y)+self.bilinearOffsetY,
 	)
 	r, g, b, a := colorToFloat32(self.state.fontColor)
 	opts.ColorScale.Scale(r, g, b, a)

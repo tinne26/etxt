@@ -61,10 +61,10 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 	srcRect := mask.Rect
 	shift := image.Pt(origin.X.ToIntFloor(), origin.Y.ToIntFloor())
 	dstRect := srcRect.Add(shift)
-	if self.subPixelOffsetX > 0 { // interpolation spills into the next pixel
+	if self.bilinearOffsetX > 0 { // interpolation spills into the next pixel
 		dstRect.Max.X += 1
 	}
-	if self.subPixelOffsetY > 0 {
+	if self.bilinearOffsetY > 0 {
 		dstRect.Max.Y += 1
 	}
 	targetRect := targetBounds.Intersect(dstRect)
@@ -190,14 +190,14 @@ func (self *Renderer) mixImageInto(src GlyphMask, target draw.Image, srcRect, ta
 
 	directColor := self.state.fontColor
 	r, g, b, a := directColor.RGBA()
-	bilinear := self.subPixelOffsetX != 0 || self.subPixelOffsetY != 0
+	bilinear := self.bilinearOffsetX != 0 || self.bilinearOffsetY != 0
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			// get mask alpha applied to our main drawing color
 			var level uint8
 			if bilinear {
-				level = bilinearAlphaAt(src, srcOffX+x, srcOffY+y, self.subPixelOffsetX, self.subPixelOffsetY)
+				level = bilinearAlphaAt(src, srcOffX+x, srcOffY+y, self.bilinearOffsetX, self.bilinearOffsetY)
 			} else {
 				level = src.AlphaAt(srcOffX+x, srcOffY+y).A
 			}
