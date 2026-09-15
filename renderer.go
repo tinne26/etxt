@@ -56,6 +56,11 @@ type Renderer struct {
 	cachedMidHeight   fract.Unit
 	cachedCapHeight   fract.Unit
 	cachedMetricsSize fract.Unit
+
+	// related to DrawBilinear
+	bilinearOffsetX float64
+	bilinearOffsetY float64
+	bilinearFilter  bool // whether to use FilterLinear; even if bilinear offsets are zero
 }
 
 // Creates a new [Renderer], initialized with reasonable default values.
@@ -175,7 +180,7 @@ func (self *Renderer) GetDirection() Direction {
 // Miscellaneous tips and advice:
 //   - If you only have the unparsed font file data, consider [RendererUtils.SetFontBytes]().
 //   - If you need more robust font management, take a look at [etxt/font.Library].
-//   - If you need a quick font for testing, take on from [github.com/tinne26/fonts]
+//   - If you need a quick font for testing, take one from [github.com/tinne26/fonts]
 //     (e.g. lbrtsans.Font()).
 //
 // [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.10#Library
