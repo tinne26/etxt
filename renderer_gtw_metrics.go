@@ -10,7 +10,7 @@ import (
 //
 // In general, this type is used through method chaining:
 //
-//	renderer.Metrics().Advance()
+//	renderer.Metrics().Ascent()
 //
 // This gateway simplifies access to common metrics, which otherwise
 // can be tedious to request from the sizer itself:

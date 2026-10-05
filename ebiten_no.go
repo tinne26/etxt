@@ -60,7 +60,14 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 	targetBounds := target.Bounds()
 	srcRect := mask.Rect
 	shift := image.Pt(origin.X.ToIntFloor(), origin.Y.ToIntFloor())
-	targetRect := targetBounds.Intersect(srcRect.Add(shift))
+	dstRect := srcRect.Add(shift)
+	if self.bilinearOffsetX > 0 { // interpolation spills into the next pixel
+		dstRect.Max.X += 1
+	}
+	if self.bilinearOffsetY > 0 {
+		dstRect.Max.Y += 1
+	}
+	targetRect := targetBounds.Intersect(dstRect)
 	if targetRect.Empty() {
 		return
 	}
@@ -183,11 +190,17 @@ func (self *Renderer) mixImageInto(src GlyphMask, target draw.Image, srcRect, ta
 
 	directColor := self.state.fontColor
 	r, g, b, a := directColor.RGBA()
+	bilinear := self.bilinearOffsetX != 0 || self.bilinearOffsetY != 0
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			// get mask alpha applied to our main drawing color
-			level := src.AlphaAt(srcOffX+x, srcOffY+y).A
+			var level uint8
+			if bilinear {
+				level = bilinearAlphaAt(src, srcOffX+x, srcOffY+y, self.bilinearOffsetX, self.bilinearOffsetY)
+			} else {
+				level = src.AlphaAt(srcOffX+x, srcOffY+y).A
+			}
 			var newColor color.Color
 			if level == 0 {
 				newColor = color.RGBA{0, 0, 0, 0}
@@ -203,6 +216,19 @@ func (self *Renderer) mixImageInto(src GlyphMask, target draw.Image, srcRect, ta
 			target.Set(tarOffX+x, tarOffY+y, mixColor)
 		}
 	}
+}
+
+// Samples the mask bilinearly, displaced by a sub-pixel offset
+func bilinearAlphaAt(src GlyphMask, x, y int, shiftX, shiftY float64) uint8 {
+	// sampling outside bounds is safe, transparent is returned
+	topLeft := float64(src.AlphaAt(x-1, y-1).A)
+	topRight := float64(src.AlphaAt(x, y-1).A)
+	bottomLeft := float64(src.AlphaAt(x-1, y).A)
+	bottomRight := float64(src.AlphaAt(x, y).A)
+
+	top := topLeft*shiftX + topRight*(1.0-shiftX)
+	bottom := bottomLeft*shiftX + bottomRight*(1.0-shiftX)
+	return uint8(top*shiftY + bottom*(1.0-shiftY) + 0.5)
 }
 
 func rescaledAlpha(r, g, b, a uint32, alphaFactor uint8) color.Color {
