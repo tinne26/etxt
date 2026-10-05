@@ -81,3 +81,10 @@ func ensureTestAssetsLoaded() {
 		testFontB = fonts[1].font
 	}
 }
+
+func doesNotPanic(function func()) (didNotPanic bool) {
+	didNotPanic = true
+	defer func() { didNotPanic = (recover() == nil) }()
+	function()
+	return
+}
