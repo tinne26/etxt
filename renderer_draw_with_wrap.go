@@ -42,6 +42,10 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 	if bounds.Empty() {
 		return
 	}
+	if self.state.hasScriptFonts() {
+		self.lastContextualRun = contextualRun{}
+		defer self.activatePrimaryFont()
+	}
 
 	// adjust Y position
 	horzQuant, vertQuant := self.fractGetQuantization()

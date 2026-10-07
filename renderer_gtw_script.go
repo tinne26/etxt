@@ -3,6 +3,7 @@ package etxt
 import (
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/image/font/sfnt"
 )
@@ -31,16 +32,22 @@ type RendererScript Renderer
 // SetFont assigns a font to the given script, replacing any font previously
 // assigned to it. Use nil to remove the assignment.
 //
-// Whenever script-specific fonts are configured, the renderer performs text
-// itemization before measuring and drawing. If a section of the text is found
-// to use a specific script for which a custom font is configured, that font
-// will be used; otherwise, the primary font set through [Renderer.SetFont]()
-// will prevail.
+// Whenever script-specific fonts are configured, the renderer checks text
+// scripts while measuring and drawing. If a section of the text is found to
+// use a specific script for which a custom font is configured, that font is
+// used; otherwise, the primary font from [Renderer.SetFont]() prevails.
+//
+// Spaces, ASCII digits and punctuation belong to the [Common] script, so they
+// generally keep the font of the preceding text.
+//
+// Line metrics always come from the primary font.
 //
 // Scripts must be one of the [unicode] tables included in [unicode.Scripts],
 // like [unicode.Latin], [unicode.Cyrillic], [unicode.Han], etc.
 //
 // Multiple scripts can be associated to the same font.
+//
+// [Common]: https://www.unicode.org/reports/tr24/#Common
 func (self *RendererScript) SetFont(script *unicode.RangeTable, font *sfnt.Font) {
 	(*Renderer)(self).scriptSetFont(script, font)
 }
@@ -174,4 +181,107 @@ func scriptName(script *unicode.RangeTable) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// contextualRun holds the font used by a run of Common and/or Inherited
+// runes, whose script depends on the text around them.
+type contextualRun struct {
+	start int // byte range within the text being processed
+	end   int
+	font  *sfnt.Font
+}
+
+// activatePrimaryFont makes the primary font active again if it was changed
+// during draw or measure while using script fonts
+func (self *Renderer) activatePrimaryFont() {
+	if self.state.activeFont != self.state.primaryFont {
+		self.state.activeFont = self.state.primaryFont
+		self.notifyFontChange(self.state.primaryFont)
+	}
+}
+
+// updateScriptFont checks the font that needs to be used for the rune at
+// text[index], and when it has to change, it configures it and returns true
+func (self *Renderer) updateScriptFont(text string, index int, codePoint rune) bool {
+	var font *sfnt.Font
+	if index >= self.lastContextualRun.start && index < self.lastContextualRun.end {
+		font = self.lastContextualRun.font
+	} else if font = self.getRuneFont(codePoint); font == nil {
+		self.resolveContextualRun(text, index)
+		font = self.lastContextualRun.font
+	}
+
+	if font == self.state.activeFont {
+		return false
+	}
+	self.state.activeFont = font
+	self.notifyFontChange(font)
+	return true
+}
+
+// getRuneFont returns the font assigned to the rune's script, or the primary
+// font when there's none. It returns nil for runes of the Common and Inherited
+// scripts, like spaces, ASCII digits, punctuation, etc., which are contextual
+func (self *Renderer) getRuneFont(codePoint rune) *sfnt.Font {
+	for i := range self.state.scriptFonts {
+		if unicode.Is(self.state.scriptFonts[i].script, codePoint) {
+			return self.state.scriptFonts[i].font
+		}
+	}
+	if codePoint < utf8.RuneSelf { // only ASCII letters aren't Common
+		if ('a' <= codePoint && codePoint <= 'z') || ('A' <= codePoint && codePoint <= 'Z') {
+			return self.state.primaryFont
+		}
+		return nil
+	}
+	if unicode.Is(unicode.Common, codePoint) || unicode.Is(unicode.Inherited, codePoint) {
+		return nil
+	}
+	return self.state.primaryFont
+}
+
+// resolveContextualRun finds the run of Common and Inherited runes around
+// text[index] within its line, and caches it with the font its runes use:
+// the font of the closest rune with a script of its own before the run, or
+// after it when the run starts the line. Each run is resolved once, so a
+// traversal looks at each rune once, plus the two runes around each run.
+func (self *Renderer) resolveContextualRun(text string, index int) {
+	start, end := index, index
+	var fontBefore, fontAfter *sfnt.Font // fonts of the runes around the run
+
+	// walk backwards from index to find where the run starts. this is
+	// fast in LTR (already at start), but actual work in RTL
+	for start > 0 {
+		codePoint, size := utf8.DecodeLastRuneInString(text[:start])
+		if codePoint == '\n' {
+			break // line break found, don't go past it
+		}
+		if fontBefore = self.getRuneFont(codePoint); fontBefore != nil {
+			break // script/font found. we still need to find end for memo
+		}
+		start -= size
+	}
+
+	// walk forwards from index to find where the run ends. this is
+	// fast in RTL (already at end), but actual work in LTR
+	for end < len(text) {
+		codePoint, size := utf8.DecodeRuneInString(text[end:])
+		if codePoint == '\n' {
+			break // line break found, don't go past it
+		}
+		if fontAfter = self.getRuneFont(codePoint); fontAfter != nil {
+			break // script-specific font found, done
+		}
+		end += size
+	}
+
+	font := fontBefore // the run follows the text before it
+	if font == nil {
+		font = fontAfter // unless it starts the line
+	}
+	if font == nil {
+		font = self.state.primaryFont // or the line has nothing to follow
+		// TODO: improve with whole text closest prev fallback later
+	}
+	self.lastContextualRun = contextualRun{start: start, end: end, font: font}
 }

@@ -66,6 +66,10 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 	if text == "" {
 		return fract.Rect{}
 	}
+	if self.state.hasScriptFonts() {
+		self.lastContextualRun = contextualRun{}
+		defer self.activatePrimaryFont()
+	}
 	if self.state.textDirection == LeftToRight {
 		return self.fractMeasureLTR(text)
 	} else {
@@ -88,6 +92,10 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 	// main processing
 	if text == "" {
 		return fract.Rect{}
+	}
+	if self.state.hasScriptFonts() {
+		self.lastContextualRun = contextualRun{}
+		defer self.activatePrimaryFont()
 	}
 	if self.state.textDirection == LeftToRight {
 		return self.fractMeasureWrapLTR(text, widthLimit)
@@ -123,10 +131,12 @@ func (self *Renderer) fractMeasureLTR(text string) fract.Rect {
 			break
 		}
 		lineBreakNth = maxInt(1, lineBreakNth+1)
+		self.activatePrimaryFont() // for line metrics
 		height = (height + self.getOpLineAdvance(lineBreakNth)).QuantizeUp(vertQuant)
 	}
 
 	if !lineBreaksOnly {
+		self.activatePrimaryFont() // for line metrics
 		height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant)
 	}
 	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
@@ -155,10 +165,12 @@ func (self *Renderer) fractMeasureRTL(text string) fract.Rect {
 			break
 		}
 		lineBreakNth = maxInt(1, lineBreakNth+1)
+		self.activatePrimaryFont() // for line metrics
 		height = (height + self.getOpLineAdvance(lineBreakNth)).QuantizeUp(vertQuant)
 	}
 
 	if !lineBreaksOnly {
+		self.activatePrimaryFont() // for line metrics
 		height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant)
 	}
 	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
@@ -187,10 +199,12 @@ func (self *Renderer) fractMeasureWrapLTR(text string, widthLimit fract.Unit) fr
 			break
 		}
 		lineBreakNth = maxInt(1, lineBreakNth+1)
+		self.activatePrimaryFont() // for line metrics
 		height = (height + self.getOpLineAdvance(lineBreakNth)).QuantizeUp(vertQuant)
 	}
 
 	if !lineBreaksOnly {
+		self.activatePrimaryFont() // for line metrics
 		height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant)
 	}
 	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
@@ -220,10 +234,12 @@ func (self *Renderer) fractMeasureWrapRTL(text string, widthLimit fract.Unit) fr
 			break
 		}
 		lineBreakNth = maxInt(1, lineBreakNth+1)
+		self.activatePrimaryFont() // for line metrics
 		height = (height + self.getOpLineAdvance(lineBreakNth)).QuantizeUp(vertQuant)
 	}
 
 	if !lineBreaksOnly {
+		self.activatePrimaryFont() // for line metrics
 		height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant)
 	}
 	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))

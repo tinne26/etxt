@@ -54,6 +54,8 @@ type Renderer struct {
 	fonts         []*sfnt.Font
 	buffer        sfnt.Buffer
 
+	lastContextualRun contextualRun // latest run of Common and Inherited runes, reset when each draw or measure starts
+
 	cachedMidHeight   fract.Unit
 	cachedCapHeight   fract.Unit
 	cachedMetricsSize fract.Unit
@@ -192,6 +194,8 @@ func (self *Renderer) SetFont(font *sfnt.Font) {
 	// ensure there's enough space in the fonts slice
 	fontIndex := int(self.state.fontIndex)
 	self.fonts = ensureSliceSize(self.fonts, fontIndex+1)
+
+	self.state.primaryFont = font
 
 	// assign font if new
 	if font == self.state.activeFont {

@@ -53,6 +53,10 @@ func (self *Renderer) fractDraw(target Target, text string, x, y fract.Unit) {
 	if text == "" {
 		return
 	}
+	if self.state.hasScriptFonts() {
+		self.lastContextualRun = contextualRun{}
+		defer self.activatePrimaryFont()
+	}
 
 	// adjust Y position
 	horzQuant, vertQuant := self.fractGetQuantization()
@@ -154,7 +158,7 @@ func (self *Renderer) fractDrawLeftLTR(target Target, text string, x, y fract.Un
 				self.lineChangeFn(iv.lineChangeDetails)
 			}
 		} else {
-			position, iv = self.drawRuneLTR(target, position, codePoint, iv)
+			position, iv = self.drawRuneLTR(target, position, text, iterator.prevRuneStart, codePoint, iv)
 		}
 	}
 }
@@ -183,7 +187,7 @@ func (self *Renderer) fractDrawLeftRTL(target Target, text string, x, y fract.Un
 				self.lineChangeFn(iv.lineChangeDetails)
 			}
 		} else {
-			position, iv = self.drawRuneLTR(target, position, codePoint, iv)
+			position, iv = self.drawRuneLTR(target, position, text, iterator.prevRuneStart, codePoint, iv)
 		}
 	}
 }
@@ -212,7 +216,7 @@ func (self *Renderer) fractDrawRightLTR(target Target, text string, x, y fract.U
 				self.lineChangeFn(iv.lineChangeDetails)
 			}
 		} else {
-			position, iv = self.drawRuneRTL(target, position, codePoint, iv)
+			position, iv = self.drawRuneRTL(target, position, text, iterator.prevRuneStart, codePoint, iv)
 		}
 	}
 }
@@ -240,7 +244,7 @@ func (self *Renderer) fractDrawRightRTL(target Target, text string, x, y fract.U
 				self.lineChangeFn(iv.lineChangeDetails)
 			}
 		} else {
-			position, iv = self.drawRuneRTL(target, position, codePoint, iv)
+			position, iv = self.drawRuneRTL(target, position, text, iterator.prevRuneStart, codePoint, iv)
 		}
 	}
 }
