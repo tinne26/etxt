@@ -11,7 +11,7 @@ import (
 )
 
 // samples for picking test fonts by glyph coverage
-const testLatinSample = "aZ09 .,:;!?()'\""
+const testLatinSample = "aZ09 .,:;!?()[]'\""
 const testHanSample = "中文你是一"
 
 // scriptFontsForTest returns two different test fonts: a primary font with
@@ -135,10 +135,40 @@ var scriptCases = [][][2]string{
 		{`你`, "han"},
 	},
 	{
+		{`12 .`, "han"}, // no letters before the first line with Han: font after
+		{"\n", ""},
 		{`中文`, "han"},
 		{"\n", ""},
-		{`12 .`, "primary"}, // no letters on the line: primary font
+		{`3 ,`, "han"}, // no letters on the line: font of the lines before
+		{"\n", ""},
+		{`ab`, "primary"},
+		{"\n", ""},
+		{`4`, "primary"},
 	},
+	{
+		{`中(`, "han"},
+		{`ab`, "primary"},
+		{`),`, "han"}, // the closing bracket takes the font of its opening bracket, and the comma follows it
+		{`a[b]c(d)`, "primary"},
+	},
+	{
+		{`(ab)`, "primary"}, // at the start of a line, an opening bracket takes the font after it
+		{`中(`, "han"},
+		{`a(b)c`, "primary"}, // nested pair, inside Latin text
+		{`)`, "han"},
+	},
+	nestedBracketsCase(),
+}
+
+// nestedBracketsCase opens more nested brackets than the renderer pairs,
+// alternating the font before each of them. Pairing stops for the rest of
+// the line, so the closing brackets take the font of the text before them.
+func nestedBracketsCase() [][2]string {
+	var segments [][2]string
+	for i := 0; i < 8; i++ {
+		segments = append(segments, [2]string{`中(`, "han"}, [2]string{`a(`, "primary"})
+	}
+	return append(segments, [2]string{`中(`, "han"}, [2]string{"a" + strings.Repeat(")", 17), "primary"})
 }
 
 func segmentFont(name string, primary, han *sfnt.Font) *sfnt.Font {
@@ -362,7 +392,8 @@ func TestMeasureScriptFontsKerning(t *testing.T) {
 }
 
 // TestMeasureScriptFontsAllocations verifies that measuring text that switches
-// between script fonts doesn't allocate.
+// between script fonts doesn't allocate once the renderer has measured it
+// before. The first time, the buffer for font switches may grow.
 func TestMeasureScriptFontsAllocations(t *testing.T) {
 	primary, han := scriptFontsForTest(t)
 

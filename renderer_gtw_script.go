@@ -37,8 +37,8 @@ type RendererScript Renderer
 // use a specific script for which a custom font is configured, that font is
 // used; otherwise, the primary font from [Renderer.SetFont]() prevails.
 //
-// Spaces, ASCII digits and punctuation belong to the [Common] script, so they
-// generally keep the font of the preceding text.
+// Spaces, ASCII digits and punctuation belong to the [Common] script, which
+// generally inherit the font of the preceding text.
 //
 // Line metrics always come from the primary font.
 //
@@ -186,12 +186,16 @@ func scriptName(script *unicode.RangeTable) (string, bool) {
 	return "", false
 }
 
-// contextualRun holds the font used by a run of Common and/or Inherited
-// runes, whose script depends on the text around them.
-type contextualRun struct {
-	start int // byte range within the text being processed
-	end   int
+// scriptSwitch marks the start of a run of text that uses a different font.
+type scriptSwitch struct {
+	index int // byte index of the first rune of the run
 	font  *sfnt.Font
+}
+
+// openBracket is an opening bracket waiting for its closing pair.
+type openBracket struct {
+	closing rune       // the closing bracket that pairs with it
+	font    *sfnt.Font // font of the text before it, nil at the start of a line
 }
 
 // activatePrimaryFont makes the primary font active again if it was changed
@@ -203,17 +207,114 @@ func (self *Renderer) activatePrimaryFont() {
 	}
 }
 
-// updateScriptFont checks the font that needs to be used for the rune at
-// text[index], and when it has to change, it configures it and returns true
-func (self *Renderer) updateScriptFont(text string, index int, codePoint rune) bool {
-	var font *sfnt.Font
-	if index >= self.lastContextualRun.start && index < self.lastContextualRun.end {
-		font = self.lastContextualRun.font
-	} else if font = self.getRuneFont(codePoint); font == nil {
-		self.resolveContextualRun(text, index)
-		font = self.lastContextualRun.font
-	}
+// itemizeScripts finds the fonts for the given text before drawing or
+// measuring it with script fonts, and stores where they change.
+//
+// Common and Inherited runes, like spaces, digits and punctuation, take the
+// font of the text before them. At the start of a line they take the font of
+// the text after them, and recognized closing brackets take the font of their
+// opening bracket. Lines without runes of their own script continue with the
+// font of the previous lines, or take the first font in the text if there's
+// none. Only line breaks end lines here: wrapping happens later, and doesn't
+// change fonts, as wrap points depend on the widths of the fonts.
+func (self *Renderer) itemizeScripts(text string) {
+	switches := self.scriptSwitches[:0]
+	var brackets [16]openBracket // open brackets of the current line
+	var depth int
+	var bracketsFull bool // more brackets were nested than fit, so pairing stopped for the line
+	var lineStart int
+	var lineHasScript bool // whether the line has a rune of its own script yet
+	for index, codePoint := range text {
+		// line breaks: brackets aren't paired across lines
+		if codePoint == '\n' {
+			lineStart, lineHasScript, depth, bracketsFull = index+1, false, 0, false
+			continue
+		}
 
+		// Common and Inherited runes keep the current font, except closing
+		// brackets, which take the font of their opening bracket
+		font := self.getRuneFont(codePoint)
+		if font == nil {
+			if closing := closingBracket(codePoint); closing != 0 {
+				// opening bracket: record the font of the text before it. If it
+				// doesn't fit, its closing bracket would pair with an outer one,
+				// so pairing stops for the rest of the line
+				if depth == len(brackets) {
+					depth, bracketsFull = 0, true
+				}
+				if !bracketsFull {
+					brackets[depth] = openBracket{closing: closing}
+					if lineHasScript {
+						brackets[depth].font = switches[len(switches)-1].font
+					}
+					depth += 1
+				}
+				continue // keeps the current font, like other Common runes
+			}
+			for i := depth - 1; i >= 0; i-- {
+				if brackets[i].closing != codePoint {
+					continue // not this bracket's pair, try an outer one
+				}
+				if brackets[i].font != nil { // nil at the start of a line, which takes the font after it
+					switches = setFontFrom(switches, index, brackets[i].font)
+				}
+				depth = i // also drops unclosed brackets inside this pair
+				break
+			}
+			continue // keeps the current font, unless switched above
+		}
+
+		// runes with their own script: on the first one of a line, the
+		// Common runes at the start of the line take its font too, and so
+		// does the start of the text when it's the first one in the text
+		if !lineHasScript {
+			start := lineStart
+			if len(switches) == 0 {
+				start = 0
+			}
+			switches = setFontFrom(switches, start, font)
+			for i := range brackets[:depth] {
+				brackets[i].font = font
+			}
+			lineHasScript = true
+		}
+		switches = setFontFrom(switches, index, font)
+	}
+	if len(switches) == 0 {
+		switches = append(switches, scriptSwitch{0, self.state.primaryFont})
+	}
+	self.scriptSwitches = switches
+	self.scriptCursor = 0
+}
+
+// setFontFrom makes the given font start at the given index. It doesn't add a
+// switch if that font is already the one in use.
+func setFontFrom(switches []scriptSwitch, index int, font *sfnt.Font) []scriptSwitch {
+	last := len(switches) - 1
+	if last >= 0 && switches[last].font == font {
+		return switches
+	}
+	if last >= 0 && switches[last].index == index {
+		switches[last].font = font
+		return switches
+	}
+	return append(switches, scriptSwitch{index, font})
+}
+
+// updateScriptFont sets the font for the rune at text[index], and reports
+// whether the active font changed. Traversals move through the text in order
+// or line by line backwards, so the switch is found in a few steps.
+func (self *Renderer) updateScriptFont(index int) bool {
+	switches, i := self.scriptSwitches, self.scriptCursor
+	for i+1 < len(switches) && switches[i+1].index <= index {
+		i += 1
+	}
+	for switches[i].index > index {
+		i -= 1
+	}
+	self.scriptCursor = i
+
+	font := switches[i].font
 	if font == self.state.activeFont {
 		return false
 	}
@@ -243,51 +344,59 @@ func (self *Renderer) getRuneFont(codePoint rune) *sfnt.Font {
 	return self.state.primaryFont
 }
 
-// resolveContextualRun finds the run of Common and Inherited runes around
-// text[index] within its line, and caches it with the font its runes use:
-// the font of the closest rune with a script of its own before the run, or
-// after it when the run starts the line. Each run is resolved once, so a
-// traversal looks at each rune once, plus the two runes around each run.
-func (self *Renderer) resolveContextualRun(text string, index int) {
-	start, end := index, index
-	var fontBefore, fontAfter *sfnt.Font // fonts of the runes around the run
-
-	// walk backwards from index to find where the run starts. this is fast
-	// when traversing forwards (already at start), but actual work when
-	// traversing backwards (Draw with left align + RTL or right align + LTR)
-	for start > 0 {
-		codePoint, size := utf8.DecodeLastRuneInString(text[:start])
-		if codePoint == '\n' {
-			break // line break found, don't go past it
-		}
-		if fontBefore = self.getRuneFont(codePoint); fontBefore != nil {
-			break // script/font found. we still need to find end for memo
-		}
-		start -= size
+// closingBracket returns the closing bracket for the given opening bracket,
+// or 0 if the rune isn't one of the common ASCII, East Asian or mathematical
+// opening brackets supported by the itemizer.
+func closingBracket(codePoint rune) rune {
+	switch codePoint {
+	// ASCII
+	case '(':
+		return ')'
+	case '[':
+		return ']'
+	case '{':
+		return '}'
+	// full width forms
+	case '（':
+		return '）'
+	case '［':
+		return '］'
+	case '｛':
+		return '｝'
+	case '｟':
+		return '｠'
+	case '｢':
+		return '｣'
+	// CJK
+	case '「':
+		return '」'
+	case '『':
+		return '』'
+	case '《':
+		return '》'
+	case '〈':
+		return '〉'
+	case '【':
+		return '】'
+	case '〔':
+		return '〕'
+	case '〖':
+		return '〗'
+	case '〘':
+		return '〙'
+	case '〚':
+		return '〛'
+	// mathematical
+	case '⌈':
+		return '⌉'
+	case '⌊':
+		return '⌋'
+	case '⟨':
+		return '⟩'
+	case '⟦':
+		return '⟧'
+	case '⟪':
+		return '⟫'
 	}
-
-	// walk forwards from index to find where the run ends. this is fast
-	// when traversing backwards (already at end), but actual work when
-	// traversing forwards (measuring, DrawWithWrap, and Draw with center
-	// align, left align + LTR or right align + RTL)
-	for end < len(text) {
-		codePoint, size := utf8.DecodeRuneInString(text[end:])
-		if codePoint == '\n' {
-			break // line break found, don't go past it
-		}
-		if fontAfter = self.getRuneFont(codePoint); fontAfter != nil {
-			break // script-specific font found, done
-		}
-		end += size
-	}
-
-	font := fontBefore // the run follows the text before it
-	if font == nil {
-		font = fontAfter // unless it starts the line
-	}
-	if font == nil {
-		font = self.state.primaryFont // or the line has nothing to follow
-		// TODO: improve with whole text closest prev fallback later
-	}
-	self.lastContextualRun = contextualRun{start: start, end: end, font: font}
+	return 0
 }

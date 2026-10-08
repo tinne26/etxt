@@ -201,7 +201,8 @@ func TestDrawScriptFontsLineMetrics(t *testing.T) {
 }
 
 // TestDrawScriptFontsAllocations verifies that drawing text that switches
-// between script fonts doesn't allocate.
+// between script fonts doesn't allocate once the renderer has drawn it before.
+// The first time, the buffer for font switches may grow.
 func TestDrawScriptFontsAllocations(t *testing.T) {
 	primary, han := scriptFontsForTest(t)
 

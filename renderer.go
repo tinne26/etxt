@@ -54,13 +54,15 @@ type Renderer struct {
 	fonts         []*sfnt.Font
 	buffer        sfnt.Buffer
 
-	lastContextualRun contextualRun // latest run of Common and Inherited runes, reset when each draw or measure starts
-
 	cachedMidHeight   fract.Unit
 	cachedCapHeight   fract.Unit
 	cachedMetricsSize fract.Unit
 
-	// related to DrawBilinear
+	// temps related to script-specific fonts
+	scriptSwitches []scriptSwitch // font switches in text operations with script fonts
+	scriptCursor   int            // index of the switch used by the latest rune
+
+	// temps related to DrawBilinear
 	bilinearOffsetX float64
 	bilinearOffsetY float64
 	bilinearFilter  bool // whether to use FilterLinear; even if bilinear offsets are zero

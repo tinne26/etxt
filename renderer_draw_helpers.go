@@ -62,8 +62,8 @@ func (self *drawInternalValues) numElisions() int {
 	return 0
 }
 
-func (self *Renderer) drawRuneLTR(target Target, position fract.Point, text string, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	if self.state.hasScriptFonts() && self.updateScriptFont(text, index, codePoint) {
+func (self *Renderer) drawRuneLTR(target Target, position fract.Point, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
+	if self.state.hasScriptFonts() && self.updateScriptFont(index) {
 		iv.prevGlyphIndex = 0 // break kerning when changing font
 	}
 	glyph, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
@@ -100,8 +100,8 @@ func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyp
 	return position, iv
 }
 
-func (self *Renderer) drawRuneRTL(target Target, position fract.Point, text string, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	if self.state.hasScriptFonts() && self.updateScriptFont(text, index, codePoint) {
+func (self *Renderer) drawRuneRTL(target Target, position fract.Point, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
+	if self.state.hasScriptFonts() && self.updateScriptFont(index) {
 		iv.prevGlyphIndex = 0 // break kerning when changing font
 	}
 	glyph, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
@@ -141,7 +141,7 @@ func (self *Renderer) drawGlyphRTL(target Target, position fract.Point, currGlyp
 func (self *Renderer) helperDrawLineLTR(target Target, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
 	for i := 0; i < runeCount; i++ {
 		codePoint := iterator.Next(text)
-		position, iv = self.drawRuneLTR(target, position, text, iterator.prevRuneStart, codePoint, iv)
+		position, iv = self.drawRuneLTR(target, position, iterator.prevRuneStart, codePoint, iv)
 	}
 	return position, iv, iterator
 }
@@ -149,7 +149,7 @@ func (self *Renderer) helperDrawLineLTR(target Target, position fract.Point, iv 
 func (self *Renderer) helperDrawLineReverseLTR(target Target, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
 	for i := 0; i < runeCount; i++ {
 		codePoint := iterator.Next(text)
-		position, iv = self.drawRuneRTL(target, position, text, iterator.prevRuneStart, codePoint, iv)
+		position, iv = self.drawRuneRTL(target, position, iterator.prevRuneStart, codePoint, iv)
 	}
 	return position, iv, iterator
 }
