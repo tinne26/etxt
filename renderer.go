@@ -55,7 +55,7 @@ type Renderer struct {
 
 	cachedMidHeight   fract.Unit
 	cachedCapHeight   fract.Unit
-	cachedMetricsSize fract.Unit
+	cachedMetricsSize fract.Unit // also dropped to 0 on font change
 
 	// related to DrawBilinear
 	bilinearOffsetX float64
@@ -196,6 +196,7 @@ func (self *Renderer) SetFont(font *sfnt.Font) {
 	}
 	self.fonts[fontIndex] = font
 	self.state.activeFont = font
+	self.cachedMetricsSize = 0 // drop extra metrics
 
 	// notify font change
 	self.notifyFontChange(font)

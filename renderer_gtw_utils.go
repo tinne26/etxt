@@ -212,6 +212,7 @@ func (self *Renderer) setState(state restorableState) {
 	}
 	if initFont != self.state.activeFont {
 		refreshSizer = true
+		self.cachedMetricsSize = 0 // drop extra metrics
 		if self.cacheHandler != nil {
 			self.cacheHandler.NotifyFontChange(self.state.activeFont)
 		}
