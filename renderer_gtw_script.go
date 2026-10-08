@@ -42,8 +42,8 @@ type RendererScript Renderer
 //
 // Line metrics always come from the primary font.
 //
-// Scripts must be one of the [unicode] tables included in [unicode.Scripts],
-// like [unicode.Latin], [unicode.Cyrillic], [unicode.Han], etc.
+// Scripts must be one of the writing systems in [unicode.Scripts], like
+// [unicode.Latin], [unicode.Cyrillic], [unicode.Han], etc.
 //
 // Multiple scripts can be associated to the same font.
 //
@@ -105,6 +105,9 @@ func (self *Renderer) scriptSetFont(script *unicode.RangeTable, font *sfnt.Font)
 	name, found := scriptName(script)
 	if !found {
 		panic("script not found in unicode.Scripts")
+	}
+	if script == unicode.Common || script == unicode.Inherited {
+		panic("Common and Inherited can't have script-specific fonts") // not writing systems
 	}
 	if font == nil {
 		return // nothing to remove, but validating first makes invalid scripts always panic

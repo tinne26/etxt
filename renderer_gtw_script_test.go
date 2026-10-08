@@ -110,6 +110,8 @@ func TestScriptInvalidScriptPanics(t *testing.T) {
 	invalid := map[string]*unicode.RangeTable{
 		"nil":         nil,
 		"Ideographic": unicode.Ideographic, // a property, not a script
+		"Common":      unicode.Common,      // contextual, takes the font of the text around it
+		"Inherited":   unicode.Inherited,   // contextual, takes the font of the text around it
 	}
 	for name, script := range invalid {
 		// nil fonts remove assignments, but scripts are validated first
