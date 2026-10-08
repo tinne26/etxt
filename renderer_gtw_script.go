@@ -219,6 +219,7 @@ func (self *Renderer) activatePrimaryFont() {
 // change fonts, as wrap points depend on the widths of the fonts.
 func (self *Renderer) itemizeScripts(text string) {
 	switches := self.scriptSwitches[:0]
+	fonts := newRuneFontFinder(self.state.scriptFonts, self.state.primaryFont)
 	var brackets [16]openBracket // open brackets of the current line
 	var depth int
 	var bracketsFull bool // more brackets were nested than fit, so pairing stopped for the line
@@ -233,7 +234,7 @@ func (self *Renderer) itemizeScripts(text string) {
 
 		// Common and Inherited runes keep the current font, except closing
 		// brackets, which take the font of their opening bracket
-		font := self.getRuneFont(codePoint)
+		font := fonts.find(codePoint)
 		if font == nil {
 			if closing := closingBracket(codePoint); closing != 0 {
 				// opening bracket: record the font of the text before it. If it
@@ -323,25 +324,157 @@ func (self *Renderer) updateScriptFont(index int) bool {
 	return true
 }
 
-// getRuneFont returns the font assigned to the rune's script, or the primary
-// font when there's none. It returns nil for runes of the Common and Inherited
-// scripts, like spaces, ASCII digits, punctuation, etc., which are contextual
-func (self *Renderer) getRuneFont(codePoint rune) *sfnt.Font {
-	for i := range self.state.scriptFonts {
-		if unicode.Is(self.state.scriptFonts[i].script, codePoint) {
-			return self.state.scriptFonts[i].font
+// runeFontFinder finds the font for each rune of a text. Text tends to stay
+// within a few blocks of Unicode, so it remembers the last two spans of runes
+// used for fast tests. The zero spans are valid: U+0000 is a Common rune.
+type runeFontFinder struct {
+	scriptFonts []scriptFont
+	primaryFont *sfnt.Font
+	latinFont   *sfnt.Font      // font for ASCII letters, primary unless Latin is assigned
+	spans       [2]runeFontSpan // span[0] is the most recently used one
+}
+
+func newRuneFontFinder(scriptFonts []scriptFont, primaryFont *sfnt.Font) runeFontFinder {
+	finder := runeFontFinder{scriptFonts: scriptFonts, primaryFont: primaryFont, latinFont: primaryFont}
+	for i := range scriptFonts {
+		if scriptFonts[i].script == unicode.Latin {
+			finder.latinFont = scriptFonts[i].font
 		}
 	}
-	if codePoint < utf8.RuneSelf { // only ASCII letters aren't Common
+	return finder
+}
+
+// runeFontSpan is a span of consecutive code points that use the same font
+type runeFontSpan struct {
+	first, last rune
+	font        *sfnt.Font // nil for Common and Inherited
+}
+
+func (self *runeFontSpan) has(codePoint rune) bool {
+	return self.first <= codePoint && codePoint <= self.last
+}
+
+// find returns the font assigned to the rune's script, or the primary font
+// when there's none. It returns nil for Common and Inherited code points
+// like spaces, ASCII digits, punctuation, etc., which are contextual.
+func (self *runeFontFinder) find(codePoint rune) *sfnt.Font {
+	// quick ASCII initial lookup
+	if codePoint < utf8.RuneSelf {
 		if ('a' <= codePoint && codePoint <= 'z') || ('A' <= codePoint && codePoint <= 'Z') {
-			return self.state.primaryFont
+			return self.latinFont
 		}
-		return nil
+		return nil // any other ASCII character is Common (control, space, digits, punctuation)
 	}
-	if unicode.Is(unicode.Common, codePoint) || unicode.Is(unicode.Inherited, codePoint) {
-		return nil
+
+	// fast cache lookup
+	if self.spans[0].has(codePoint) {
+		return self.spans[0].font // still in most recently used span
 	}
-	return self.state.primaryFont
+	if self.spans[1].has(codePoint) {
+		self.spans[0], self.spans[1] = self.spans[1], self.spans[0]
+		return self.spans[0].font // back to the other cached span
+	}
+
+	// fallback: check the tables in order, clipping the span on each lookup
+	span := runeFontSpan{first: 0, last: unicode.MaxRune}
+	for i := range self.scriptFonts {
+		if span.clipTo(self.scriptFonts[i].script, codePoint) {
+			span.font = self.scriptFonts[i].font
+			break
+		}
+	}
+	if span.font == nil && !span.clipTo(unicode.Common, codePoint) && !span.clipTo(unicode.Inherited, codePoint) {
+		span.font = self.primaryFont
+	}
+	self.spans[1] = self.spans[0] // overwrite least recently used span[1]
+	self.spans[0] = span          // set new most recently used span
+	return span.font
+}
+
+// clipTo reports whether the table has the given code point, and clips the
+// span to the part of the table that contains it:
+//   - if the table has the code point, the table range that contains it;
+//   - otherwise, the gap that contains it, which can be before, between or
+//     after the table ranges.
+func (self *runeFontSpan) clipTo(table *unicode.RangeTable, codePoint rune) bool {
+	if codePoint > 0xFFFF {
+		return self.clipToR32(table, codePoint)
+	}
+
+	// binary search for the first range ending at codePoint or later, written
+	// out so the comparison is inlined
+	ranges := table.R16
+	i, j := 0, len(ranges)
+	for i < j {
+		m := (i + j) >> 1
+		if rune(ranges[m].Hi) < codePoint {
+			i = m + 1
+		} else {
+			j = m
+		}
+	}
+
+	first, last, inRange := rune(0), rune(0xFFFF), false // R16 ends at U+FFFF, so the last gap too
+	if i > 0 {
+		first = rune(ranges[i-1].Hi) + 1
+	}
+	if i < len(ranges) {
+		lo, hi, stride := rune(ranges[i].Lo), rune(ranges[i].Hi), rune(ranges[i].Stride)
+		switch {
+		case codePoint < lo: // in the gap before the range
+			last = lo - 1
+		case stride != 1: // the range skips code points, so only the code point itself
+			first, last, inRange = codePoint, codePoint, (codePoint-lo)%stride == 0
+		default:
+			first, last, inRange = lo, hi, true
+		}
+	}
+	if first > self.first {
+		self.first = first
+	}
+	if last < self.last {
+		self.last = last
+	}
+	return inRange
+}
+
+// clipToR32 is clipTo for code points above U+FFFF, which are in R32 instead
+// of R16: emoji, historic scripts, rare ideographs, etc. It repeats the code
+// of clipTo, as sharing it would keep it from being inlined.
+func (self *runeFontSpan) clipToR32(table *unicode.RangeTable, codePoint rune) bool {
+	ranges := table.R32
+	i, j := 0, len(ranges)
+	for i < j {
+		m := (i + j) >> 1
+		if rune(ranges[m].Hi) < codePoint {
+			i = m + 1
+		} else {
+			j = m
+		}
+	}
+
+	first, last, inRange := rune(0x10000), rune(unicode.MaxRune), false // R32 starts at U+10000, so the first gap too
+	if i > 0 {
+		first = rune(ranges[i-1].Hi) + 1
+	}
+	if i < len(ranges) {
+		lo, hi, stride := rune(ranges[i].Lo), rune(ranges[i].Hi), rune(ranges[i].Stride)
+		switch {
+		case codePoint < lo:
+			last = lo - 1
+		case stride != 1:
+			first, last, inRange = codePoint, codePoint, (codePoint-lo)%stride == 0
+		default:
+			first, last, inRange = lo, hi, true
+		}
+	}
+	if first > self.first {
+		self.first = first
+	}
+	if last < self.last {
+		self.last = last
+	}
+	return inRange
 }
 
 // closingBracket returns the closing bracket for the given opening bracket,

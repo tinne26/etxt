@@ -121,6 +121,46 @@ func TestScriptInvalidScriptPanics(t *testing.T) {
 	}
 }
 
+// TestRuneFontFinder verifies that remembering spans never changes the font
+// found for a rune. Results must match a plain unicode.Is() check for every
+// rune, visited in order and jumping around, with different assigned scripts.
+// The fonts are only compared, never used.
+func TestRuneFontFinder(t *testing.T) {
+	primary := &sfnt.Font{}
+	configs := [][]*unicode.RangeTable{
+		{unicode.Han},
+		{unicode.Latin, unicode.Han}, // Latin has ASCII runes
+		{unicode.Arabic, unicode.Greek, unicode.Hangul},
+	}
+	for _, scripts := range configs {
+		var scriptFonts []scriptFont
+		for _, script := range scripts {
+			scriptFonts = append(scriptFonts, scriptFont{script: script, font: &sfnt.Font{}})
+		}
+		expected := func(codePoint rune) *sfnt.Font {
+			for _, scriptFont := range scriptFonts {
+				if unicode.Is(scriptFont.script, codePoint) {
+					return scriptFont.font
+				}
+			}
+			if unicode.Is(unicode.Common, codePoint) || unicode.Is(unicode.Inherited, codePoint) {
+				return nil
+			}
+			return primary
+		}
+
+		finder := newRuneFontFinder(scriptFonts, primary)
+		for _, step := range []rune{1, 7919} { // 7919 visits every rune too, as it's prime
+			for i := int64(0); i <= unicode.MaxRune; i++ {
+				codePoint := rune(i * int64(step) % (unicode.MaxRune + 1))
+				if finder.find(codePoint) != expected(codePoint) {
+					t.Fatalf("%d scripts, step %d: wrong font for U+%04X", len(scripts), step, codePoint)
+				}
+			}
+		}
+	}
+}
+
 // scriptCases defines test strings split into segments by the script / font
 // they must use. Contextual code points like punctuation typically follow the
 // preceding script (or after them if at the start of the line). Consecutive
