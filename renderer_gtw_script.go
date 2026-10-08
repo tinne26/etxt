@@ -37,13 +37,14 @@ type RendererScript Renderer
 // use a specific script for which a custom font is configured, that font is
 // used; otherwise, the primary font from [Renderer.SetFont]() prevails.
 //
-// Spaces, ASCII digits and punctuation belong to the [Common] script, which
-// generally inherit the font of the preceding text.
+// Spaces, ASCII digits and punctuation belong to the [Common] script, and
+// generally take the font of the preceding text.
 //
 // Line metrics always come from the primary font.
 //
 // Scripts must be one of the writing systems in [unicode.Scripts], like
-// [unicode.Latin], [unicode.Cyrillic], [unicode.Han], etc.
+// [unicode.Latin], [unicode.Cyrillic], [unicode.Han], etc. It panics
+// otherwise.
 //
 // Multiple scripts can be associated to the same font.
 //
@@ -164,7 +165,7 @@ func clearScriptFonts(scriptFonts []scriptFont) {
 }
 
 // scriptTableIndex searches the given script linearly through already defined
-// entries. used for fast script replaces or removals.
+// entries. Used for fast script replaces or removals.
 func (self *Renderer) scriptTableIndex(script *unicode.RangeTable) (int, bool) {
 	for i := range self.state.scriptFonts {
 		if self.state.scriptFonts[i].script == script {
@@ -175,7 +176,7 @@ func (self *Renderer) scriptTableIndex(script *unicode.RangeTable) (int, bool) {
 }
 
 // scriptName returns the key under which the given table appears in
-// [unicode.Scripts]. this is a slow search meant to be used  only during
+// [unicode.Scripts]. This is a slow search meant to be used only during
 // insertion of new scripts.
 func scriptName(script *unicode.RangeTable) (string, bool) {
 	for name, table := range unicode.Scripts {

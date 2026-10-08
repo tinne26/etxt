@@ -163,7 +163,7 @@ func TestRuneFontFinder(t *testing.T) {
 
 // scriptCases defines test strings split into segments by the script / font
 // they must use. Contextual code points like punctuation typically follow the
-// preceding script (or after them if at the start of the line). Consecutive
+// preceding script (or the next if at the start of the line). Consecutive
 // segments always use different fonts.
 var scriptCases = [][][2]string{
 	{
