@@ -21,8 +21,8 @@ func (self *Renderer) DrawWithWrap(target Target, text string, x, y, widthLimit 
 // x and y are assumed to be unquantized
 func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.Unit, widthLimit fract.Unit) {
 	// preconditions
-	if target == nil {
-		panic("can't draw on nil Target")
+	if target == nil && self.customDrawFn == nil {
+		panic("can't draw on nil Target without a custom draw func")
 	}
 	if self.state.activeFont == nil {
 		panic("can't draw text with nil font (tip: Renderer.SetFont())")
@@ -38,8 +38,7 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 	if text == "" {
 		return
 	}
-	bounds := target.Bounds()
-	if bounds.Empty() {
+	if target != nil && target.Bounds().Empty() {
 		return
 	}
 

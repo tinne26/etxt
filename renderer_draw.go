@@ -36,8 +36,8 @@ func (self *Renderer) DrawBilinear(target Target, text string, x, y float64) {
 // x and y may be unquantized
 func (self *Renderer) fractDraw(target Target, text string, x, y fract.Unit) {
 	// preconditions
-	if target == nil {
-		panic("can't draw on nil Target")
+	if target == nil && self.customDrawFn == nil {
+		panic("can't draw on nil Target without a custom draw func")
 	}
 	if self.state.activeFont == nil {
 		panic("can't draw text with nil font (tip: Renderer.SetFont())")
