@@ -249,8 +249,9 @@ func (self *Renderer) resolveContextualRun(text string, index int) {
 	start, end := index, index
 	var fontBefore, fontAfter *sfnt.Font // fonts of the runes around the run
 
-	// walk backwards from index to find where the run starts. this is
-	// fast in LTR (already at start), but actual work in RTL
+	// walk backwards from index to find where the run starts. this is fast
+	// when traversing forwards (already at start), but actual work when
+	// traversing backwards (Draw with left align + RTL or right align + LTR)
 	for start > 0 {
 		codePoint, size := utf8.DecodeLastRuneInString(text[:start])
 		if codePoint == '\n' {
@@ -262,8 +263,10 @@ func (self *Renderer) resolveContextualRun(text string, index int) {
 		start -= size
 	}
 
-	// walk forwards from index to find where the run ends. this is
-	// fast in RTL (already at end), but actual work in LTR
+	// walk forwards from index to find where the run ends. this is fast
+	// when traversing backwards (already at end), but actual work when
+	// traversing forwards (measuring, DrawWithWrap, and Draw with center
+	// align, left align + LTR or right align + RTL)
 	for end < len(text) {
 		codePoint, size := utf8.DecodeRuneInString(text[end:])
 		if codePoint == '\n' {
