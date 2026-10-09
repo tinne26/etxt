@@ -51,6 +51,7 @@ type Renderer struct {
 	customDrawFn  func(Target, sfnt.GlyphIndex, fract.Point)
 	lineChangeFn  func(LineChangeDetails)
 	missHandlerFn func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool)
+	activeFont    *sfnt.Font // same as state.font, except while drawing or measuring with script fonts
 	fonts         []*sfnt.Font
 	buffer        sfnt.Buffer
 
@@ -197,14 +198,13 @@ func (self *Renderer) SetFont(font *sfnt.Font) {
 	fontIndex := int(self.state.fontIndex)
 	self.fonts = ensureSliceSize(self.fonts, fontIndex+1)
 
-	self.state.primaryFont = font
-
 	// assign font if new
-	if font == self.state.activeFont {
+	if font == self.state.font {
 		return
 	}
 	self.fonts[fontIndex] = font
-	self.state.activeFont = font
+	self.state.font = font
+	self.activeFont = font
 	self.cachedMetricsSize = -1 // drop extra metrics
 
 	// notify font change
@@ -222,7 +222,9 @@ func (self *Renderer) notifyFontChange(font *sfnt.Font) {
 
 // Returns the current font. The font is nil by default.
 func (self *Renderer) GetFont() *sfnt.Font {
-	return self.state.activeFont
+	// intentionally the active font: inside a custom draw func it can be a
+	// script font, the one that the glyph index passed to the func belongs to
+	return self.activeFont
 }
 
 // Sets the blend mode to be used on subsequent operations.
@@ -269,7 +271,7 @@ func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
 		return
 	}
 	self.state.fontSizer = fontSizer
-	self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
+	self.state.fontSizer.NotifyChange(self.activeFont, &self.buffer, self.state.scaledSize)
 }
 
 // Returns the current glyph cache handler, which is nil by default.

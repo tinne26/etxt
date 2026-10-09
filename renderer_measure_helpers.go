@@ -51,7 +51,7 @@ func (self *Renderer) helperMeasureLineLTR(iterator ltrStringIterator, text stri
 		if self.state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
-		currGlyphIndex, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
 		if !skip {
 			// apply kerning unless no previous rune (line start)
 			if runeCount > 0 {
@@ -88,7 +88,7 @@ func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, te
 		if self.state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
-		currGlyphIndex, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
 		if !skip {
 			// advance
 			width -= self.getOpAdvance(currGlyphIndex)
@@ -128,7 +128,7 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 		if self.state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
-		currGlyphIndex, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
 		if skip {
 			runeCount += 1
 		} else {
@@ -200,7 +200,7 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 		if self.state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
-		currGlyphIndex, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
 		if skip {
 			runeCount += 1
 		} else {

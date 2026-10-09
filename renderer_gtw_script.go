@@ -202,9 +202,9 @@ type openBracket struct {
 // activatePrimaryFont makes the primary font active again if it was changed
 // during draw or measure while using script fonts
 func (self *Renderer) activatePrimaryFont() {
-	if self.state.activeFont != self.state.primaryFont {
-		self.state.activeFont = self.state.primaryFont
-		self.notifyFontChange(self.state.primaryFont)
+	if self.activeFont != self.state.font {
+		self.activeFont = self.state.font
+		self.notifyFontChange(self.state.font)
 	}
 }
 
@@ -220,7 +220,7 @@ func (self *Renderer) activatePrimaryFont() {
 // change fonts, as wrap points depend on the widths of the fonts.
 func (self *Renderer) itemizeScripts(text string) {
 	switches := self.scriptSwitches[:0]
-	fonts := newRuneFontFinder(self.state.scriptFonts, self.state.primaryFont)
+	fonts := newRuneFontFinder(self.state.scriptFonts, self.state.font)
 	var brackets [16]openBracket // open brackets of the current line
 	var depth int
 	var bracketsFull bool // more brackets were nested than fit, so pairing stopped for the line
@@ -283,7 +283,7 @@ func (self *Renderer) itemizeScripts(text string) {
 		switches = setFontFrom(switches, index, font)
 	}
 	if len(switches) == 0 {
-		switches = append(switches, scriptSwitch{0, self.state.primaryFont})
+		switches = append(switches, scriptSwitch{0, self.state.font})
 	}
 	self.scriptSwitches = switches
 	self.scriptCursor = 0
@@ -317,10 +317,10 @@ func (self *Renderer) updateScriptFont(index int) bool {
 	self.scriptCursor = i
 
 	font := switches[i].font
-	if font == self.state.activeFont {
+	if font == self.activeFont {
 		return false
 	}
-	self.state.activeFont = font
+	self.activeFont = font
 	self.notifyFontChange(font)
 	return true
 }

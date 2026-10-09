@@ -66,7 +66,7 @@ func (self *Renderer) drawRuneLTR(target Target, position fract.Point, index int
 	if self.state.hasScriptFonts() && self.updateScriptFont(index) {
 		iv.prevGlyphIndex = 0 // break kerning when changing font
 	}
-	glyph, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+	glyph, skip := self.getGlyphIndex(self.activeFont, codePoint)
 	if skip {
 		return position, iv
 	}
@@ -104,7 +104,7 @@ func (self *Renderer) drawRuneRTL(target Target, position fract.Point, index int
 	if self.state.hasScriptFonts() && self.updateScriptFont(index) {
 		iv.prevGlyphIndex = 0 // break kerning when changing font
 	}
-	glyph, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
+	glyph, skip := self.getGlyphIndex(self.activeFont, codePoint)
 	if skip {
 		return position, iv
 	}

@@ -177,7 +177,7 @@ func (self *Renderer) utilsFillMissingProperties() {
 
 	if self.state.fontSizer == nil {
 		self.state.fontSizer = &sizer.DefaultSizer{}
-		self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
+		self.state.fontSizer.NotifyChange(self.activeFont, &self.buffer, self.state.scaledSize)
 	}
 }
 
@@ -206,6 +206,7 @@ func (self *Renderer) utilsRestoreState() bool {
 	prev := self.state // still valid, as popping only shrinks the slice
 	self.states = self.states[:len(self.states)-1]
 	self.state = &self.states[len(self.states)-1]
+	self.activeFont = self.state.font
 	self.notifyStateChange(prev)
 	return true
 }
@@ -213,7 +214,7 @@ func (self *Renderer) utilsRestoreState() bool {
 // notifyStateChange notifies the cache handler, sizer and rasterizers
 // of the differences between the given state and the active one.
 func (self *Renderer) notifyStateChange(prev *restorableState) {
-	initFont := prev.activeFont
+	initFont := prev.font
 	initSizer := prev.fontSizer
 	initSize := prev.scaledSize
 	initRast := prev.rasterizer
@@ -226,16 +227,16 @@ func (self *Renderer) notifyStateChange(prev *restorableState) {
 			self.cacheHandler.NotifySizeChange(self.state.scaledSize)
 		}
 	}
-	if initFont != self.state.activeFont {
+	if initFont != self.state.font {
 		refreshSizer = true
 		self.cachedMetricsSize = -1 // drop extra metrics
 		if self.cacheHandler != nil {
-			self.cacheHandler.NotifyFontChange(self.state.activeFont)
+			self.cacheHandler.NotifyFontChange(self.state.font)
 		}
 	}
 
 	if refreshSizer && self.state.fontSizer != nil {
-		self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
+		self.state.fontSizer.NotifyChange(self.state.font, &self.buffer, self.state.scaledSize)
 	}
 
 	if self.state.rasterizer != initRast {

@@ -77,13 +77,13 @@ func (self *Renderer) loadGlyphMask(index sfnt.GlyphIndex, origin fract.Point) G
 
 func (self *Renderer) getOpKernBetween(prevGlyphIndex, currGlyphIndex sfnt.GlyphIndex) fract.Unit {
 	return self.state.fontSizer.Kern(
-		self.state.activeFont, &self.buffer, self.state.scaledSize,
+		self.activeFont, &self.buffer, self.state.scaledSize,
 		prevGlyphIndex, currGlyphIndex,
 	)
 }
 
 func (self *Renderer) getOpAdvance(currGlyphIndex sfnt.GlyphIndex) fract.Unit {
-	return self.state.fontSizer.GlyphAdvance(self.state.activeFont, &self.buffer, self.state.scaledSize, currGlyphIndex)
+	return self.state.fontSizer.GlyphAdvance(self.activeFont, &self.buffer, self.state.scaledSize, currGlyphIndex)
 }
 
 // Line metrics come from the active font, which the sizer requires. Draw and
@@ -91,19 +91,19 @@ func (self *Renderer) getOpAdvance(currGlyphIndex sfnt.GlyphIndex) fract.Unit {
 // activate the primary font again before reading line metrics.
 
 func (self *Renderer) getOpLineAdvance(lineBreakNth int) fract.Unit {
-	return self.state.fontSizer.LineAdvance(self.state.activeFont, &self.buffer, self.state.scaledSize, lineBreakNth)
+	return self.state.fontSizer.LineAdvance(self.activeFont, &self.buffer, self.state.scaledSize, lineBreakNth)
 }
 
 func (self *Renderer) getOpLineHeight() fract.Unit {
-	return self.state.fontSizer.LineHeight(self.state.activeFont, &self.buffer, self.state.scaledSize)
+	return self.state.fontSizer.LineHeight(self.activeFont, &self.buffer, self.state.scaledSize)
 }
 
 func (self *Renderer) getOpAscent() fract.Unit {
-	return self.state.fontSizer.Ascent(self.state.activeFont, &self.buffer, self.state.scaledSize)
+	return self.state.fontSizer.Ascent(self.activeFont, &self.buffer, self.state.scaledSize)
 }
 
 func (self *Renderer) getOpDescent() fract.Unit {
-	return self.state.fontSizer.Descent(self.state.activeFont, &self.buffer, self.state.scaledSize)
+	return self.state.fontSizer.Descent(self.activeFont, &self.buffer, self.state.scaledSize)
 }
 
 func (self *Renderer) getOpMidHeight() fract.Unit {
@@ -119,7 +119,7 @@ func (self *Renderer) getOpCapHeight() fract.Unit {
 func (self *Renderer) ensureExtraMetrics() {
 	if self.cachedMetricsSize != self.state.scaledSize {
 		const hintingNone = 0
-		metrics, err := self.state.activeFont.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
+		metrics, err := self.activeFont.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
 		if err != nil {
 			panic("font.Metrics error: " + err.Error())
 		}

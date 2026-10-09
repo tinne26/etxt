@@ -55,7 +55,7 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 	// - The returned rect is always quantized.
 
 	// preconditions
-	if self.state.activeFont == nil {
+	if self.activeFont == nil {
 		panic("can't measure text with font == nil (tip: Renderer.SetFont())")
 	}
 	if self.state.fontSizer == nil {
@@ -79,7 +79,7 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 
 func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) fract.Rect {
 	// preconditions
-	if self.state.activeFont == nil {
+	if self.activeFont == nil {
 		panic("can't measure text with nil font (tip: Renderer.SetFont())")
 	}
 	if self.state.fontSizer == nil {

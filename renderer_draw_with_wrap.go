@@ -24,7 +24,7 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 	if target == nil && self.customDrawFn == nil {
 		panic("can't draw on nil Target without a custom draw func")
 	}
-	if self.state.activeFont == nil {
+	if self.activeFont == nil {
 		panic("can't draw text with nil font (tip: Renderer.SetFont())")
 	}
 	if self.state.fontSizer == nil {

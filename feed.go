@@ -62,7 +62,7 @@ func (self *Feed) At(x, y int) *Feed {
 	}
 
 	// prepare for complex cases
-	font := renderer.state.activeFont
+	font := renderer.activeFont
 	sizer := renderer.state.fontSizer
 	ascent := sizer.Ascent(font, &renderer.buffer, renderer.state.scaledSize)
 
@@ -152,10 +152,7 @@ func (self *Feed) LineBreak() {
 	renderer := self.Renderer
 
 	// advance
-	self.Position.Y += renderer.state.fontSizer.LineAdvance(
-		renderer.state.activeFont, &renderer.buffer,
-		renderer.state.scaledSize, int(self.LineBreakAcc),
-	)
+	self.Position.Y += renderer.getOpLineAdvance(int(self.LineBreakAcc))
 
 	// y position must be quantized for conformity with Renderer operations
 	qtVert := fract.Unit(renderer.state.vertQuantization)
