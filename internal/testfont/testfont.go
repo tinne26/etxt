@@ -43,18 +43,57 @@ func NewDir(fsys fs.FS, path string) *Dir {
 	return &Dir{fsys: fsys, path: path}
 }
 
-// WithRunes returns a different test font for each of the given samples.
-// "" accepts any font. If fonts can't be loaded, the test fails. If suitable
-// fonts can't be found, the test is skipped and recorded for ReportSkips.
-// On success, the returned fonts are also logged.
+// Filter is used for [Dir.Matching].
+type Filter struct {
+	Has   string
+	Lacks string
+}
+
+// String returns the filter's runes, for skip messages.
+func (self Filter) String() string {
+	if self.Lacks == "" {
+		return fmt.Sprintf("%q", self.Has)
+	}
+	return fmt.Sprintf("%q without %q", self.Has, self.Lacks)
+}
+
+func (self Filter) matches(font *sfnt.Font) bool {
+	var buffer sfnt.Buffer
+	for _, codePoint := range self.Has {
+		if index, err := font.GlyphIndex(&buffer, codePoint); err != nil || index == 0 {
+			return false
+		}
+	}
+	for _, codePoint := range self.Lacks {
+		if index, err := font.GlyphIndex(&buffer, codePoint); err == nil && index != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// WithRunes maps to [Dir.Matching] with only Has filters.
 func (self *Dir) WithRunes(tb testing.TB, samples ...string) []Font {
 	tb.Helper()
-	picked, found := pick(self.All(tb), samples)
+	filters := make([]Filter, len(samples))
+	for i := range samples {
+		filters[i].Has = samples[i]
+	}
+	return self.Matching(tb, filters...)
+}
+
+// Matching returns a different test font for each of the given filters.
+// If fonts can't be loaded, the test fails. If suitable fonts can't be found,
+// the test is skipped and recorded for ReportSkips. On success, the returned
+// fonts are also logged.
+func (self *Dir) Matching(tb testing.TB, filters ...Filter) []Font {
+	tb.Helper()
+	picked, found := pick(self.All(tb), filters)
 	if !found {
 		self.mutex.Lock()
 		self.skipped = append(self.skipped, tb.Name())
 		self.mutex.Unlock()
-		tb.Skipf("not enough test fonts with glyphs for each of %q (see test/README.md)", samples)
+		tb.Skipf("not enough test fonts for %v (see test/README.md)", filters)
 	}
 
 	names := make([]string, len(picked))
@@ -140,32 +179,21 @@ func load(fsys fs.FS, path string) ([]Font, error) {
 	return fonts, nil
 }
 
-// pick returns a different font for each sample, trying the fonts in order.
-// When the remaining samples can't be satisfied, it tries the next font for
+// pick returns a different font for each filter, trying the fonts in order.
+// When the remaining filters can't be satisfied, it tries the next font for
 // the first one.
-func pick(fonts []Font, samples []string) ([]Font, bool) {
-	if len(samples) == 0 {
+func pick(fonts []Font, filters []Filter) ([]Font, bool) {
+	if len(filters) == 0 {
 		return nil, true
 	}
 	for i, font := range fonts {
-		if !hasGlyphs(font.Font, samples[0]) {
+		if !filters[0].matches(font.Font) {
 			continue
 		}
 		others := append(append([]Font{}, fonts[:i]...), fonts[i+1:]...)
-		if rest, found := pick(others, samples[1:]); found {
+		if rest, found := pick(others, filters[1:]); found {
 			return append([]Font{font}, rest...), true
 		}
 	}
 	return nil, false
-}
-
-func hasGlyphs(font *sfnt.Font, sample string) bool {
-	var buffer sfnt.Buffer
-	for _, codePoint := range sample {
-		index, err := font.GlyphIndex(&buffer, codePoint)
-		if err != nil || index == 0 {
-			return false
-		}
-	}
-	return true
 }
