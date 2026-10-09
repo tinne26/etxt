@@ -52,38 +52,13 @@ func NewFeed(renderer *Renderer) *Feed {
 // field directly.
 func (self *Feed) At(x, y int) *Feed {
 	renderer := self.Renderer
-	vertAlign := renderer.GetAlign().Vert()
 	self.Position.X = fract.FromInt(x)
 	self.LineBreakX = self.Position.X
-	fractY := fract.FromInt(y)
-	if vertAlign == Baseline || vertAlign == LastBaseline {
-		self.Position.Y = fractY
-		return self // basic case
-	}
 
-	// prepare for complex cases
-	font := renderer.activeFont
-	sizer := renderer.state.fontSizer
-	ascent := sizer.Ascent(font, &renderer.buffer, renderer.state.scaledSize)
-
-	// code based on Renderer.fractDraw // adjust Y position
+	// adjust Y position as in Renderer.fractDraw
+	vertAlign := renderer.GetAlign().Vert()
 	qtVert := fract.Unit(renderer.state.vertQuantization)
-	switch vertAlign {
-	case Top:
-		self.Position.Y = (fractY + ascent).QuantizeUp(qtVert)
-	case CapLine:
-		self.Position.Y = (fractY + ascent - renderer.getOpCapHeight()).QuantizeUp(qtVert)
-	case Midline:
-		self.Position.Y = (fractY + ascent - renderer.getOpMidHeight()).QuantizeUp(qtVert)
-	case VertCenter:
-		height := sizer.LineHeight(font, &renderer.buffer, renderer.state.scaledSize)
-		self.Position.Y = (fractY + ascent - (height >> 1)).QuantizeUp(qtVert)
-	case Bottom:
-		height := sizer.LineHeight(font, &renderer.buffer, renderer.state.scaledSize)
-		self.Position.Y = (fractY + ascent - height).QuantizeUp(qtVert)
-	default:
-		panic(vertAlign)
-	}
+	self.Position.Y = (fract.FromInt(y) + renderer.getBaselineOffset(vertAlign)).QuantizeUp(qtVert)
 	return self
 }
 
