@@ -204,13 +204,37 @@ type openBracket struct {
 }
 
 // activatePrimaryFont makes the primary font active again if it was changed
-// during draw or measure while using script fonts
+// during draw or measure while using script or fallback fonts.
 func (self *Renderer) activatePrimaryFont() {
-	state := self.state()
-	if self.activeFont != state.font {
-		self.activeFont = state.font
-		self.notifyFontChange(state.font)
+	// TODO: consider removing it in favor of activateFont(self.state().font)
+	self.activateFont(self.state().font)
+}
+
+// activateFont makes the given font active, and reports whether it changed.
+func (self *Renderer) activateFont(font *sfnt.Font) bool {
+	if font == self.activeFont {
+		return false
 	}
+	self.activeFont = font
+	self.notifyFontChange(font)
+	return true
+}
+
+// runeGlyph gets the glyph index for the rune at text[index] with getGlyph.
+// The font used can be affected by script-specific fonts, it's not always
+// necessarily the primary font. runeGlyph then activates the glyph's font,
+// and reports whether the active font changed (required for kerning breaks)
+func (self *Renderer) runeGlyph(index int, codePoint rune) (glyph sfnt.GlyphIndex, skip, fontChanged bool) {
+	state := self.state()
+	font := state.font
+	if state.hasScriptFonts() {
+		font = self.scriptFontAt(index)
+	}
+	font, glyph = self.getGlyph(font, codePoint)
+	if font == nil {
+		return 0, true, false
+	}
+	return glyph, false, self.activateFont(font)
 }
 
 // itemizeScripts finds the fonts for the given text before drawing or
@@ -309,10 +333,10 @@ func setFontFrom(switches []scriptSwitch, index int, font *sfnt.Font) []scriptSw
 	return append(switches, scriptSwitch{index, font})
 }
 
-// updateScriptFont sets the font for the rune at text[index], and reports
-// whether the active font changed. Traversals move through the text in order
-// or line by line backwards, so the switch is found in a few steps.
-func (self *Renderer) updateScriptFont(index int) bool {
+// scriptFontAt returns the font for the rune at text[index]. The search starts
+// from the switch found in the previous call, because draw and measure ask for
+// nearby runes in consecutive calls.
+func (self *Renderer) scriptFontAt(index int) *sfnt.Font {
 	switches, i := self.scriptSwitches, self.scriptCursor
 	for i+1 < len(switches) && switches[i+1].index <= index {
 		i += 1
@@ -321,14 +345,7 @@ func (self *Renderer) updateScriptFont(index int) bool {
 		i -= 1
 	}
 	self.scriptCursor = i
-
-	font := switches[i].font
-	if font == self.activeFont {
-		return false
-	}
-	self.activeFont = font
-	self.notifyFontChange(font)
-	return true
+	return switches[i].font
 }
 
 // runeFontFinder finds the font for each rune of a text. Text tends to stay

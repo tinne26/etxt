@@ -60,7 +60,7 @@ func TestStoreRestoreState(t *testing.T) {
 	renderer.SetCacheHandler(cacheHandler)
 	renderer.Glyph().SetDrawFunc(func(Target, sfnt.GlyphIndex, fract.Point) {})
 	renderer.Glyph().SetLineChangeFunc(func(LineChangeDetails) {})
-	renderer.Glyph().SetMissHandler(func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool) { return 0, false })
+	renderer.Glyph().SetMissHandler(OnMissNotdef)
 
 	check(renderer.Utils().RestoreState(), "expected a stored state to restore")
 

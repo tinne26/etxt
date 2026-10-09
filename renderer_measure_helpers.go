@@ -49,10 +49,10 @@ func (self *Renderer) helperMeasureLineLTR(iterator ltrStringIterator, text stri
 		}
 
 		// get glyph index
-		if state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
+		currGlyphIndex, skip, fontChanged := self.runeGlyph(iterator.prevRuneStart, codePoint)
+		if fontChanged {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
-		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
 		if !skip {
 			// apply kerning unless no previous rune (line start)
 			if runeCount > 0 {
@@ -87,10 +87,10 @@ func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, te
 		}
 
 		// get glyph index
-		if state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
+		currGlyphIndex, skip, fontChanged := self.runeGlyph(iterator.prevRuneStart, codePoint)
+		if fontChanged {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
-		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
 		if !skip {
 			// advance
 			width -= self.getOpAdvance(currGlyphIndex)
@@ -128,10 +128,10 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 		}
 
 		// get glyph index
-		if state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
+		currGlyphIndex, skip, fontChanged := self.runeGlyph(iterator.prevRuneStart, codePoint)
+		if fontChanged {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
-		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
 		if skip {
 			runeCount += 1
 		} else {
@@ -201,10 +201,10 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 		}
 
 		// get glyph index
-		if state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
+		currGlyphIndex, skip, fontChanged := self.runeGlyph(iterator.prevRuneStart, codePoint)
+		if fontChanged {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
-		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
 		if skip {
 			runeCount += 1
 		} else {

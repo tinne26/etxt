@@ -49,8 +49,8 @@ type Renderer struct {
 	cacheHandler  cache.GlyphCacheHandler
 	customDrawFn  func(Target, sfnt.GlyphIndex, fract.Point)
 	lineChangeFn  func(LineChangeDetails)
-	missHandlerFn func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool)
-	activeFont    *sfnt.Font // same as state.font, except while drawing or measuring with script fonts
+	missHandlerFn func(*sfnt.Font, *sfnt.Buffer, rune) (*sfnt.Font, sfnt.GlyphIndex)
+	activeFont    *sfnt.Font // same as state.font, except while drawing or measuring with script or fallback fonts
 	fonts         []*sfnt.Font
 	buffer        sfnt.Buffer
 
@@ -232,7 +232,8 @@ func (self *Renderer) notifyFontChange(font *sfnt.Font) {
 // Returns the current font. The font is nil by default.
 func (self *Renderer) GetFont() *sfnt.Font {
 	// intentionally the active font: inside a custom draw func it can be a
-	// script font, the one that the glyph index passed to the func belongs to
+	// script or fallback font, the one that the glyph index passed to the func
+	// belongs to
 	return self.activeFont
 }
 

@@ -93,22 +93,47 @@ func (self *RendererGlyph) SetLineChangeFunc(lineChangeFn func(LineChangeDetails
 	self.lineChangeFn = lineChangeFn
 }
 
-// Basic handlers for [RendererGlyph.SetMissHandler]().
+// Basic handlers for [RendererGlyph.SetMissHandler](). See also [OnMissFallback].
 var (
-	OnMissSkip   = func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool) { return 0, true }
-	OnMissNotdef = func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool) { return 0, false }
+	OnMissSkip   = func(*sfnt.Font, *sfnt.Buffer, rune) (*sfnt.Font, sfnt.GlyphIndex) { return nil, 0 }
+	OnMissNotdef = func(font *sfnt.Font, _ *sfnt.Buffer, _ rune) (*sfnt.Font, sfnt.GlyphIndex) { return font, 0 }
 )
 
+// OnMissFallback returns a miss handler that looks for the missing glyph in
+// the given fonts, in order. If none of them has it, the handler returns the
+// notdef glyph.
+func OnMissFallback(fonts ...*sfnt.Font) func(*sfnt.Font, *sfnt.Buffer, rune) (*sfnt.Font, sfnt.GlyphIndex) {
+	fallbacks := make([]*sfnt.Font, len(fonts))
+	copy(fallbacks, fonts)
+	return func(font *sfnt.Font, buffer *sfnt.Buffer, codePoint rune) (*sfnt.Font, sfnt.GlyphIndex) {
+		for _, fallback := range fallbacks {
+			if fallback == font {
+				continue // already checked
+			}
+			index, err := fallback.GlyphIndex(buffer, codePoint)
+			if err == nil && index != 0 {
+				return fallback, index
+			}
+		}
+		return font, 0
+	}
+}
+
 // By default, if the renderer can't map a given code point to a suitable glyph
-// while drawing, the program will panic. Setting a missHandler allows you to
-// override this behavior and use a glyph index of your choosing instead.
+// while drawing or measuring, the program will panic. Setting a miss handler
+// allows you to override this behavior.
 //
-// The miss handler can also return true in order to completely skip the code point.
+// When a glyph is not found, the miss handler is called with the font +
+// codePoint pair that failed. The miss handler can return a glyph index from
+// that font or another one. Returning a nil font skips the code point.
 //
-// For some common implementations, see [OnMissSkip] and [OnMissNotdef]. More complex
-// approaches include logging and attempting to transliterate non-ASCII characters
-// to their closest ASCII look-alikes.
-func (self *RendererGlyph) SetMissHandler(missHandler func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool)) {
+// Miss handlers are called during draw and measure operations, so they must
+// return consistent results and not modify the renderer.
+//
+// [OnMissSkip], [OnMissNotdef] and [OnMissFallback] implement commonly
+// requested behaviors. Other custom approaches may include logging or
+// transliteration of non-ASCII characters to ASCII look-alikes.
+func (self *RendererGlyph) SetMissHandler(missHandler func(font *sfnt.Font, buffer *sfnt.Buffer, codePoint rune) (*sfnt.Font, sfnt.GlyphIndex)) {
 	self.missHandlerFn = missHandler
 }
 

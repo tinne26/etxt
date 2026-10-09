@@ -79,10 +79,7 @@ func (self *Feed) Reset() {
 // Quantization will be checked before every drawing operation and adjusted
 // if necessary (even vertical quantization).
 func (self *Feed) Draw(target Target, codePoint rune) {
-	index, skip := self.Renderer.getGlyphIndex(self.Renderer.GetFont(), codePoint)
-	if !skip {
-		self.DrawGlyph(target, index)
-	}
+	self.traverseRune(target, codePoint, true)
 }
 
 // Same as [Feed.Draw](), but taking a glyph index instead of a rune.
@@ -110,10 +107,7 @@ func (self *Feed) Advance(codePoint rune) {
 	if codePoint == '\n' {
 		self.LineBreak()
 	} else {
-		index, skip := self.Renderer.getGlyphIndex(self.Renderer.GetFont(), codePoint)
-		if !skip {
-			self.AdvanceGlyph(index)
-		}
+		self.traverseRune(nil, codePoint, false)
 	}
 }
 
@@ -134,6 +128,29 @@ func (self *Feed) LineBreak() {
 	self.Position.Y = self.Position.Y.QuantizeUp(qtVert)
 	self.Position.X = self.LineBreakX // doesn't matter if it's unquantized
 	self.LineBreakAcc += 1
+}
+
+// traverseRune draws or advances the given rune
+func (self *Feed) traverseRune(target Target, codePoint rune, drawMode bool) {
+	renderer := self.Renderer
+	baseFont := renderer.activeFont
+	font, index := renderer.getGlyph(baseFont, codePoint)
+	if font == nil {
+		return // skipped by the miss handler
+	}
+	if font == baseFont {
+		self.traverseGlyph(target, index, drawMode)
+		return
+	}
+
+	renderer.activateFont(font)
+	self.PrevGlyphIndex = 0 // glyphs from different fonts can't be kerned
+	self.traverseGlyph(target, index, drawMode)
+	self.PrevGlyphIndex = 0 // the next glyph can't kern with this one either
+
+	// restoring the base font can't be optimized away, as Feed's Draw and
+	// Advance are standalone operations; renderer state must be restored here
+	renderer.activateFont(baseFont)
 }
 
 // Private traverse method used for Draw and Advance.
