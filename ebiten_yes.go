@@ -44,6 +44,7 @@ type BlendMode = ebiten.Blend
 // Underlying default glyph drawing function for renderers.
 // Can be overridden with Renderer.Glyph().SetDrawFunc(...).
 func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask GlyphMask) {
+	state := self.state()
 	if mask == nil {
 		return
 	} // spaces and empty glyphs will be nil
@@ -60,9 +61,9 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 		float64(origin.X.ToIntFloor()+srcRect.Min.X)+self.bilinearOffsetX,
 		float64(origin.Y.ToIntFloor()+srcRect.Min.Y)+self.bilinearOffsetY,
 	)
-	r, g, b, a := colorToFloat32(self.state.fontColor)
+	r, g, b, a := colorToFloat32(state.fontColor)
 	opts.ColorScale.Scale(r, g, b, a)
-	opts.Blend = self.state.blendMode
+	opts.Blend = state.blendMode
 	target.DrawImage(mask, &opts)
 }
 

@@ -145,3 +145,32 @@ func TestStoreRestoreState(t *testing.T) {
 	}
 	expectScripts("after the temporary changes", testFontA, nil, nil)
 }
+
+// TestZeroValueRenderer verifies that a zero value renderer can be set up
+// with FillMissingProperties() and then used like any other.
+func TestZeroValueRenderer(t *testing.T) {
+	font := testFontsWithRunes(t, "abc")[0]
+
+	var renderer Renderer
+	renderer.Utils().AssertMaxStoredStates(0)
+	if renderer.Utils().RestoreState() {
+		t.Fatal("expected no state to restore")
+	}
+	renderer.SetFont(font)
+	renderer.Utils().FillMissingProperties()
+
+	renderer.Utils().StoreState()
+	renderer.SetSize(32)
+	if !renderer.Utils().RestoreState() || renderer.GetSize() != 16 {
+		t.Fatal("expected the stored state to be restored")
+	}
+	if renderer.Measure("abc").Width() == 0 {
+		t.Fatal("expected a non-zero width")
+	}
+	drawn := 0
+	renderer.Glyph().SetDrawFunc(func(Target, sfnt.GlyphIndex, fract.Point) { drawn += 1 })
+	renderer.Draw(nil, "abc", 0, 16)
+	if drawn != 3 {
+		t.Fatalf("expected 3 glyphs drawn, got %d", drawn)
+	}
+}
