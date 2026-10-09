@@ -56,7 +56,7 @@ type Renderer struct {
 
 	cachedMidHeight   fract.Unit
 	cachedCapHeight   fract.Unit
-	cachedMetricsSize fract.Unit
+	cachedMetricsSize fract.Unit // also dropped to -1 on font change
 
 	// temps related to script-specific fonts
 	scriptSwitches []scriptSwitch // font switches in text operations with script fonts
@@ -205,6 +205,7 @@ func (self *Renderer) SetFont(font *sfnt.Font) {
 	}
 	self.fonts[fontIndex] = font
 	self.state.activeFont = font
+	self.cachedMetricsSize = -1 // drop extra metrics
 
 	// notify font change
 	self.notifyFontChange(font)

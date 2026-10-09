@@ -45,7 +45,7 @@ func (self *RendererMetrics) CapHeight() fract.Unit {
 // MidHeight returns the reference height of a lowercase character for the
 // current font and size.
 func (self *RendererMetrics) MidHeight() fract.Unit {
-	return (*Renderer)(self).getOpCapHeight()
+	return (*Renderer)(self).getOpMidHeight()
 }
 
 // Descent returns the font descent for the current renderer configuration.
