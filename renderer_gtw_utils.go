@@ -80,11 +80,12 @@ func (self *RendererUtils) SetFontBytes(data []byte) error {
 // [RendererUtils.RestoreState]() in last-in first-out order.
 //
 // The stored state includes the following properties:
-//   - [Align], color, size, scale, [BlendMode], rasterizer,
-//     sizer, quantization and text [Direction].
+//   - Font, script fonts, [Align], color, size, scale, [BlendMode],
+//     rasterizer, sizer, quantization and text [Direction].
 //
-// Notably, custom rendering functions, inactive fonts
-// and the cache handler are not stored.
+// Notably, the cache handler and the functions set through
+// [RendererGlyph.SetDrawFunc](), [RendererGlyph.SetLineChangeFunc]()
+// and [RendererGlyph.SetMissHandler]() are not stored.
 //
 // For improved safety when managing states, consider also
 // [RendererUtils.AssertMaxStoredStates]().
@@ -112,9 +113,9 @@ func (self *RendererUtils) RestoreState() bool {
 //   - Passing zero whenever you want to ensure that the
 //     states stack is completely empty.
 func (self *RendererUtils) AssertMaxStoredStates(n int) {
-	if n > len(self.restorableStates) {
+	if n > len(self.states)-1 {
 		assertMax := strconv.Itoa(n)
-		actualMax := strconv.Itoa(len(self.restorableStates))
+		actualMax := strconv.Itoa(len(self.states) - 1)
 		panic("expected at most " + assertMax + " stored states, found " + actualMax)
 	}
 }
@@ -181,26 +182,41 @@ func (self *Renderer) utilsFillMissingProperties() {
 }
 
 func (self *Renderer) utilsStoreState() {
-	self.restorableStates = append(self.restorableStates, self.state)
+	if cap(self.states) <= len(self.states) {
+		// unreached depth case: append state copy, without the stored state's buffer
+		self.states = append(self.states, *self.state)
+		self.states[len(self.states)-1].scriptFontsBuffer = nil
+	} else {
+		// previously reached depth: preserve scriptFontsBuffer
+		self.states = self.states[:len(self.states)+1] // grow using existing capacity
+		state := &self.states[len(self.states)-1]
+		memoBuffer := state.scriptFontsBuffer // preserve pre-existing buffer
+		*state = *self.state
+		state.scriptFontsBuffer = memoBuffer
+	}
+
+	// update active state reference
+	self.state = &self.states[len(self.states)-1]
 }
 
 func (self *Renderer) utilsRestoreState() bool {
-	if len(self.restorableStates) == 0 {
+	if len(self.states) <= 1 {
 		return false
 	}
-	last := len(self.restorableStates) - 1
-	self.setState(self.restorableStates[last])
-	self.restorableStates = self.restorableStates[0:last]
+	prev := self.state // still valid, as popping only shrinks the slice
+	self.states = self.states[:len(self.states)-1]
+	self.state = &self.states[len(self.states)-1]
+	self.notifyStateChange(prev)
 	return true
 }
 
-func (self *Renderer) setState(state restorableState) {
-	initFont := self.state.activeFont
-	initSizer := self.state.fontSizer
-	initSize := self.state.scaledSize
-	initRast := self.state.rasterizer
-
-	self.state = state
+// notifyStateChange notifies the cache handler, sizer and rasterizers
+// of the differences between the given state and the active one.
+func (self *Renderer) notifyStateChange(prev *restorableState) {
+	initFont := prev.activeFont
+	initSizer := prev.fontSizer
+	initSize := prev.scaledSize
+	initRast := prev.rasterizer
 
 	// notify changes where relevant
 	refreshSizer := (self.state.fontSizer != initSizer)

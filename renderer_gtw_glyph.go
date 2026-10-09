@@ -125,6 +125,12 @@ func (self *RendererGlyph) SetMissHandler(missHandler func(*sfnt.Font, rune) (sf
 //	if err != nil { /* handle */ }
 //	if index == 0 { /* handle notdef glyph */ }
 //
+// For users of script-specific fonts, notice that this method always returns
+// the glyph index corresponding to the primary font, unless the method is
+// called from inside a custom draw function and the current text run uses a
+// different script. This also means that to cache glyphs of script-specific
+// fonts, you must set them with [Renderer.SetFont]() first.
+//
 // [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10/font#GetMissingRunes
 func (self *RendererGlyph) GetRuneIndex(codePoint rune) sfnt.GlyphIndex {
 	return (*Renderer)(self).glyphGetRuneIndex(codePoint)

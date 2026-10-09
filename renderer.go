@@ -31,11 +31,12 @@ import (
 //   - [Renderer.Fract](), to access specialized fractional positioning functionality.
 //   - [Renderer.Glyph](), to access low level functions for glyphs and
 //     glyph masks.
+//   - [Renderer.Script](), to assign fonts to specific writing systems.
 //
-// To create a renderer, using [NewRenderer]() is recommended. Before you
-// can start using it, though, you have to set a font. In most practical
-// scenarios you will also want to set a cache, the text size, the text
-// color and the align explicitly.
+// Renderers must be created with [NewRenderer](), as the zero value is not
+// usable. Before you can start using one, though, you have to set a font.
+// In most practical scenarios you will also want to set a cache, the text
+// size, the text color and the align explicitly.
 //
 // If you need further help or guidance, consider reading ["advice on
 // renderers"] and going through the code in the [examples] folder.
@@ -43,8 +44,8 @@ import (
 // ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.10/docs/renderer.md
 // [examples]: https://github.com/tinne26/etxt/tree/v0.0.10/examples
 type Renderer struct {
-	state            restorableState
-	restorableStates []restorableState
+	states []restorableState // stored states, with the active one last
+	state  *restorableState  // &states[len(states)-1], refreshed on store and restore
 
 	cacheHandler  cache.GlyphCacheHandler
 	customDrawFn  func(Target, sfnt.GlyphIndex, fract.Point)
@@ -57,7 +58,11 @@ type Renderer struct {
 	cachedCapHeight   fract.Unit
 	cachedMetricsSize fract.Unit // also dropped to -1 on font change
 
-	// related to DrawBilinear
+	// temps related to script-specific fonts
+	scriptSwitches []scriptSwitch // font switches in text operations with script fonts
+	scriptCursor   int            // index of the switch used by the latest rune
+
+	// temps related to DrawBilinear
 	bilinearOffsetX float64
 	bilinearOffsetY float64
 	bilinearFilter  bool // whether to use FilterLinear; even if bilinear offsets are zero
@@ -71,8 +76,8 @@ type Renderer struct {
 // being the simplest solution.
 func NewRenderer() *Renderer {
 	// No font sizer change notification required (there's no font yet)
-	return &Renderer{
-		state: restorableState{
+	renderer := &Renderer{
+		states: []restorableState{{
 			fontColor:        color.RGBA{255, 255, 255, 255},
 			fontSizer:        &sizer.DefaultSizer{},
 			rasterizer:       &mask.DefaultRasterizer{},
@@ -82,9 +87,11 @@ func NewRenderer() *Renderer {
 			scale:            fract.One,
 			logicalSize:      16 * fract.One,
 			scaledSize:       16 * fract.One,
-		},
+		}},
 		fonts: make([]*sfnt.Font, 0, 1),
 	}
+	renderer.state = &renderer.states[0]
+	return renderer
 }
 
 // Sets the logical font size to be used on subsequent operations.
@@ -189,6 +196,8 @@ func (self *Renderer) SetFont(font *sfnt.Font) {
 	// ensure there's enough space in the fonts slice
 	fontIndex := int(self.state.fontIndex)
 	self.fonts = ensureSliceSize(self.fonts, fontIndex+1)
+
+	self.state.primaryFont = font
 
 	// assign font if new
 	if font == self.state.activeFont {

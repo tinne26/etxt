@@ -41,6 +41,10 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 	if target != nil && target.Bounds().Empty() {
 		return
 	}
+	if self.state.hasScriptFonts() {
+		self.itemizeScripts(text)
+		defer self.activatePrimaryFont()
+	}
 
 	// adjust Y position
 	horzQuant, vertQuant := self.fractGetQuantization()
@@ -48,17 +52,17 @@ func (self *Renderer) fractDrawWithWrap(target Target, text string, x, y fract.U
 	vertAlign := self.state.align.Vert()
 	switch vertAlign {
 	case VertCenter:
-		height := self.fractMeasureWithWrap(text, widthLimit).Height()
+		height := self.helperMeasureWrap(text, widthLimit).Height()
 		y = (y + self.getOpAscent() - (height >> 1)).QuantizeUp(vertQuant)
 	case LastBaseline:
-		height := self.fractMeasureWithWrap(text, widthLimit).Height()
+		height := self.helperMeasureWrap(text, widthLimit).Height()
 		qtLineHeight := lineHeight.QuantizeUp(vertQuant)
 		if height >= qtLineHeight {
 			height -= qtLineHeight
 		}
 		y = (y - height).QuantizeUp(vertQuant)
 	case Bottom:
-		height := self.fractMeasureWithWrap(text, widthLimit).Height()
+		height := self.helperMeasureWrap(text, widthLimit).Height()
 		y = (y + self.getOpAscent() - height).QuantizeUp(vertQuant)
 	default:
 		y = (y + self.getBaselineOffset(vertAlign)).QuantizeUp(vertQuant)
