@@ -15,7 +15,7 @@ func (self *Renderer) helperMeasureHeight(text string) fract.Unit {
 	var height fract.Unit
 	var lineBreakNth int
 	var lineBreaksOnly bool = true
-	vertQuant := fract.Unit(self.state.vertQuantization)
+	vertQuant := fract.Unit(self.state().vertQuantization)
 
 	for _, codePoint := range text {
 		if codePoint == '\n' {
@@ -36,11 +36,12 @@ func (self *Renderer) helperMeasureHeight(text string) fract.Unit {
 
 // returns the width quantized. doesn't include potential last \n in rune count
 func (self *Renderer) helperMeasureLineLTR(iterator ltrStringIterator, text string) (ltrStringIterator, fract.Unit, int, rune) {
+	state := self.state()
 	var prevGlyphIndex sfnt.GlyphIndex
 	var width fract.Unit
 	var runeCount int
 
-	horzQuant := fract.Unit(self.state.horzQuantization)
+	horzQuant := fract.Unit(state.horzQuantization)
 	for {
 		codePoint := iterator.Next(text)
 		if codePoint == -1 || codePoint == '\n' {
@@ -48,7 +49,7 @@ func (self *Renderer) helperMeasureLineLTR(iterator ltrStringIterator, text stri
 		}
 
 		// get glyph index
-		if self.state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
+		if state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
 		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
@@ -73,11 +74,12 @@ func (self *Renderer) helperMeasureLineLTR(iterator ltrStringIterator, text stri
 
 // returns the width quantized. doesn't include potential last \n in rune count
 func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, text string) (ltrStringIterator, fract.Unit, int, rune) {
+	state := self.state()
 	var prevGlyphIndex sfnt.GlyphIndex
 	var width fract.Unit
 	var runeCount int
 
-	horzQuant := fract.Unit(self.state.horzQuantization)
+	horzQuant := fract.Unit(state.horzQuantization)
 	for {
 		codePoint := iterator.Next(text)
 		if codePoint == -1 || codePoint == '\n' {
@@ -85,7 +87,7 @@ func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, te
 		}
 
 		// get glyph index
-		if self.state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
+		if state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
 		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
@@ -112,12 +114,13 @@ func (self *Renderer) helperMeasureLineReverseLTR(iterator ltrStringIterator, te
 
 // returns the width unquantized, without accounting for final wrapped spaces.
 func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit) (ltrStringIterator, fract.Unit, int, rune) {
+	state := self.state()
 	var x, lastSafeWidth fract.Unit
 	var runeCount, lastSafeCount int
 	var safeIterator ltrStringIterator
 	var prevGlyphIndex sfnt.GlyphIndex
 
-	horzQuant := fract.Unit(self.state.horzQuantization)
+	horzQuant := fract.Unit(state.horzQuantization)
 	for {
 		codePoint := iterator.Next(text)
 		if codePoint == -1 || codePoint == '\n' {
@@ -125,7 +128,7 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 		}
 
 		// get glyph index
-		if self.state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
+		if state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
 		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)
@@ -184,12 +187,13 @@ func (self *Renderer) helperMeasureWrapLineLTR(iterator ltrStringIterator, text 
 
 // returns the width unquantized, without accounting for final wrapped spaces.
 func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator, text string, widthLimit fract.Unit) (ltrStringIterator, fract.Unit, int, rune) {
+	state := self.state()
 	var x, lastSafeWidth fract.Unit // values will be negative while looping
 	var runeCount, lastSafeCount int
 	var safeIterator ltrStringIterator
 	var prevGlyphIndex sfnt.GlyphIndex
 
-	horzQuant := fract.Unit(self.state.horzQuantization)
+	horzQuant := fract.Unit(state.horzQuantization)
 	for {
 		codePoint := iterator.Next(text)
 		if codePoint == -1 || codePoint == '\n' {
@@ -197,7 +201,7 @@ func (self *Renderer) helperMeasureWrapLineReverseLTR(iterator ltrStringIterator
 		}
 
 		// get glyph index
-		if self.state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
+		if state.hasScriptFonts() && self.updateScriptFont(iterator.prevRuneStart) {
 			prevGlyphIndex = 0 // break kerning when changing font
 		}
 		currGlyphIndex, skip := self.getGlyphIndex(self.activeFont, codePoint)

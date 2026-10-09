@@ -29,7 +29,7 @@ func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) (index sfnt
 }
 
 func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
-	return logicalSize.MulDown(self.state.scale) // *
+	return logicalSize.MulDown(self.state().scale) // *
 	// * I prefer MulDown to compensate having used FromFloat64Up()
 	//   on both size and scale conversions. It's not a big deal in
 	//   either case, but this reduces the maximum potential error.
@@ -59,7 +59,7 @@ func (self *Renderer) loadGlyphMask(index sfnt.GlyphIndex, origin fract.Point) G
 	}
 
 	// rasterize the glyph mask
-	alphaMask, err := mask.Rasterize(segments, self.state.rasterizer, origin)
+	alphaMask, err := mask.Rasterize(segments, self.state().rasterizer, origin)
 	if err != nil {
 		panic("RasterizeGlyphMask failed: " + err.Error())
 	}
@@ -76,14 +76,16 @@ func (self *Renderer) loadGlyphMask(index sfnt.GlyphIndex, origin fract.Point) G
 // Precondition: sizer and font have been validated to be initialized.
 
 func (self *Renderer) getOpKernBetween(prevGlyphIndex, currGlyphIndex sfnt.GlyphIndex) fract.Unit {
-	return self.state.fontSizer.Kern(
-		self.activeFont, &self.buffer, self.state.scaledSize,
+	state := self.state()
+	return state.fontSizer.Kern(
+		self.activeFont, &self.buffer, state.scaledSize,
 		prevGlyphIndex, currGlyphIndex,
 	)
 }
 
 func (self *Renderer) getOpAdvance(currGlyphIndex sfnt.GlyphIndex) fract.Unit {
-	return self.state.fontSizer.GlyphAdvance(self.activeFont, &self.buffer, self.state.scaledSize, currGlyphIndex)
+	state := self.state()
+	return state.fontSizer.GlyphAdvance(self.activeFont, &self.buffer, state.scaledSize, currGlyphIndex)
 }
 
 // Line metrics come from the active font, which the sizer requires. Draw and
@@ -91,19 +93,23 @@ func (self *Renderer) getOpAdvance(currGlyphIndex sfnt.GlyphIndex) fract.Unit {
 // activate the primary font again before reading line metrics.
 
 func (self *Renderer) getOpLineAdvance(lineBreakNth int) fract.Unit {
-	return self.state.fontSizer.LineAdvance(self.activeFont, &self.buffer, self.state.scaledSize, lineBreakNth)
+	state := self.state()
+	return state.fontSizer.LineAdvance(self.activeFont, &self.buffer, state.scaledSize, lineBreakNth)
 }
 
 func (self *Renderer) getOpLineHeight() fract.Unit {
-	return self.state.fontSizer.LineHeight(self.activeFont, &self.buffer, self.state.scaledSize)
+	state := self.state()
+	return state.fontSizer.LineHeight(self.activeFont, &self.buffer, state.scaledSize)
 }
 
 func (self *Renderer) getOpAscent() fract.Unit {
-	return self.state.fontSizer.Ascent(self.activeFont, &self.buffer, self.state.scaledSize)
+	state := self.state()
+	return state.fontSizer.Ascent(self.activeFont, &self.buffer, state.scaledSize)
 }
 
 func (self *Renderer) getOpDescent() fract.Unit {
-	return self.state.fontSizer.Descent(self.activeFont, &self.buffer, self.state.scaledSize)
+	state := self.state()
+	return state.fontSizer.Descent(self.activeFont, &self.buffer, state.scaledSize)
 }
 
 func (self *Renderer) getOpMidHeight() fract.Unit {
@@ -117,13 +123,14 @@ func (self *Renderer) getOpCapHeight() fract.Unit {
 }
 
 func (self *Renderer) ensureExtraMetrics() {
-	if self.cachedMetricsSize != self.state.scaledSize {
+	state := self.state()
+	if self.cachedMetricsSize != state.scaledSize {
 		const hintingNone = 0
-		metrics, err := self.activeFont.Metrics(&self.buffer, fixed.Int26_6(self.state.scaledSize), hintingNone)
+		metrics, err := self.activeFont.Metrics(&self.buffer, fixed.Int26_6(state.scaledSize), hintingNone)
 		if err != nil {
 			panic("font.Metrics error: " + err.Error())
 		}
-		self.cachedMetricsSize = self.state.scaledSize
+		self.cachedMetricsSize = state.scaledSize
 		self.cachedMidHeight = fract.Unit(metrics.XHeight)
 		self.cachedCapHeight = fract.Unit(metrics.CapHeight)
 	}

@@ -33,10 +33,10 @@ import (
 //     glyph masks.
 //   - [Renderer.Script](), to assign fonts to specific writing systems.
 //
-// Renderers must be created with [NewRenderer](), as the zero value is not
-// usable. Before you can start using one, though, you have to set a font.
-// In most practical scenarios you will also want to set a cache, the text
-// size, the text color and the align explicitly.
+// To create a renderer, using [NewRenderer]() is recommended. Before you
+// can start using it, though, you have to set a font. In most practical
+// scenarios you will also want to set a cache, the text size, the text
+// color and the align explicitly.
 //
 // If you need further help or guidance, consider reading ["advice on
 // renderers"] and going through the code in the [examples] folder.
@@ -44,8 +44,7 @@ import (
 // ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.10/docs/renderer.md
 // [examples]: https://github.com/tinne26/etxt/tree/v0.0.10/examples
 type Renderer struct {
-	states []restorableState // stored states, with the active one last
-	state  *restorableState  // &states[len(states)-1], refreshed on store and restore
+	states []restorableState // stored states, with the active one last (see state())
 
 	cacheHandler  cache.GlyphCacheHandler
 	customDrawFn  func(Target, sfnt.GlyphIndex, fract.Point)
@@ -77,7 +76,7 @@ type Renderer struct {
 // being the simplest solution.
 func NewRenderer() *Renderer {
 	// No font sizer change notification required (there's no font yet)
-	renderer := &Renderer{
+	return &Renderer{
 		states: []restorableState{{
 			fontColor:        color.RGBA{255, 255, 255, 255},
 			fontSizer:        &sizer.DefaultSizer{},
@@ -91,8 +90,15 @@ func NewRenderer() *Renderer {
 		}},
 		fonts: make([]*sfnt.Font, 0, 1),
 	}
-	renderer.state = &renderer.states[0]
-	return renderer
+}
+
+// state returns the active state. On zero value renderers, it creates
+// the base state the first time it's called.
+func (self *Renderer) state() *restorableState {
+	if len(self.states) == 0 {
+		self.states = append(self.states, restorableState{})
+	}
+	return &self.states[len(self.states)-1]
 }
 
 // Sets the logical font size to be used on subsequent operations.
@@ -169,7 +175,7 @@ func (self *Renderer) SetDirection(dir Direction) {
 	// from first \n to next, to next \n to first.
 	switch dir {
 	case LeftToRight, RightToLeft:
-		self.state.textDirection = dir
+		self.state().textDirection = dir
 	default:
 		panic("invalid direction")
 	}
@@ -178,7 +184,7 @@ func (self *Renderer) SetDirection(dir Direction) {
 // Returns the current text direction. See [Renderer.SetDirection]()
 // for more details.
 func (self *Renderer) GetDirection() Direction {
-	return self.state.textDirection
+	return self.state().textDirection
 }
 
 // Sets the font to be used on subsequent operations. Without a
@@ -194,16 +200,18 @@ func (self *Renderer) GetDirection() Direction {
 // [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.10#Library
 // [github.com/tinne26/fonts]: https://github.com/tinne26/fonts
 func (self *Renderer) SetFont(font *sfnt.Font) {
+	state := self.state()
+
 	// ensure there's enough space in the fonts slice
-	fontIndex := int(self.state.fontIndex)
+	fontIndex := int(state.fontIndex)
 	self.fonts = ensureSliceSize(self.fonts, fontIndex+1)
 
 	// assign font if new
-	if font == self.state.font {
+	if font == state.font {
 		return
 	}
 	self.fonts[fontIndex] = font
-	self.state.font = font
+	state.font = font
 	self.activeFont = font
 	self.cachedMetricsSize = -1 // drop extra metrics
 
@@ -212,11 +220,12 @@ func (self *Renderer) SetFont(font *sfnt.Font) {
 }
 
 func (self *Renderer) notifyFontChange(font *sfnt.Font) {
+	state := self.state()
 	if self.cacheHandler != nil {
 		self.cacheHandler.NotifyFontChange(font)
 	}
-	if self.state.fontSizer != nil {
-		self.state.fontSizer.NotifyChange(font, &self.buffer, self.state.scaledSize)
+	if state.fontSizer != nil {
+		state.fontSizer.NotifyChange(font, &self.buffer, state.scaledSize)
 	}
 }
 
@@ -231,25 +240,25 @@ func (self *Renderer) GetFont() *sfnt.Font {
 // The default blend mode will compose glyphs over the active
 // target with regular alpha blending.
 func (self *Renderer) SetBlendMode(blendMode BlendMode) {
-	self.state.blendMode = blendMode
+	self.state().blendMode = blendMode
 }
 
 // Returns the renderer's [BlendMode]. As far as I know, this is only
 // strictly necessary when implementing draw operations with custom
 // shaders.
 func (self *Renderer) GetBlendMode() BlendMode {
-	return self.state.blendMode
+	return self.state().blendMode
 }
 
 // Sets the color to be used on subsequent draw operations.
 // By default, [NewRenderer]() initializes the color to white.
 func (self *Renderer) SetColor(fontColor color.Color) {
-	self.state.fontColor = fontColor
+	self.state().fontColor = fontColor
 }
 
 // Returns the current drawing color.
 func (self *Renderer) GetColor() color.Color {
-	return self.state.fontColor
+	return self.state().fontColor
 }
 
 // Returns the current [sizer.Sizer].
@@ -259,7 +268,7 @@ func (self *Renderer) GetColor() color.Color {
 // To obtain information about font metrics see [Renderer.Metrics](). That
 // gateway exposes most common values, so you rarely need the sizer itself.
 func (self *Renderer) GetSizer() sizer.Sizer {
-	return self.state.fontSizer
+	return self.state().fontSizer
 }
 
 // Sets the sizer to be used on subsequent operations.
@@ -267,11 +276,12 @@ func (self *Renderer) GetSizer() sizer.Sizer {
 // The most common use for sizers is adjusting line height or glyph interspacing.
 // See [Renderer.GetSizer]() for more details.
 func (self *Renderer) SetSizer(fontSizer sizer.Sizer) {
-	if self.state.fontSizer == fontSizer {
+	state := self.state()
+	if state.fontSizer == fontSizer {
 		return
 	}
-	self.state.fontSizer = fontSizer
-	self.state.fontSizer.NotifyChange(self.activeFont, &self.buffer, self.state.scaledSize)
+	state.fontSizer = fontSizer
+	state.fontSizer.NotifyChange(self.activeFont, &self.buffer, state.scaledSize)
 }
 
 // Returns the current glyph cache handler, which is nil by default.
@@ -297,25 +307,26 @@ func (self *Renderer) GetCacheHandler() cache.GlyphCacheHandler {
 // may create multiple handlers from the same underlying cache and
 // use them with different renderers.
 func (self *Renderer) SetCacheHandler(cacheHandler cache.GlyphCacheHandler) {
+	state := self.state()
 	self.cacheHandler = cacheHandler
 	if cacheHandler == nil {
-		if self.state.rasterizer != nil {
-			self.state.rasterizer.SetOnChangeFunc(nil)
+		if state.rasterizer != nil {
+			state.rasterizer.SetOnChangeFunc(nil)
 		}
 		return
 	}
 
-	if self.state.rasterizer != nil {
-		self.state.rasterizer.SetOnChangeFunc(cacheHandler.NotifyRasterizerChange)
+	if state.rasterizer != nil {
+		state.rasterizer.SetOnChangeFunc(cacheHandler.NotifyRasterizerChange)
 	}
 
-	cacheHandler.NotifySizeChange(self.state.scaledSize)
+	cacheHandler.NotifySizeChange(state.scaledSize)
 	font := self.GetFont()
 	if font != nil {
 		cacheHandler.NotifyFontChange(font)
 	}
-	if self.state.rasterizer != nil {
-		cacheHandler.NotifyRasterizerChange(self.state.rasterizer)
+	if state.rasterizer != nil {
+		cacheHandler.NotifyRasterizerChange(state.rasterizer)
 	}
 }
 

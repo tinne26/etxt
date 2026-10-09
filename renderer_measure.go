@@ -47,6 +47,8 @@ func (self *Renderer) MeasureWithWrap(text string, widthLimit int) fract.Rect {
 // ---- underlying implementations ----
 
 func (self *Renderer) fractMeasure(text string) fract.Rect {
+	state := self.state()
+
 	// Notes on quirkiness:
 	// - Consecutive line breaks are vertically quantized
 	//   not because that's more correct in isolation, but
@@ -58,19 +60,19 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 	if self.activeFont == nil {
 		panic("can't measure text with font == nil (tip: Renderer.SetFont())")
 	}
-	if self.state.fontSizer == nil {
-		panic("can't measure text with a nil sizer (tip: NewRenderer())")
+	if state.fontSizer == nil {
+		panic("can't measure text with a nil sizer (tip: RendererUtils.FillMissingProperties())")
 	}
 
 	// main processing
 	if text == "" {
 		return fract.Rect{}
 	}
-	if self.state.hasScriptFonts() {
+	if state.hasScriptFonts() {
 		self.itemizeScripts(text)
 		defer self.activatePrimaryFont()
 	}
-	if self.state.textDirection == LeftToRight {
+	if state.textDirection == LeftToRight {
 		return self.fractMeasureLTR(text)
 	} else {
 		return self.fractMeasureRTL(text)
@@ -78,12 +80,14 @@ func (self *Renderer) fractMeasure(text string) fract.Rect {
 }
 
 func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) fract.Rect {
+	state := self.state()
+
 	// preconditions
 	if self.activeFont == nil {
 		panic("can't measure text with nil font (tip: Renderer.SetFont())")
 	}
-	if self.state.fontSizer == nil {
-		panic("can't measure text with a nil sizer (tip: NewRenderer())")
+	if state.fontSizer == nil {
+		panic("can't measure text with a nil sizer (tip: RendererUtils.FillMissingProperties())")
 	}
 	if widthLimit < 0 {
 		panic("can't use a negative widthLimit")
@@ -93,7 +97,7 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 	if text == "" {
 		return fract.Rect{}
 	}
-	if self.state.hasScriptFonts() {
+	if state.hasScriptFonts() {
 		self.itemizeScripts(text)
 		defer self.activatePrimaryFont()
 	}
@@ -103,7 +107,7 @@ func (self *Renderer) fractMeasureWithWrap(text string, widthLimit fract.Unit) f
 // helperMeasureWrap is fractMeasureWithWrap() without the preconditions and
 // the itemization, for draw operations that already did both.
 func (self *Renderer) helperMeasureWrap(text string, widthLimit fract.Unit) fract.Rect {
-	if self.state.textDirection == LeftToRight {
+	if self.state().textDirection == LeftToRight {
 		return self.fractMeasureWrapLTR(text, widthLimit)
 	} else {
 		return self.fractMeasureWrapRTL(text, widthLimit)
@@ -117,12 +121,13 @@ func (self *Renderer) helperMeasureWrap(text string, widthLimit fract.Unit) frac
 
 // Preconditions: non-nil font and sizer, non-empty text.
 func (self *Renderer) fractMeasureLTR(text string) fract.Rect {
+	state := self.state()
 	var iterator ltrStringIterator
 	var lastRune rune
 	var lineBreakNth int = -1
 	var width, height, lineWidth fract.Unit
 	var lineBreaksOnly bool = true
-	vertQuant := fract.Unit(self.state.vertQuantization)
+	vertQuant := fract.Unit(state.vertQuantization)
 
 	for { // measure text line by line
 		iterator, lineWidth, _, lastRune = self.helperMeasureLineLTR(iterator, text)
@@ -145,18 +150,19 @@ func (self *Renderer) fractMeasureLTR(text string) fract.Rect {
 	if !lineBreaksOnly {
 		height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant)
 	}
-	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	width = width.QuantizeUp(fract.Unit(state.horzQuantization))
 	return fract.Rect{Max: fract.UnitsToPoint(width, height)}
 }
 
 // Preconditions: non-nil font and sizer, non-empty text.
 func (self *Renderer) fractMeasureRTL(text string) fract.Rect {
+	state := self.state()
 	var iterator ltrStringIterator
 	var lastRune rune
 	var lineBreakNth int = -1
 	var width, height, lineWidth fract.Unit
 	var lineBreaksOnly bool = true
-	vertQuant := fract.Unit(self.state.vertQuantization)
+	vertQuant := fract.Unit(state.vertQuantization)
 
 	for { // measure text line by line
 		iterator, lineWidth, _, lastRune = self.helperMeasureLineReverseLTR(iterator, text)
@@ -179,18 +185,19 @@ func (self *Renderer) fractMeasureRTL(text string) fract.Rect {
 	if !lineBreaksOnly {
 		height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant)
 	}
-	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	width = width.QuantizeUp(fract.Unit(state.horzQuantization))
 	return fract.Rect{Max: fract.UnitsToPoint(width, height)}
 }
 
 // Preconditions: non-nil font and sizer, non-empty text.
 func (self *Renderer) fractMeasureWrapLTR(text string, widthLimit fract.Unit) fract.Rect {
+	state := self.state()
 	var iterator ltrStringIterator
 	var lastRune rune
 	var lineBreakNth int = -1
 	var width, height, lineWidth fract.Unit
 	var lineBreaksOnly bool = true
-	vertQuant := fract.Unit(self.state.vertQuantization)
+	vertQuant := fract.Unit(state.vertQuantization)
 
 	for { // measure text line by line
 		iterator, lineWidth, _, lastRune = self.helperMeasureWrapLineLTR(iterator, text, widthLimit)
@@ -213,19 +220,20 @@ func (self *Renderer) fractMeasureWrapLTR(text string, widthLimit fract.Unit) fr
 	if !lineBreaksOnly {
 		height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant)
 	}
-	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	width = width.QuantizeUp(fract.Unit(state.horzQuantization))
 	return fract.Rect{Max: fract.UnitsToPoint(width, height)}
 }
 
 // failing with qt = 64, align = (Baseline | Left), dir = RightToLeft
 // Preconditions: non-nil font and sizer, non-empty text.
 func (self *Renderer) fractMeasureWrapRTL(text string, widthLimit fract.Unit) fract.Rect {
+	state := self.state()
 	var iterator ltrStringIterator
 	var lastRune rune
 	var lineBreakNth int = -1
 	var width, height, lineWidth fract.Unit
 	var lineBreaksOnly bool = true
-	vertQuant := fract.Unit(self.state.vertQuantization)
+	vertQuant := fract.Unit(state.vertQuantization)
 
 	for { // measure text line by line
 		iterator, lineWidth, _, lastRune = self.helperMeasureWrapLineReverseLTR(iterator, text, widthLimit)
@@ -248,6 +256,6 @@ func (self *Renderer) fractMeasureWrapRTL(text string, widthLimit fract.Unit) fr
 	if !lineBreaksOnly {
 		height = (height + self.getOpLineHeight()).QuantizeUp(vertQuant)
 	}
-	width = width.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	width = width.QuantizeUp(fract.Unit(state.horzQuantization))
 	return fract.Rect{Max: fract.UnitsToPoint(width, height)}
 }

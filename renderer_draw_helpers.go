@@ -12,7 +12,7 @@ func (self *Renderer) advanceLine(position fract.Point, lineBreakX fract.Unit, l
 	position.X = lineBreakX
 	self.activatePrimaryFont() // for line metrics
 	position.Y += self.getOpLineAdvance(lineBreakNth)
-	position.Y = position.Y.QuantizeUp(fract.Unit(self.state.vertQuantization))
+	position.Y = position.Y.QuantizeUp(fract.Unit(self.state().vertQuantization))
 	if self.cacheHandler != nil && position.Y.FractShift() != prevFractY {
 		self.cacheHandler.NotifyFractChange(position)
 	}
@@ -63,7 +63,7 @@ func (self *drawInternalValues) numElisions() int {
 }
 
 func (self *Renderer) drawRuneLTR(target Target, position fract.Point, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	if self.state.hasScriptFonts() && self.updateScriptFont(index) {
+	if self.state().hasScriptFonts() && self.updateScriptFont(index) {
 		iv.prevGlyphIndex = 0 // break kerning when changing font
 	}
 	glyph, skip := self.getGlyphIndex(self.activeFont, codePoint)
@@ -81,7 +81,7 @@ func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyp
 	} else {
 		iv.lineBreakNth = 0
 	}
-	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	position.X = position.X.QuantizeUp(fract.Unit(self.state().horzQuantization))
 
 	if position.X.FractShift() != iv.prevFractX {
 		iv.prevFractX = position.X.FractShift()
@@ -101,7 +101,7 @@ func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyp
 }
 
 func (self *Renderer) drawRuneRTL(target Target, position fract.Point, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	if self.state.hasScriptFonts() && self.updateScriptFont(index) {
+	if self.state().hasScriptFonts() && self.updateScriptFont(index) {
 		iv.prevGlyphIndex = 0 // break kerning when changing font
 	}
 	glyph, skip := self.getGlyphIndex(self.activeFont, codePoint)
@@ -122,7 +122,7 @@ func (self *Renderer) drawGlyphRTL(target Target, position fract.Point, currGlyp
 	} else {
 		iv.lineBreakNth = 0
 	}
-	position.X = position.X.QuantizeUp(fract.Unit(self.state.horzQuantization))
+	position.X = position.X.QuantizeUp(fract.Unit(self.state().horzQuantization))
 
 	if position.X.FractShift() != iv.prevFractX {
 		iv.prevFractX = position.X.FractShift()

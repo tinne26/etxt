@@ -35,6 +35,8 @@ func (self *Renderer) DrawBilinear(target Target, text string, x, y float64) {
 
 // x and y may be unquantized
 func (self *Renderer) fractDraw(target Target, text string, x, y fract.Unit) {
+	state := self.state()
+
 	// preconditions
 	if target == nil && self.customDrawFn == nil {
 		panic("can't draw on nil Target without a custom draw func")
@@ -42,18 +44,18 @@ func (self *Renderer) fractDraw(target Target, text string, x, y fract.Unit) {
 	if self.activeFont == nil {
 		panic("can't draw text with nil font (tip: Renderer.SetFont())")
 	}
-	if self.state.fontSizer == nil {
-		panic("can't draw with a nil sizer (tip: NewRenderer())")
+	if state.fontSizer == nil {
+		panic("can't draw with a nil sizer (tip: RendererUtils.FillMissingProperties())")
 	}
-	if self.state.rasterizer == nil {
-		panic("can't draw with a nil rasterizer (tip: NewRenderer())")
+	if state.rasterizer == nil {
+		panic("can't draw with a nil rasterizer (tip: RendererUtils.FillMissingProperties())")
 	}
 
 	// return directly on superfluous invocations
 	if text == "" {
 		return
 	}
-	if self.state.hasScriptFonts() {
+	if state.hasScriptFonts() {
 		self.itemizeScripts(text)
 		defer self.activatePrimaryFont()
 	}
@@ -61,7 +63,7 @@ func (self *Renderer) fractDraw(target Target, text string, x, y fract.Unit) {
 	// adjust Y position
 	horzQuant, vertQuant := self.fractGetQuantization()
 	lineHeight := self.getOpLineHeight()
-	vertAlign := self.state.align.Vert()
+	vertAlign := state.align.Vert()
 	switch vertAlign {
 	case VertCenter:
 		height := self.helperMeasureHeight(text)
@@ -111,27 +113,27 @@ func (self *Renderer) fractDraw(target Target, text string, x, y fract.Unit) {
 	// }
 
 	// subdelegate to relevant draw function
-	switch self.state.align.Horz() {
+	switch state.align.Horz() {
 	case Left:
-		if self.state.textDirection == LeftToRight {
+		if state.textDirection == LeftToRight {
 			self.fractDrawLeftLTR(target, text, x.QuantizeUp(horzQuant), y)
 		} else {
 			self.fractDrawLeftRTL(target, text, x.QuantizeUp(horzQuant), y)
 		}
 	case Right:
-		if self.state.textDirection == LeftToRight {
+		if state.textDirection == LeftToRight {
 			self.fractDrawRightLTR(target, text, x.QuantizeUp(horzQuant), y)
 		} else {
 			self.fractDrawRightRTL(target, text, x.QuantizeUp(horzQuant), y)
 		}
 	case HorzCenter:
-		if self.state.textDirection == LeftToRight {
+		if state.textDirection == LeftToRight {
 			self.fractDrawCenterLTR(target, text, x, y)
 		} else {
 			self.fractDrawCenterRTL(target, text, x, y)
 		}
 	default:
-		panic(self.state.align.Horz())
+		panic(state.align.Horz())
 	}
 }
 

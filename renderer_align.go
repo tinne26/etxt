@@ -174,11 +174,12 @@ const (
 //
 // [this image]: https://github.com/tinne26/etxt/blob/v0.0.10/docs/img/gtxt_aligns.png
 func (self *Renderer) SetAlign(align Align) {
-	self.state.align = self.state.align.Adjusted(align)
+	state := self.state()
+	state.align = state.align.Adjusted(align)
 }
 
 // Returns the current align. See [Renderer.SetAlign]() documentation
 // for further details.
 func (self *Renderer) GetAlign() Align {
-	return self.state.align
+	return self.state().align
 }

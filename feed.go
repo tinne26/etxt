@@ -57,7 +57,7 @@ func (self *Feed) At(x, y int) *Feed {
 
 	// adjust Y position as in Renderer.fractDraw
 	vertAlign := renderer.GetAlign().Vert()
-	qtVert := fract.Unit(renderer.state.vertQuantization)
+	qtVert := fract.Unit(renderer.state().vertQuantization)
 	self.Position.Y = (fract.FromInt(y) + renderer.getBaselineOffset(vertAlign)).QuantizeUp(qtVert)
 	return self
 }
@@ -130,7 +130,7 @@ func (self *Feed) LineBreak() {
 	self.Position.Y += renderer.getOpLineAdvance(int(self.LineBreakAcc))
 
 	// y position must be quantized for conformity with Renderer operations
-	qtVert := fract.Unit(renderer.state.vertQuantization)
+	qtVert := fract.Unit(renderer.state().vertQuantization)
 	self.Position.Y = self.Position.Y.QuantizeUp(qtVert)
 	self.Position.X = self.LineBreakX // doesn't matter if it's unquantized
 	self.LineBreakAcc += 1
