@@ -1,6 +1,6 @@
 # How to `go test` etxt
 
-Testing etxt requires placing two different `.ttf` fonts in `/font/test/`. Some tests can be executed even without these fonts, but you will get one failure due to missing assets.
+Most tests need fonts placed in `/font/test/` (`.ttf` or `.otf`). To cover all current tests, you will need at least a Latin and a Han + Latin font (e.g. Noto Sans SC). The package's test run will fail listing the skipped tests when suitable fonts can't be found.
 
 The main testing command is the following:
 ```
@@ -8,23 +8,25 @@ go test -tags gtxt ./...
 ```
 While you can test without the `gtxt` tag, most tests won't run because there's no easy way to test Ebitengine's graphical output. I made an effort to compare gtxt and Ebitengine results using `go generate`. That's explained in the next section. Outside that, Ebitengine-specific tests exist mainly to help detect build problems.
 
-Many scripts are provided in `/test/scripts`. For example, you can run the tests with `run_tests.sh` (or `run_tests.bat` if you are on Windows). Here are the results of an example run:
+Many scripts are provided in `/test/scripts`. For example, you can run the tests with `run_tests.sh` (or `run_tests.bat` if you are on Windows), which also lists skipped tests with the reason. Here are the results of an example run:
 ```
 $ ./test/scripts/run_tests.sh
 [testing with gtxt...]
-ok      github.com/tinne26/etxt 0.331s  coverage: 44.2% of statements
-ok      github.com/tinne26/etxt/cache   0.266s  coverage: 82.2% of statements
-ok      github.com/tinne26/etxt/font    0.284s  coverage: 82.9% of statements
-ok      github.com/tinne26/etxt/fract   0.307s  coverage: 91.0% of statements
-ok      github.com/tinne26/etxt/mask    0.311s  coverage: 83.5% of statements
+ok      github.com/tinne26/etxt         0.212s  coverage: 75.5% of statements
+ok      github.com/tinne26/etxt/cache   0.004s  coverage: 83.8% of statements
+ok      github.com/tinne26/etxt/font    0.016s  coverage: 81.8% of statements
+ok      github.com/tinne26/etxt/fract   0.007s  coverage: 89.4% of statements
+ok      github.com/tinne26/etxt/mask    0.017s  coverage: 78.9% of statements
 
 [testing with Ebitengine...]
-ok      github.com/tinne26/etxt 0.506s  coverage: 18.0% of statements
-ok      github.com/tinne26/etxt/cache   0.463s  coverage: 82.2% of statements
-ok      github.com/tinne26/etxt/font    0.286s  coverage: 82.9% of statements
-ok      github.com/tinne26/etxt/fract   0.478s  coverage: 90.5% of statements
-ok      github.com/tinne26/etxt/mask    0.546s  coverage: 83.5% of statements
+ok      github.com/tinne26/etxt         0.248s  coverage: 54.5% of statements
+ok      github.com/tinne26/etxt/cache   0.041s  coverage: 83.8% of statements
+ok      github.com/tinne26/etxt/font    0.017s  coverage: 81.8% of statements
+ok      github.com/tinne26/etxt/fract   0.055s  coverage: 88.9% of statements
+ok      github.com/tinne26/etxt/mask    0.065s  coverage: 78.9% of statements
 ```
+
+Tests pick fonts in the same order on every run, sorted by name. You can set the `ETXT_TEST_SEED` environment variable to any integer in order to shuffle fonts in a reproducible way.
 
 ## Testing Ebitengine vs gtxt
 
@@ -39,7 +41,6 @@ Generating 'testdata_blend_rand_gtxt_test.go'... OK
 This will generate a few additional test files that contain only raw render data. Running `go test .` or `go test -tags gtxt .` afterwards will include this data on existing conditional tests. These tests will compare the compositing results of etxt's different modes and report if the results vary in any meaningful way.
 
 To be honest, this set of tests is fairly limited and simplistic at the moment, but it's still much better than having no cross comparison tests at all.
-
 
 ## Honest reliability assessment
 

@@ -17,7 +17,7 @@ func TestTestdataBlendRand(t *testing.T) {
 		panic("incorrect test data generation or setup")
 	}
 	if !foundE {
-		t.SkipNow()
+		t.Skip("needs testdata generated with go generate, see testdata_generate.go")
 	}
 
 	// compare values

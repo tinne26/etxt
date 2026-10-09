@@ -1,135 +1,41 @@
 package etxt
 
-// This file contains a fake test ensuring that test assets are available,
-// setups a few important variables and provides some helper methods.
+// This file gives tests access to the fonts placed in font/test/, picked by
+// the glyphs each test needs, and provides some helper methods.
 
 import (
 	"embed"
-	"fmt"
 	"os"
-	"sort"
-	"sync"
 	"testing"
 
-	"github.com/tinne26/etxt/font"
+	"github.com/tinne26/etxt/internal/testfont"
 	"golang.org/x/image/font/sfnt"
 )
 
 //go:embed font/test/*
 var testfs embed.FS
 
-var testFontsDir string = "font/test"
-var testFonts []*sfnt.Font
-var testFontA *sfnt.Font
-var testFontB *sfnt.Font
-var assetsLoadMutex sync.Mutex
-var testAssetsLoaded bool
+var testFonts = testfont.NewDir(testfs, "font/test")
 
-func TestAssetAvailability(t *testing.T) {
-	ensureTestAssetsLoaded()
-	if len(testWarnings) > 0 {
-		t.Fatalf("missing test assets\n%s", testWarnings)
-	}
+func TestMain(m *testing.M) {
+	os.Exit(testFonts.ReportSkips(m.Run()))
 }
 
-var testWarnings string
-
-func ensureTestAssetsLoaded() {
-	// assets load access control
-	assetsLoadMutex.Lock()
-	defer assetsLoadMutex.Unlock()
-	if testAssetsLoaded {
-		return
-	}
-	testAssetsLoaded = true
-
-	// load library from embedded folder and check fonts
-	lib := font.NewLibrary()
-	_, _, err := lib.ParseAllFromFS(testfs, testFontsDir)
-	if err != nil {
-		fmt.Printf("TESTS INIT: %s", err.Error())
-		os.Exit(1)
-	}
-
-	type FontInfo struct {
-		font *sfnt.Font
-		name string
-	}
-	fonts := make([]FontInfo, 0, 2)
-	err = lib.EachFont(func(name string, sfntFont *sfnt.Font) error {
-		fonts = append(fonts, FontInfo{sfntFont, name})
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	sort.Slice(fonts, func(i, j int) bool {
-		return fonts[i].name < fonts[j].name
-	})
-	testFonts = make([]*sfnt.Font, len(fonts))
-	for i := range fonts {
-		testFonts[i] = fonts[i].font
-	}
-
-	// set fonts and/or warnings for missing fonts
-	switch len(fonts) {
-	case 0:
-		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 0)\n" +
-			"WARNING: Most tests will be skipped\n"
-	case 1:
-		testFontA = fonts[0].font
-		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 1)\n" +
-			"WARNING: Some tests will be skipped\n"
-	default:
-		testFontA = fonts[0].font
-		testFontB = fonts[1].font
-	}
-}
+// samples for picking test fonts by glyph coverage
+const testLatinSample = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,:;!?()[]'\""
+const testHanSample = "中文你是一"
 
 // testFontsWithRunes returns a different test font for each of the given
 // samples, with glyphs for all the runes in that sample. An empty sample
-// accepts any font. It skips the test when the test fonts can't satisfy all
-// the samples at once.
+// accepts any font. See [testfont.Dir.WithRunes] for details.
 func testFontsWithRunes(tb testing.TB, samples ...string) []*sfnt.Font {
 	tb.Helper()
-	ensureTestAssetsLoaded()
-	fonts := make([]*sfnt.Font, len(samples))
-	if !assignTestFonts(fonts, samples, 0) {
-		tb.Skipf("requires %d different test fonts with glyphs for %q", len(samples), samples)
+	picked := testFonts.WithRunes(tb, samples...)
+	fonts := make([]*sfnt.Font, len(picked))
+	for i := range picked {
+		fonts[i] = picked[i].Font
 	}
 	return fonts
-}
-
-// assignTestFonts fills fonts[i:] with test fonts for samples[i:], using fonts
-// not assigned yet. When a later sample can't be satisfied, it goes back and
-// tries the next font for the earlier ones. It reports whether it succeeded.
-func assignTestFonts(fonts []*sfnt.Font, samples []string, i int) bool {
-	if i == len(samples) {
-		return true
-	}
-	for _, candidate := range testFonts {
-		if isTestFontAssigned(fonts[:i], candidate) {
-			continue
-		}
-		if missing, err := font.IsMissingRunes(candidate, samples[i]); err != nil || missing {
-			continue
-		}
-		fonts[i] = candidate
-		if assignTestFonts(fonts, samples, i+1) {
-			return true
-		}
-	}
-	return false
-}
-
-func isTestFontAssigned(fonts []*sfnt.Font, candidate *sfnt.Font) bool {
-	for _, assigned := range fonts {
-		if assigned == candidate {
-			return true
-		}
-	}
-	return false
 }
 
 func doesNotPanic(function func()) (didNotPanic bool) {
