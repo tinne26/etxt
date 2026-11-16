@@ -2,11 +2,24 @@ package etxt
 
 import (
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
 
 	"golang.org/x/image/font/sfnt"
 )
+
+// scriptNames is the reverse map of [unicode.Scripts], built lazily. Instead
+// of mapping names to RangeTables, it maps the RangeTables to their names.
+var scriptNames map[*unicode.RangeTable]string
+var scriptNamesOnce sync.Once
+
+func loadScriptNames() {
+	scriptNames = make(map[*unicode.RangeTable]string, len(unicode.Scripts))
+	for name, table := range unicode.Scripts {
+		scriptNames[table] = name
+	}
+}
 
 // [Gateway] to [RendererScript] functionality.
 //
@@ -103,7 +116,8 @@ func (self *Renderer) scriptSetFont(script *unicode.RangeTable, font *sfnt.Font)
 	}
 
 	// insertion case: find script in unicode.Scripts
-	name, found := scriptName(script)
+	scriptNamesOnce.Do(loadScriptNames)
+	name, found := scriptNames[script]
 	if !found {
 		panic("script not found in unicode.Scripts")
 	}
@@ -173,18 +187,6 @@ func (self *Renderer) scriptTableIndex(script *unicode.RangeTable) (int, bool) {
 		}
 	}
 	return 0, false
-}
-
-// scriptName returns the key under which the given table appears in
-// [unicode.Scripts]. This is a slow search meant to be used only during
-// insertion of new scripts.
-func scriptName(script *unicode.RangeTable) (string, bool) {
-	for name, table := range unicode.Scripts {
-		if table == script {
-			return name, true
-		}
-	}
-	return "", false
 }
 
 // scriptSwitch marks the start of a run of text that uses a different font.
