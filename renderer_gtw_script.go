@@ -197,12 +197,6 @@ type scriptSwitch struct {
 	font  *sfnt.Font
 }
 
-// openBracket is an opening bracket waiting for its closing pair.
-type openBracket struct {
-	closing rune       // the closing bracket that pairs with it
-	font    *sfnt.Font // font of the text before it, nil at the start of a line
-}
-
 // activatePrimaryFont makes the primary font active again if it was changed
 // during draw or measure while using script fonts
 func (self *Renderer) activatePrimaryFont() {
@@ -212,6 +206,11 @@ func (self *Renderer) activatePrimaryFont() {
 		self.notifyFontChange(state.font)
 	}
 }
+
+// The Unicode Bidirectional Algorithm uses a fixed 63-element stack when
+// identifying bracket pairs. Using the same limit keeps itemization bounded
+// and allocation-free without imposing a smaller nesting limit.
+const maxBracketPairingDepth = 63
 
 // itemizeScripts finds the fonts for the given text before drawing or
 // measuring it with script fonts, and stores where they change.
@@ -224,10 +223,15 @@ func (self *Renderer) activatePrimaryFont() {
 // none. Only line breaks end lines here: wrapping happens later, and doesn't
 // change fonts, as wrap points depend on the widths of the fonts.
 func (self *Renderer) itemizeScripts(text string) {
+	type openBracket struct {
+		closing rune       // the closing bracket that pairs with it
+		font    *sfnt.Font // font of the text before it, nil at the start of a line
+	}
+
 	state := self.state()
 	switches := self.scriptSwitches[:0]
 	fonts := newRuneFontFinder(state.scriptFonts, state.font)
-	var brackets [16]openBracket // open brackets of the current line
+	var brackets [maxBracketPairingDepth]openBracket // open brackets of the current line
 	var depth int
 	var bracketsFull bool // more brackets were nested than fit, so pairing stopped for the line
 	var lineStart int
