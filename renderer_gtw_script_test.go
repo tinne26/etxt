@@ -201,10 +201,16 @@ var scriptCases = [][][2]string{
 // the line, so the closing brackets take the font of the text before them.
 func nestedBracketsCase() [][2]string {
 	var segments [][2]string
-	for i := 0; i < 8; i++ {
-		segments = append(segments, [2]string{`中(`, "han"}, [2]string{`a(`, "primary"})
+	for i := 0; i <= maxBracketPairingDepth; i++ {
+		if i%2 == 0 {
+			segments = append(segments, [2]string{`中(`, "han"})
+		} else {
+			segments = append(segments, [2]string{`a(`, "primary"})
+		}
 	}
-	return append(segments, [2]string{`中(`, "han"}, [2]string{"a" + strings.Repeat(")", 17), "primary"})
+	last := len(segments) - 1
+	segments[last][0] += "a" + strings.Repeat(")", maxBracketPairingDepth+1)
+	return segments
 }
 
 func segmentFont(name string, primary, han *sfnt.Font) *sfnt.Font {
