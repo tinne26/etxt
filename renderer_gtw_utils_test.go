@@ -173,3 +173,20 @@ func TestZeroValueRenderer(t *testing.T) {
 		t.Fatalf("expected 3 glyphs drawn, got %d", drawn)
 	}
 }
+
+// TestAssertMaxStoredStates verifies that the assertion only panics when more
+// states than the given limit are stored.
+func TestAssertMaxStoredStates(t *testing.T) {
+	renderer := NewRenderer()
+	renderer.Utils().StoreState()
+	renderer.Utils().StoreState()
+
+	for _, limit := range []int{2, 3} {
+		if !doesNotPanic(func() { renderer.Utils().AssertMaxStoredStates(limit) }) {
+			t.Fatalf("expected no panic with 2 stored states and a limit of %d", limit)
+		}
+	}
+	if doesNotPanic(func() { renderer.Utils().AssertMaxStoredStates(1) }) {
+		t.Fatal("expected a panic with 2 stored states and a limit of 1")
+	}
+}

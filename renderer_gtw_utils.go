@@ -114,7 +114,7 @@ func (self *RendererUtils) RestoreState() bool {
 //     states stack is completely empty.
 func (self *RendererUtils) AssertMaxStoredStates(n int) {
 	stored := maxInt(len(self.states)-1, 0) // zero value renderers have no states yet
-	if n > stored {
+	if stored > n {
 		assertMax := strconv.Itoa(n)
 		actualMax := strconv.Itoa(stored)
 		panic("expected at most " + assertMax + " stored states, found " + actualMax)
