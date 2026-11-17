@@ -176,7 +176,9 @@ func (self *Feed) traverseGlyph(target Target, glyphIndex sfnt.GlyphIndex, drawM
 		// position at many different points in dangerous ways
 		self.Position.X = self.Position.X.QuantizeUp(qtHorz)
 		self.Position.Y = self.Position.Y.QuantizeUp(qtVert)
-		renderer.cacheHandler.NotifyFractChange(self.Position)
+		if renderer.cacheHandler != nil {
+			renderer.cacheHandler.NotifyFractChange(self.Position)
+		}
 
 		// traverse glyph
 		if drawMode {
@@ -197,7 +199,9 @@ func (self *Feed) traverseGlyph(target Target, glyphIndex sfnt.GlyphIndex, drawM
 		// quantize
 		self.Position.X = self.Position.X.QuantizeUp(qtHorz)
 		self.Position.Y = self.Position.Y.QuantizeUp(qtVert)
-		renderer.cacheHandler.NotifyFractChange(self.Position)
+		if renderer.cacheHandler != nil {
+			renderer.cacheHandler.NotifyFractChange(self.Position)
+		}
 
 		// traverse glyph
 		if drawMode {
