@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unicode"
 
 	"golang.org/x/image/font/sfnt"
 )
@@ -43,7 +44,7 @@ func NewDir(fsys fs.FS, path string) *Dir {
 	return &Dir{fsys: fsys, path: path}
 }
 
-// Filter is used for [Dir.Matching].
+// Filter is used for [Dir.Matching]. Control characters are always ignored.
 type Filter struct {
 	Has   string
 	Lacks string
@@ -60,6 +61,9 @@ func (self Filter) String() string {
 func (self Filter) matches(font *sfnt.Font) bool {
 	var buffer sfnt.Buffer
 	for _, codePoint := range self.Has {
+		if unicode.IsControl(codePoint) {
+			continue
+		}
 		if index, err := font.GlyphIndex(&buffer, codePoint); err != nil || index == 0 {
 			return false
 		}
