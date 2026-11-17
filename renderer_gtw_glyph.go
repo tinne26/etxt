@@ -55,6 +55,12 @@ func (self *RendererGlyph) LoadBounds(index sfnt.GlyphIndex) fract.Rect {
 	return (*Renderer)(self).glyphLoadBounds(index)
 }
 
+// Returns the current glyph drawing function, or nil if unset. See
+// [RendererGlyph.SetDrawFunc]() for more details.
+func (self *RendererGlyph) GetDrawFunc() func(Target, sfnt.GlyphIndex, fract.Point) {
+	return self.customDrawFn
+}
+
 // Overrides the renderer's glyph drawing function with a custom
 // one. You can set it to nil to go back to the default behavior.
 //
