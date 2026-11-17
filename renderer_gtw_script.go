@@ -95,20 +95,21 @@ type scriptFont struct {
 }
 
 func (self *Renderer) scriptSetFont(script *unicode.RangeTable, font *sfnt.Font) {
+	state := self.state()
 	if script == nil {
 		panic("nil script")
 	}
 
 	// search within existing script-font entries for fast remove/replace
 	if i, found := self.scriptTableIndex(script); found {
-		if self.state.scriptFonts[i].font == font {
+		if state.scriptFonts[i].font == font {
 			return // redundant replace, skip
 		}
 		scriptFonts := self.scriptFontsForWrite()
 		if font == nil { // remove case
 			copy(scriptFonts[i:], scriptFonts[i+1:])
 			scriptFonts[len(scriptFonts)-1] = scriptFont{}
-			self.state.scriptFonts = scriptFonts[:len(scriptFonts)-1]
+			state.scriptFonts = scriptFonts[:len(scriptFonts)-1]
 		} else { // replace case
 			scriptFonts[i].font = font
 		}
@@ -127,19 +128,19 @@ func (self *Renderer) scriptSetFont(script *unicode.RangeTable, font *sfnt.Font)
 	if font == nil {
 		return // nothing to remove, but validating first makes invalid scripts always panic
 	}
-	i, _ := binarySearchFunc(self.state.scriptFonts, name, func(scriptFont *scriptFont, name string) int {
+	i, _ := binarySearchFunc(state.scriptFonts, name, func(scriptFont *scriptFont, name string) int {
 		return strings.Compare(scriptFont.name, name)
 	})
 	scriptFonts := append(self.scriptFontsForWrite(), scriptFont{})
 	copy(scriptFonts[i+1:], scriptFonts[i:])
 	scriptFonts[i] = scriptFont{name, script, font}
-	self.state.scriptFonts = scriptFonts
-	self.state.scriptFontsBuffer = scriptFonts // append may have moved it to a larger array
+	state.scriptFonts = scriptFonts
+	state.scriptFontsBuffer = scriptFonts // append may have moved it to a larger array
 }
 
 func (self *Renderer) scriptGetFont(script *unicode.RangeTable) *sfnt.Font {
 	if i, found := self.scriptTableIndex(script); found {
-		return self.state.scriptFonts[i].font
+		return self.state().scriptFonts[i].font
 	}
 	return nil
 }
@@ -147,12 +148,13 @@ func (self *Renderer) scriptGetFont(script *unicode.RangeTable) *sfnt.Font {
 func (self *Renderer) scriptClear() {
 	scriptFonts := self.scriptFontsForWrite()
 	clearScriptFonts(scriptFonts)
-	self.state.scriptFonts = scriptFonts[:0]
+	self.state().scriptFonts = scriptFonts[:0]
 }
 
 func (self *Renderer) scriptEach(fn func(string, *unicode.RangeTable, *sfnt.Font) bool) {
-	for i := range self.state.scriptFonts {
-		scriptFont := &self.state.scriptFonts[i]
+	state := self.state()
+	for i := range state.scriptFonts {
+		scriptFont := &state.scriptFonts[i]
 		if !fn(scriptFont.name, scriptFont.script, scriptFont.font) {
 			return
 		}
@@ -163,11 +165,12 @@ func (self *Renderer) scriptEach(fn func(string, *unicode.RangeTable, *sfnt.Font
 // be modified. Right after a store they are shared with the stored state,
 // so the first write copies them into the active state's own buffer.
 func (self *Renderer) scriptFontsForWrite() []scriptFont {
-	if !self.state.areScriptFontsWritable() {
-		self.state.scriptFontsBuffer = append(self.state.scriptFontsBuffer[:0], self.state.scriptFonts...)
-		self.state.scriptFonts = self.state.scriptFontsBuffer
+	state := self.state()
+	if !state.areScriptFontsWritable() {
+		state.scriptFontsBuffer = append(state.scriptFontsBuffer[:0], state.scriptFonts...)
+		state.scriptFonts = state.scriptFontsBuffer
 	}
-	return self.state.scriptFonts
+	return state.scriptFonts
 }
 
 // clearScriptFonts zeroes the given assignments. Buffers kept for reuse
@@ -181,8 +184,9 @@ func clearScriptFonts(scriptFonts []scriptFont) {
 // scriptTableIndex searches the given script linearly through already defined
 // entries. Used for fast script replaces or removals.
 func (self *Renderer) scriptTableIndex(script *unicode.RangeTable) (int, bool) {
-	for i := range self.state.scriptFonts {
-		if self.state.scriptFonts[i].script == script {
+	state := self.state()
+	for i := range state.scriptFonts {
+		if state.scriptFonts[i].script == script {
 			return i, true
 		}
 	}
@@ -198,9 +202,10 @@ type scriptSwitch struct {
 // activatePrimaryFont makes the primary font active again if it was changed
 // during draw or measure while using script fonts
 func (self *Renderer) activatePrimaryFont() {
-	if self.state.activeFont != self.state.primaryFont {
-		self.state.activeFont = self.state.primaryFont
-		self.notifyFontChange(self.state.primaryFont)
+	state := self.state()
+	if self.activeFont != state.font {
+		self.activeFont = state.font
+		self.notifyFontChange(state.font)
 	}
 }
 
@@ -225,8 +230,9 @@ func (self *Renderer) itemizeScripts(text string) {
 		font    *sfnt.Font // font of the text before it, nil at the start of a line
 	}
 
+	state := self.state()
 	switches := self.scriptSwitches[:0]
-	fonts := newRuneFontFinder(self.state.scriptFonts, self.state.primaryFont)
+	fonts := newRuneFontFinder(state.scriptFonts, state.font)
 	var brackets [maxBracketPairingDepth]openBracket // open brackets of the current line
 	var depth int
 	var bracketsFull bool // more brackets were nested than fit, so pairing stopped for the line
@@ -289,7 +295,7 @@ func (self *Renderer) itemizeScripts(text string) {
 		switches = setFontFrom(switches, index, font)
 	}
 	if len(switches) == 0 {
-		switches = append(switches, scriptSwitch{0, self.state.primaryFont})
+		switches = append(switches, scriptSwitch{0, state.font})
 	}
 	self.scriptSwitches = switches
 	self.scriptCursor = 0
@@ -323,10 +329,10 @@ func (self *Renderer) updateScriptFont(index int) bool {
 	self.scriptCursor = i
 
 	font := switches[i].font
-	if font == self.state.activeFont {
+	if font == self.activeFont {
 		return false
 	}
-	self.state.activeFont = font
+	self.activeFont = font
 	self.notifyFontChange(font)
 	return true
 }

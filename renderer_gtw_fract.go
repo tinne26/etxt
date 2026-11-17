@@ -60,7 +60,7 @@ func (self *RendererFract) GetScale() fract.Unit {
 // is useful when working with sizers and trying to
 // obtain specific metrics for advanced use-cases.
 func (self *RendererFract) GetScaledSize() fract.Unit {
-	return self.state.scaledSize
+	return (*Renderer)(self).state().scaledSize
 }
 
 // Sets the horizontal quantization level to be used on subsequent
@@ -112,6 +112,8 @@ func (self *RendererFract) DrawWithWrap(target Target, text string, x, y fract.U
 // ---- underlying implementations ----
 
 func (self *Renderer) fractSetSize(size fract.Unit) {
+	state := self.state()
+
 	// range checks
 	if size < 0 {
 		panic("negative text size")
@@ -125,61 +127,64 @@ func (self *Renderer) fractSetSize(size fract.Unit) {
 	// try to render multiple characters, but... I tried...)
 
 	// set the new size
-	if self.state.logicalSize == size {
+	if state.logicalSize == size {
 		return
 	}
-	self.state.logicalSize = size
+	state.logicalSize = size
 	self.refreshScaledSize()
 }
 
 func (self *Renderer) fractGetSize() fract.Unit {
-	return self.state.logicalSize
+	return self.state().logicalSize
 }
 
 func (self *Renderer) fractSetScale(scale fract.Unit) {
+	state := self.state()
+
 	// safety check
 	if scale < 0 {
 		panic("negative scaling factor")
 	}
 
 	// set new scale
-	if self.state.scale == scale {
+	if state.scale == scale {
 		return
 	}
-	self.state.scale = scale
+	state.scale = scale
 	self.refreshScaledSize()
 }
 
 func (self *Renderer) fractGetScale() fract.Unit {
-	return self.state.scale
+	return self.state().scale
 }
 
 // Must be called after logical size or scale changes.
 func (self *Renderer) refreshScaledSize() {
-	scaledSize := self.scaleLogicalSize(self.state.logicalSize)
+	state := self.state()
+	scaledSize := self.scaleLogicalSize(state.logicalSize)
 
-	if scaledSize == self.state.scaledSize {
+	if scaledSize == state.scaledSize {
 		return
 	} // yeah, not likely
-	self.state.scaledSize = scaledSize
+	state.scaledSize = scaledSize
 
 	// notify changes
 	if self.cacheHandler != nil {
-		self.cacheHandler.NotifySizeChange(self.state.scaledSize)
+		self.cacheHandler.NotifySizeChange(state.scaledSize)
 	}
-	if self.state.fontSizer != nil {
-		self.state.fontSizer.NotifyChange(self.GetFont(), &self.buffer, self.state.scaledSize)
+	if state.fontSizer != nil {
+		state.fontSizer.NotifyChange(self.GetFont(), &self.buffer, state.scaledSize)
 	}
 }
 
 func (self *Renderer) fractSetHorzQuantization(horz fract.Unit) {
 	validateQuantizationValue(horz)
-	self.state.horzQuantization = uint8(horz)
+	self.state().horzQuantization = uint8(horz)
 }
 
 func (self *Renderer) fractSetVertQuantization(vert fract.Unit) {
 	validateQuantizationValue(vert)
-	self.state.vertQuantization = uint8(vert)
+	self.state().vertQuantization = uint8(vert)
 }
 
 func validateQuantizationValue(value fract.Unit) {
@@ -192,5 +197,6 @@ func validateQuantizationValue(value fract.Unit) {
 }
 
 func (self *Renderer) fractGetQuantization() (horz, vert fract.Unit) {
-	return fract.Unit(self.state.horzQuantization), fract.Unit(self.state.vertQuantization)
+	state := self.state()
+	return fract.Unit(state.horzQuantization), fract.Unit(state.vertQuantization)
 }

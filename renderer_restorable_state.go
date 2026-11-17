@@ -14,8 +14,7 @@ type restorableState struct {
 	fontSizer  sizer.Sizer
 	rasterizer mask.Rasterizer
 
-	primaryFont *sfnt.Font
-	activeFont  *sfnt.Font // can change when using script-specific fonts
+	font *sfnt.Font // the primary font, see also Renderer.activeFont
 
 	scriptFonts       []scriptFont // sorted by name. owned when its backing array is scriptFontsBuffer's
 	scriptFontsBuffer []scriptFont // this depth's own memory, kept in its slot across restores

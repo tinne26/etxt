@@ -113,9 +113,10 @@ func (self *RendererUtils) RestoreState() bool {
 //   - Passing zero whenever you want to ensure that the
 //     states stack is completely empty.
 func (self *RendererUtils) AssertMaxStoredStates(n int) {
-	if n > len(self.states)-1 {
+	stored := maxInt(len(self.states)-1, 0) // zero value renderers have no states yet
+	if n > stored {
 		assertMax := strconv.Itoa(n)
-		actualMax := strconv.Itoa(len(self.states) - 1)
+		actualMax := strconv.Itoa(stored)
 		panic("expected at most " + assertMax + " stored states, found " + actualMax)
 	}
 }
@@ -143,69 +144,68 @@ func (self *Renderer) utilsSetFontBytes(data []byte) error {
 }
 
 func (self *Renderer) utilsFillMissingProperties() {
-	if self.state.rasterizer == nil {
+	state := self.state()
+	if state.rasterizer == nil {
 		self.glyphSetRasterizer(&mask.DefaultRasterizer{})
 	}
-	if self.state.fontColor == nil {
-		self.state.fontColor = color.RGBA{255, 255, 255, 255}
+	if state.fontColor == nil {
+		state.fontColor = color.RGBA{255, 255, 255, 255}
 	}
-	if self.state.horzQuantization == 0 {
-		self.state.horzQuantization = uint8(Qt4th)
+	if state.horzQuantization == 0 {
+		state.horzQuantization = uint8(Qt4th)
 	}
-	if self.state.vertQuantization == 0 {
-		self.state.vertQuantization = uint8(QtFull)
+	if state.vertQuantization == 0 {
+		state.vertQuantization = uint8(QtFull)
 	}
-	if self.state.align&alignVertBits == 0 {
-		self.state.align = self.state.align | Baseline
+	if state.align&alignVertBits == 0 {
+		state.align = state.align | Baseline
 	}
-	if self.state.align&alignHorzBits == 0 {
-		self.state.align = self.state.align | Left
+	if state.align&alignHorzBits == 0 {
+		state.align = state.align | Left
 	}
 
 	var refreshSize bool
-	if self.state.scale == 0 {
-		self.state.scale = 64
+	if state.scale == 0 {
+		state.scale = 64
 		refreshSize = true
 	}
-	if self.state.logicalSize == 0 {
-		self.state.logicalSize = 16 * fract.One
+	if state.logicalSize == 0 {
+		state.logicalSize = 16 * fract.One
 		refreshSize = true
 	}
 	if refreshSize {
 		self.refreshScaledSize() // also notifies the cache handler and sizer
 	}
 
-	if self.state.fontSizer == nil {
-		self.state.fontSizer = &sizer.DefaultSizer{}
-		self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
+	if state.fontSizer == nil {
+		state.fontSizer = &sizer.DefaultSizer{}
+		state.fontSizer.NotifyChange(self.activeFont, &self.buffer, state.scaledSize)
 	}
 }
 
 func (self *Renderer) utilsStoreState() {
+	active := self.state()
 	if cap(self.states) <= len(self.states) {
 		// unreached depth case: append state copy, without the stored state's buffer
-		self.states = append(self.states, *self.state)
+		self.states = append(self.states, *active)
 		self.states[len(self.states)-1].scriptFontsBuffer = nil
 	} else {
 		// previously reached depth: preserve scriptFontsBuffer
-		self.states = self.states[:len(self.states)+1] // grow using existing capacity
+		self.states = self.states[:len(self.states)+1] // grow using existing capacity, so active stays valid
 		state := &self.states[len(self.states)-1]
 		memoBuffer := state.scriptFontsBuffer // preserve pre-existing buffer
-		*state = *self.state
+		*state = *active
 		state.scriptFontsBuffer = memoBuffer
 	}
-
-	// update active state reference
-	self.state = &self.states[len(self.states)-1]
 }
 
 func (self *Renderer) utilsRestoreState() bool {
 	if len(self.states) <= 1 {
 		return false
 	}
-	prev := self.state // still valid, as popping only shrinks the slice
+	prev := self.state() // still valid, as popping only shrinks the slice
 	self.states = self.states[:len(self.states)-1]
-	self.state = &self.states[len(self.states)-1]
+	self.activeFont = self.state().font
 	self.notifyStateChange(prev)
 	return true
 }
@@ -213,32 +213,33 @@ func (self *Renderer) utilsRestoreState() bool {
 // notifyStateChange notifies the cache handler, sizer and rasterizers
 // of the differences between the given state and the active one.
 func (self *Renderer) notifyStateChange(prev *restorableState) {
-	initFont := prev.activeFont
+	state := self.state()
+	initFont := prev.font
 	initSizer := prev.fontSizer
 	initSize := prev.scaledSize
 	initRast := prev.rasterizer
 
 	// notify changes where relevant
-	refreshSizer := (self.state.fontSizer != initSizer)
-	if self.state.scaledSize != initSize {
+	refreshSizer := (state.fontSizer != initSizer)
+	if state.scaledSize != initSize {
 		refreshSizer = true
 		if self.cacheHandler != nil {
-			self.cacheHandler.NotifySizeChange(self.state.scaledSize)
+			self.cacheHandler.NotifySizeChange(state.scaledSize)
 		}
 	}
-	if initFont != self.state.activeFont {
+	if initFont != state.font {
 		refreshSizer = true
 		self.cachedMetricsSize = -1 // drop extra metrics
 		if self.cacheHandler != nil {
-			self.cacheHandler.NotifyFontChange(self.state.activeFont)
+			self.cacheHandler.NotifyFontChange(state.font)
 		}
 	}
 
-	if refreshSizer && self.state.fontSizer != nil {
-		self.state.fontSizer.NotifyChange(self.state.activeFont, &self.buffer, self.state.scaledSize)
+	if refreshSizer && state.fontSizer != nil {
+		state.fontSizer.NotifyChange(state.font, &self.buffer, state.scaledSize)
 	}
 
-	if self.state.rasterizer != initRast {
+	if state.rasterizer != initRast {
 		// clear previous rasterizer onChangeFunc
 		if initRast != nil {
 			initRast.SetOnChangeFunc(nil)
@@ -246,10 +247,10 @@ func (self *Renderer) notifyStateChange(prev *restorableState) {
 
 		// link new rasterizer to the cache handler
 		if self.cacheHandler == nil {
-			self.state.rasterizer.SetOnChangeFunc(nil)
+			state.rasterizer.SetOnChangeFunc(nil)
 		} else {
-			self.state.rasterizer.SetOnChangeFunc(self.cacheHandler.NotifyRasterizerChange)
-			self.cacheHandler.NotifyRasterizerChange(self.state.rasterizer)
+			state.rasterizer.SetOnChangeFunc(self.cacheHandler.NotifyRasterizerChange)
+			self.cacheHandler.NotifyRasterizerChange(state.rasterizer)
 		}
 	}
 }

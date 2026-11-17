@@ -95,7 +95,7 @@ func TestMeasureWithWrap(t *testing.T) {
 }
 
 func testMeasureBasics(t *testing.T, renderer *Renderer, fn func(*Renderer, string) fract.Rect) {
-	vertQuant := fract.Unit(renderer.state.vertQuantization)
+	vertQuant := fract.Unit(renderer.state().vertQuantization)
 	for _, qt := range []fract.Unit{QtFull, QtHalf, Qt4th, QtNone} {
 		for _, align := range []Align{Baseline | Left, Baseline | Right, Center} {
 			for _, dir := range []Direction{LeftToRight, RightToLeft} {

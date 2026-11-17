@@ -177,7 +177,7 @@ func (self *Renderer) glyphLoadMask(index sfnt.GlyphIndex, origin fract.Point) G
 }
 
 func (self *Renderer) glyphLoadSegments(index sfnt.GlyphIndex) (sfnt.Segments, error) {
-	return self.state.activeFont.LoadGlyph(&self.buffer, index, fixed.Int26_6(self.state.scaledSize), nil)
+	return self.activeFont.LoadGlyph(&self.buffer, index, fixed.Int26_6(self.state().scaledSize), nil)
 }
 
 func (self *Renderer) glyphLoadBounds(index sfnt.GlyphIndex) fract.Rect {
@@ -202,7 +202,7 @@ func (self *Renderer) glyphDrawMask(target Target, mask GlyphMask, origin fract.
 
 // Notice: this method doesn't consider miss handlers *by spec*.
 func (self *Renderer) glyphGetRuneIndex(codePoint rune) sfnt.GlyphIndex {
-	index, err := self.state.activeFont.GlyphIndex(&self.buffer, codePoint)
+	index, err := self.activeFont.GlyphIndex(&self.buffer, codePoint)
 	if err != nil {
 		panic("font.GlyphIndex error: " + err.Error())
 	}
@@ -220,17 +220,19 @@ func (self *Renderer) glyphCacheIndex(index sfnt.GlyphIndex) {
 }
 
 func (self *Renderer) glyphGetRasterizer() mask.Rasterizer {
-	return self.state.rasterizer
+	return self.state().rasterizer
 }
 
 func (self *Renderer) glyphSetRasterizer(rasterizer mask.Rasterizer) {
+	state := self.state()
+
 	// clear existing rasterizer onChangeFunc
-	if self.state.rasterizer != nil {
-		self.state.rasterizer.SetOnChangeFunc(nil)
+	if state.rasterizer != nil {
+		state.rasterizer.SetOnChangeFunc(nil)
 	}
 
 	// set new rasterizer and link it to the cache handler
-	self.state.rasterizer = rasterizer
+	state.rasterizer = rasterizer
 	if self.cacheHandler == nil {
 		rasterizer.SetOnChangeFunc(nil)
 	} else {

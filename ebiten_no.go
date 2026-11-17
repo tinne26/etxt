@@ -74,7 +74,7 @@ func (self *Renderer) defaultDrawFunc(target Target, origin fract.Point, mask Gl
 	shift.X, shift.Y = -shift.X, -shift.Y
 	srcRect = targetRect.Add(shift)
 
-	switch self.state.blendMode {
+	switch self.state().blendMode {
 	case BlendReplace: // ---- source only ----
 		self.mixImageInto(mask, target, srcRect, targetRect,
 			func(new, _ color.Color) color.Color { return new })
@@ -188,7 +188,7 @@ func (self *Renderer) mixImageInto(src GlyphMask, target draw.Image, srcRect, ta
 	tarOffX := tarRect.Min.X
 	tarOffY := tarRect.Min.Y
 
-	directColor := self.state.fontColor
+	directColor := self.state().fontColor
 	r, g, b, a := directColor.RGBA()
 	bilinear := self.bilinearOffsetX != 0 || self.bilinearOffsetY != 0
 
