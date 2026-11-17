@@ -122,13 +122,13 @@ func (self *Feed) LineBreak() {
 	renderer := self.Renderer
 
 	// advance
+	self.LineBreakAcc += 1
 	self.Position.Y += renderer.getOpLineAdvance(int(self.LineBreakAcc))
 
 	// y position must be quantized for conformity with Renderer operations
 	qtVert := fract.Unit(renderer.state().vertQuantization)
 	self.Position.Y = self.Position.Y.QuantizeUp(qtVert)
 	self.Position.X = self.LineBreakX // doesn't matter if it's unquantized
-	self.LineBreakAcc += 1
 	self.LineGlyphAcc = 0
 }
 
