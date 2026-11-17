@@ -202,7 +202,6 @@ type scriptSwitch struct {
 // activatePrimaryFont makes the primary font active again if it was changed
 // during draw or measure while using script or fallback fonts.
 func (self *Renderer) activatePrimaryFont() {
-	// TODO: consider removing it in favor of activateFont(self.state().font)
 	self.activateFont(self.state().font)
 }
 

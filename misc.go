@@ -23,8 +23,6 @@ type Font = sfnt.Font
 // [sfnt.GlyphIndex] is used, but they are completely interchangeable.
 type GlyphIndex = sfnt.GlyphIndex
 
-type fontIndex uint8
-
 // Quantization levels are used to control the trade-off between
 // memory usage and glyph positioning precision. Less theoretically:
 //   - A font is a collection of glyph outlines. Each time we want to
@@ -122,20 +120,4 @@ func binarySearchFunc[E any, T any](list []E, target T, cmp func(*E, T) int) (in
 		}
 	}
 	return minIndex, minIndex < len(list) && cmp(&list[minIndex], target) == 0
-}
-
-func ensureSliceSize[T any](slice []T, size int) []T {
-	// easy case: slice is big enough already
-	if len(slice) >= size {
-		return slice
-	}
-
-	// see if we have enough capacity...
-	if cap(slice) >= size {
-		return slice[:size]
-	} else { // ...or grow slice otherwise
-		slice = slice[:cap(slice)]
-		growth := size - len(slice)
-		return append(slice, make([]T, growth)...)
-	}
 }

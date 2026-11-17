@@ -51,7 +51,6 @@ type Renderer struct {
 	lineChangeFn  func(LineChangeDetails)
 	missHandlerFn func(*sfnt.Font, *sfnt.Buffer, rune) (*sfnt.Font, sfnt.GlyphIndex)
 	activeFont    *sfnt.Font // same as state.font, except while drawing or measuring with script or fallback fonts
-	fonts         []*sfnt.Font
 	buffer        sfnt.Buffer
 
 	cachedMidHeight   fract.Unit
@@ -88,7 +87,6 @@ func NewRenderer() *Renderer {
 			logicalSize:      16 * fract.One,
 			scaledSize:       16 * fract.One,
 		}},
-		fonts: make([]*sfnt.Font, 0, 1),
 	}
 }
 
@@ -202,15 +200,10 @@ func (self *Renderer) GetDirection() Direction {
 func (self *Renderer) SetFont(font *sfnt.Font) {
 	state := self.state()
 
-	// ensure there's enough space in the fonts slice
-	fontIndex := int(state.fontIndex)
-	self.fonts = ensureSliceSize(self.fonts, fontIndex+1)
-
 	// assign font if new
 	if font == state.font {
 		return
 	}
-	self.fonts[fontIndex] = font
 	state.font = font
 	self.activeFont = font
 	self.cachedMetricsSize = -1 // drop extra metrics
