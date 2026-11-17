@@ -19,6 +19,7 @@ import (
 var testfs embed.FS
 
 var testFontsDir string = "font/test"
+var testFonts []*sfnt.Font
 var testFontA *sfnt.Font
 var testFontB *sfnt.Font
 var assetsLoadMutex sync.Mutex
@@ -66,6 +67,10 @@ func ensureTestAssetsLoaded() {
 	sort.Slice(fonts, func(i, j int) bool {
 		return fonts[i].name < fonts[j].name
 	})
+	testFonts = make([]*sfnt.Font, len(fonts))
+	for i := range fonts {
+		testFonts[i] = fonts[i].font
+	}
 
 	// set fonts and/or warnings for missing fonts
 	switch len(fonts) {
@@ -80,4 +85,56 @@ func ensureTestAssetsLoaded() {
 		testFontA = fonts[0].font
 		testFontB = fonts[1].font
 	}
+}
+
+// testFontsWithRunes returns a different test font for each of the given
+// samples, with glyphs for all the runes in that sample. An empty sample
+// accepts any font. It skips the test when the test fonts can't satisfy all
+// the samples at once.
+func testFontsWithRunes(tb testing.TB, samples ...string) []*sfnt.Font {
+	tb.Helper()
+	ensureTestAssetsLoaded()
+	fonts := make([]*sfnt.Font, len(samples))
+	if !assignTestFonts(fonts, samples, 0) {
+		tb.Skipf("requires %d different test fonts with glyphs for %q", len(samples), samples)
+	}
+	return fonts
+}
+
+// assignTestFonts fills fonts[i:] with test fonts for samples[i:], using fonts
+// not assigned yet. When a later sample can't be satisfied, it goes back and
+// tries the next font for the earlier ones. It reports whether it succeeded.
+func assignTestFonts(fonts []*sfnt.Font, samples []string, i int) bool {
+	if i == len(samples) {
+		return true
+	}
+	for _, candidate := range testFonts {
+		if isTestFontAssigned(fonts[:i], candidate) {
+			continue
+		}
+		if missing, err := font.IsMissingRunes(candidate, samples[i]); err != nil || missing {
+			continue
+		}
+		fonts[i] = candidate
+		if assignTestFonts(fonts, samples, i+1) {
+			return true
+		}
+	}
+	return false
+}
+
+func isTestFontAssigned(fonts []*sfnt.Font, candidate *sfnt.Font) bool {
+	for _, assigned := range fonts {
+		if assigned == candidate {
+			return true
+		}
+	}
+	return false
+}
+
+func doesNotPanic(function func()) (didNotPanic bool) {
+	didNotPanic = true
+	defer func() { didNotPanic = (recover() == nil) }()
+	function()
+	return
 }

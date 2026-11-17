@@ -10,6 +10,7 @@ import (
 func (self *Renderer) advanceLine(position fract.Point, lineBreakX fract.Unit, lineBreakNth int) fract.Point {
 	prevFractY := position.Y.FractShift()
 	position.X = lineBreakX
+	self.activatePrimaryFont() // for line metrics
 	position.Y += self.getOpLineAdvance(lineBreakNth)
 	position.Y = position.Y.QuantizeUp(fract.Unit(self.state.vertQuantization))
 	if self.cacheHandler != nil && position.Y.FractShift() != prevFractY {
@@ -61,7 +62,10 @@ func (self *drawInternalValues) numElisions() int {
 	return 0
 }
 
-func (self *Renderer) drawRuneLTR(target Target, position fract.Point, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
+func (self *Renderer) drawRuneLTR(target Target, position fract.Point, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
+	if self.state.hasScriptFonts() && self.updateScriptFont(index) {
+		iv.prevGlyphIndex = 0 // break kerning when changing font
+	}
 	glyph, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
 	if skip {
 		return position, iv
@@ -96,7 +100,10 @@ func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyp
 	return position, iv
 }
 
-func (self *Renderer) drawRuneRTL(target Target, position fract.Point, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
+func (self *Renderer) drawRuneRTL(target Target, position fract.Point, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
+	if self.state.hasScriptFonts() && self.updateScriptFont(index) {
+		iv.prevGlyphIndex = 0 // break kerning when changing font
+	}
 	glyph, skip := self.getGlyphIndex(self.state.activeFont, codePoint)
 	if skip {
 		return position, iv
@@ -134,7 +141,7 @@ func (self *Renderer) drawGlyphRTL(target Target, position fract.Point, currGlyp
 func (self *Renderer) helperDrawLineLTR(target Target, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
 	for i := 0; i < runeCount; i++ {
 		codePoint := iterator.Next(text)
-		position, iv = self.drawRuneLTR(target, position, codePoint, iv)
+		position, iv = self.drawRuneLTR(target, position, iterator.prevRuneStart, codePoint, iv)
 	}
 	return position, iv, iterator
 }
@@ -142,7 +149,7 @@ func (self *Renderer) helperDrawLineLTR(target Target, position fract.Point, iv 
 func (self *Renderer) helperDrawLineReverseLTR(target Target, position fract.Point, iv drawInternalValues, iterator ltrStringIterator, text string, runeCount int) (fract.Point, drawInternalValues, ltrStringIterator) {
 	for i := 0; i < runeCount; i++ {
 		codePoint := iterator.Next(text)
-		position, iv = self.drawRuneRTL(target, position, codePoint, iv)
+		position, iv = self.drawRuneRTL(target, position, iterator.prevRuneStart, codePoint, iv)
 	}
 	return position, iv, iterator
 }

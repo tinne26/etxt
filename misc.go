@@ -23,21 +23,7 @@ type Font = sfnt.Font
 // [sfnt.GlyphIndex] is used, but they are completely interchangeable.
 type GlyphIndex = sfnt.GlyphIndex
 
-// See [RendererTwine.RegisterFont]() and related functions.
-//
-// When using multiple fonts, you are encouraged to define
-// and use your own named constants within the relevant context.
-// For example:
-//
-//	const (
-//	    RegularFont etxt.FontIndex = iota
-//	    BoldFont
-//	    ItalicFont
-//	)
 type fontIndex uint8
-
-// Special value for [RendererTwine.RegisterFont]().
-//const NextFontIndex FontIndex = 255
 
 // Quantization levels are used to control the trade-off between
 // memory usage and glyph positioning precision. Less theoretically:
@@ -120,6 +106,22 @@ func maxInt(a, b int) int {
 
 func runeToUnicodeCode(r rune) string {
 	return "\\u" + strconv.FormatInt(int64(r), 16)
+}
+
+// binarySearchFunc returns the position of target within the sorted
+// slice, or the position where it would be inserted, and whether it
+// was found.
+func binarySearchFunc[E any, T any](list []E, target T, cmp func(*E, T) int) (int, bool) {
+	minIndex, maxIndex := 0, len(list)
+	for minIndex < maxIndex {
+		midIndex := (minIndex + maxIndex) >> 1 // ignore int overflow
+		if cmp(&list[midIndex], target) < 0 {
+			minIndex = midIndex + 1
+		} else {
+			maxIndex = midIndex
+		}
+	}
+	return minIndex, minIndex < len(list) && cmp(&list[minIndex], target) == 0
 }
 
 func ensureSliceSize[T any](slice []T, size int) []T {

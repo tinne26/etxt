@@ -86,6 +86,10 @@ func (self *Renderer) getOpAdvance(currGlyphIndex sfnt.GlyphIndex) fract.Unit {
 	return self.state.fontSizer.GlyphAdvance(self.state.activeFont, &self.buffer, self.state.scaledSize, currGlyphIndex)
 }
 
+// Line metrics come from the active font, which the sizer requires. Draw and
+// measure operations using script fonts change the active font, so they must
+// activate the primary font again before reading line metrics.
+
 func (self *Renderer) getOpLineAdvance(lineBreakNth int) fract.Unit {
 	return self.state.fontSizer.LineAdvance(self.state.activeFont, &self.buffer, self.state.scaledSize, lineBreakNth)
 }
