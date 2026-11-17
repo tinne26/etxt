@@ -5,8 +5,6 @@ import (
 	"golang.org/x/image/font/sfnt"
 )
 
-// TODO: add tests comparing with Draw().
-
 // Feeds are the lowest level mechanism to draw text in etxt,
 // allowing the user to issue each glyph draw call individually
 // and modifying positions or configurations in between.
@@ -21,6 +19,7 @@ type Feed struct {
 	Position       fract.Point     // the feed's working pen position or origin
 	LineBreakX     fract.Unit      // the x coordinate set after a line break
 	LineBreakAcc   uint16          // consecutive accumulated line breaks
+	LineGlyphAcc   uint16          // number of glyphs on the current line
 	PrevGlyphIndex sfnt.GlyphIndex // previous glyph index. used for kern
 }
 
@@ -37,8 +36,8 @@ func NewFeed(renderer *Renderer) *Feed {
 	return &Feed{Renderer: renderer}
 }
 
-// Handy method to set the feed's Position and LineBreakX fields.
-// Often chained on feed creation as follows:
+// Handy method to set the feed's Position and LineBreakX fields, starting
+// a new line there. Often chained on feed creation as follows:
 //
 //	feed := etxt.NewFeed(renderer).At(x, y)
 //
@@ -54,6 +53,7 @@ func (self *Feed) At(x, y int) *Feed {
 	renderer := self.Renderer
 	self.Position.X = fract.FromInt(x)
 	self.LineBreakX = self.Position.X
+	self.LineGlyphAcc = 0
 
 	// adjust Y position as in Renderer.fractDraw
 	vertAlign := renderer.GetAlign().Vert()
@@ -70,6 +70,7 @@ func (self *Feed) Reset() {
 	self.Position = fract.Point{}
 	self.LineBreakX = 0
 	self.LineBreakAcc = 0
+	self.LineGlyphAcc = 0
 	self.PrevGlyphIndex = 0
 }
 
@@ -128,6 +129,7 @@ func (self *Feed) LineBreak() {
 	self.Position.Y = self.Position.Y.QuantizeUp(qtVert)
 	self.Position.X = self.LineBreakX // doesn't matter if it's unquantized
 	self.LineBreakAcc += 1
+	self.LineGlyphAcc = 0
 }
 
 // traverseRune draws or advances the given rune
@@ -163,11 +165,8 @@ func (self *Feed) traverseGlyph(target Target, glyphIndex sfnt.GlyphIndex, drawM
 	dir := self.Renderer.GetDirection()
 	switch dir {
 	case LeftToRight:
-		// TODO: revise both advances and compare with renderer.drawGlyphLTR
-		//       and renderer.advanceGlyphLTR and so on
-
-		// apply kerning unless coming from line break
-		if self.LineBreakAcc == 0 {
+		// apply kerning unless at the start of a line
+		if self.LineGlyphAcc > 0 {
 			self.Position.X += renderer.getOpKernBetween(self.PrevGlyphIndex, glyphIndex)
 		}
 
@@ -191,8 +190,8 @@ func (self *Feed) traverseGlyph(target Target, glyphIndex sfnt.GlyphIndex, drawM
 		// advance
 		self.Position.X -= renderer.getOpAdvance(glyphIndex)
 
-		// apply kerning unless coming from line break
-		if self.LineBreakAcc == 0 {
+		// apply kerning unless at the start of a line
+		if self.LineGlyphAcc > 0 {
 			self.Position.X -= renderer.getOpKernBetween(self.PrevGlyphIndex, glyphIndex)
 		}
 
@@ -213,5 +212,6 @@ func (self *Feed) traverseGlyph(target Target, glyphIndex sfnt.GlyphIndex, drawM
 
 	// update prev glyph tracking
 	self.LineBreakAcc = 0
+	self.LineGlyphAcc += 1
 	self.PrevGlyphIndex = glyphIndex
 }
