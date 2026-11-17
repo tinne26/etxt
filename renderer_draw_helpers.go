@@ -63,12 +63,12 @@ func (self *drawInternalValues) numElisions() int {
 }
 
 func (self *Renderer) drawRuneLTR(target Target, position fract.Point, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	if self.state().hasScriptFonts() && self.updateScriptFont(index) {
-		iv.prevGlyphIndex = 0 // break kerning when changing font
-	}
-	glyph, skip := self.getGlyphIndex(self.activeFont, codePoint)
+	glyph, skip, fontChanged := self.runeGlyph(index, codePoint)
 	if skip {
 		return position, iv
+	}
+	if fontChanged {
+		iv.prevGlyphIndex = 0 // break kerning when changing font
 	}
 	return self.drawGlyphLTR(target, position, glyph, iv)
 }
@@ -101,12 +101,12 @@ func (self *Renderer) drawGlyphLTR(target Target, position fract.Point, currGlyp
 }
 
 func (self *Renderer) drawRuneRTL(target Target, position fract.Point, index int, codePoint rune, iv drawInternalValues) (fract.Point, drawInternalValues) {
-	if self.state().hasScriptFonts() && self.updateScriptFont(index) {
-		iv.prevGlyphIndex = 0 // break kerning when changing font
-	}
-	glyph, skip := self.getGlyphIndex(self.activeFont, codePoint)
+	glyph, skip, fontChanged := self.runeGlyph(index, codePoint)
 	if skip {
 		return position, iv
+	}
+	if fontChanged {
+		iv.prevGlyphIndex = 0 // break kerning when changing font
 	}
 	return self.drawGlyphRTL(target, position, glyph, iv)
 }

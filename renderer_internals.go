@@ -9,23 +9,23 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// The bool indicates whether the glyph should be skipped.
-func (self *Renderer) getGlyphIndex(font *sfnt.Font, codePoint rune) (index sfnt.GlyphIndex, skip bool) {
-	var err error
-	index, err = font.GlyphIndex(&self.buffer, codePoint)
+// getGlyph tries to retrieve the glyph index of codePoint from the given font.
+// If not found, the miss handler may return its own font and glyph index. The
+// method can also return a nil font, in which case the rune must be skipped.
+func (self *Renderer) getGlyph(font *sfnt.Font, codePoint rune) (*sfnt.Font, sfnt.GlyphIndex) {
+	index, err := font.GlyphIndex(&self.buffer, codePoint)
 	if err != nil {
 		panic("font.GlyphIndex error: " + err.Error())
 	}
-	if index == 0 {
-		if self.missHandlerFn != nil {
-			index, skip = self.missHandlerFn(font, codePoint)
-		} else {
-			msg := "glyph index for '" + string(codePoint) + "' ["
-			msg += runeToUnicodeCode(codePoint) + "] missing"
-			panic(msg)
-		}
+	if index != 0 {
+		return font, index
 	}
-	return index, skip
+	if self.missHandlerFn == nil {
+		msg := "glyph index for '" + string(codePoint) + "' ["
+		msg += runeToUnicodeCode(codePoint) + "] missing"
+		panic(msg)
+	}
+	return self.missHandlerFn(font, &self.buffer, codePoint)
 }
 
 func (self *Renderer) scaleLogicalSize(logicalSize fract.Unit) fract.Unit {
@@ -89,8 +89,8 @@ func (self *Renderer) getOpAdvance(currGlyphIndex sfnt.GlyphIndex) fract.Unit {
 }
 
 // Line metrics come from the active font, which the sizer requires. Draw and
-// measure operations using script fonts change the active font, so they must
-// activate the primary font again before reading line metrics.
+// measure operations using script or fallback fonts change the active font,
+// so they must activate the primary font again before reading line metrics.
 
 func (self *Renderer) getOpLineAdvance(lineBreakNth int) fract.Unit {
 	state := self.state()
