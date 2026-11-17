@@ -341,7 +341,7 @@ func prevAlign(aligns []etxt.Align, align etxt.Align) etxt.Align {
 		if nthAlign != align {
 			continue
 		}
-		return aligns[n-1%len(aligns)]
+		return aligns[(n+len(aligns)-1)%len(aligns)]
 	}
 	panic("failed to find previous align")
 }
