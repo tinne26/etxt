@@ -1,14 +1,13 @@
 @echo off
 
-:: Notice: requires one .ttf font file in etxt/test/fonts/
-::         (any normal font will do)
+:: Notice: benchmarks need fonts in etxt/font/test/, see test/README.md
 echo [benchmarking with gtxt...]
-go test -bench "." -tags "gtxt bench" ./... | findstr /R "^[^?]"
+go test -run "^$" -bench "." -tags "gtxt" ./... | findstr /R "^[^?]"
 
 :: ebitengine pass is the same at the moment so it's disabled
 :: echo.
 :: echo [benchmarking with Ebitengine...]
-:: go test -bench "." -tags "bench" ./... | findstr /R "^[^?]"
+:: go test -run "^$" -bench "." ./... | findstr /R "^[^?]"
 
 :: You may also use -benchmem
-:: go test -bench "." -benchmem -tags "gtxt bench" ./... | findstr /R "^[^?]"
+:: go test -run "^$" -bench "." -benchmem -tags "gtxt" ./... | findstr /R "^[^?]"

@@ -10,13 +10,10 @@ import (
 )
 
 func TestDrawBilinear(t *testing.T) {
-	if testFontA == nil {
-		t.SkipNow()
-	}
-
+	font := testFontsWithRunes(t, testLatinSample)[0]
 	newRenderer := func() (*Renderer, *image.RGBA) {
 		renderer := NewRenderer()
-		renderer.SetFont(testFontA)
+		renderer.SetFont(font)
 		renderer.SetSize(18)
 		renderer.SetColor(color.RGBA{255, 255, 255, 255})
 		return renderer, image.NewRGBA(image.Rect(0, 0, 80, 64))

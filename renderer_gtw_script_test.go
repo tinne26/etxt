@@ -10,10 +10,6 @@ import (
 	"golang.org/x/image/font/sfnt"
 )
 
-// samples for picking test fonts by glyph coverage
-const testLatinSample = "aZ09 .,:;!?()[]'\""
-const testHanSample = "中文你是一"
-
 // scriptFontsForTest returns two different test fonts: a primary font with
 // Latin glyphs, and a Han font that also has Latin glyphs, because punctuation
 // next to Han text uses the Han font.

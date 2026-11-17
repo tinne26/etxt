@@ -1,88 +1,25 @@
 package font
 
-// This file contains a fake test ensuring that test assets are available,
-// setups a few important variables and provides some helper methods.
+// This file gives tests access to the fonts placed in test/, picked by the
+// glyphs each test needs, and provides some helper methods.
 
 import (
 	"embed"
-	"fmt"
 	"os"
-	"sync"
 	"testing"
 
-	"golang.org/x/image/font/sfnt"
+	"github.com/tinne26/etxt/internal/testfont"
 )
 
 //go:embed test/*
 var testfs embed.FS
 
-var testFontsDir string = "test"
-var testPathA string
-var testFontA *sfnt.Font
-var testFontB *sfnt.Font
-var assetsLoadMutex sync.Mutex
-var testAssetsLoaded bool
+const testFontsDir = "test"
 
-func TestCompleteness(t *testing.T) {
-	ensureTestAssetsLoaded()
-	if len(testWarnings) > 0 {
-		t.Fatalf("missing test assets\n%s", testWarnings)
-	}
-}
+var testFonts = testfont.NewDir(testfs, testFontsDir)
 
-var testWarnings string
-
-func ensureTestAssetsLoaded() {
-	// assets load access control
-	assetsLoadMutex.Lock()
-	defer assetsLoadMutex.Unlock()
-	if testAssetsLoaded {
-		return
-	}
-	testAssetsLoaded = true
-
-	// parse embedded directory and check for useful fonts
-	entries, err := testfs.ReadDir(testFontsDir)
-	if err != nil {
-		fmt.Printf("TESTS INIT: %s", err)
-		os.Exit(1)
-	}
-
-	// manual loading to avoid depending on font library here
-	var mainFontName string
-	for _, entry := range entries {
-		entryName := entry.Name()
-		if !hasValidFontExtension(entryName) {
-			continue
-		}
-		path := testFontsDir + "/" + entryName
-		font, fontName, err := ParseFromFS(testfs, path)
-		if err != nil {
-			fmt.Printf("TESTS INIT: %s", err)
-			os.Exit(1)
-		}
-
-		if testFontA == nil {
-			testFontA = font
-			testPathA = entryName
-			mainFontName = fontName
-		} else {
-			if mainFontName == fontName {
-				continue
-			}
-			testFontB = font
-			break
-		}
-	}
-
-	// test missing data warnings
-	if testFontA == nil {
-		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 0)\n" +
-			"WARNING: Most tests will be skipped\n"
-	} else if testFontB == nil {
-		testWarnings = "WARNING: Expected at least 2 .ttf fonts in " + testFontsDir + "/ (found 1)\n" +
-			"WARNING: Some tests will be skipped\n"
-	}
+func TestMain(m *testing.M) {
+	os.Exit(testFonts.ReportSkips(m.Run()))
 }
 
 func doesNotPanic(function func()) (didNotPanic bool) {

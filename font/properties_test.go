@@ -6,10 +6,7 @@ import (
 )
 
 func TestGetProperties(t *testing.T) {
-	ensureTestAssetsLoaded()
-	if testFontA == nil {
-		t.SkipNow()
-	}
+	font := testFonts.WithRunes(t, "")[0].Font
 	var value string
 	var err error
 
@@ -21,23 +18,23 @@ func TestGetProperties(t *testing.T) {
 	releaseSfntBuffer(buffer)
 
 	// test unexsitent property
-	value, err = GetProperty(testFontA, 999)
+	value, err = GetProperty(font, 999)
 	if err != ErrNotFound {
-		t.Fatalf("GetProperty(testFontA, 999) error: %s", err)
+		t.Fatalf("GetProperty(font, 999) error: %s", err)
 	}
 	if value != "" {
 		t.Fatalf("GetProperty(nil, 999) value = \"%s\"", value)
 	}
 
-	name, err := GetName(testFontA)
+	name, err := GetName(font)
 	if err != nil {
 		panic(err)
 	}
-	ident, err := GetIdentifier(testFontA)
+	ident, err := GetIdentifier(font)
 	if err != nil {
 		panic(err)
 	}
-	family, err := GetFamily(testFontA)
+	family, err := GetFamily(font)
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +43,7 @@ func TestGetProperties(t *testing.T) {
 		holyBible += "font family (%s). Maybe you are using a weird font?"
 		t.Fatalf(holyBible, name, ident, family)
 	}
-	subfamily, err := GetSubfamily(testFontA)
+	subfamily, err := GetSubfamily(font)
 	if err != nil {
 		panic(err)
 	}
@@ -62,7 +59,7 @@ func TestGetProperties(t *testing.T) {
 	if buffer == nil {
 		panic("failed to get shared sfntBuffer")
 	}
-	ident2, err := GetIdentifier(testFontA)
+	ident2, err := GetIdentifier(font)
 	if err != nil {
 		panic(err)
 	}
@@ -73,21 +70,18 @@ func TestGetProperties(t *testing.T) {
 }
 
 func TestGetMissingRunes(t *testing.T) {
-	ensureTestAssetsLoaded()
-	if testFontA == nil {
-		t.SkipNow()
-	}
+	font := testFonts.WithRunes(t, " ")[0].Font
 	var missing []rune
 	var err error
 
-	missing, err = GetMissingRunes(testFontA, " ")
+	missing, err = GetMissingRunes(font, " ")
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
 	if len(missing) != 0 {
 		t.Fatalf("unexpected missing runes: %v", missing)
 	}
-	missing, err = GetMissingRunes(testFontA, "\uF800")
+	missing, err = GetMissingRunes(font, "\uF800")
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -95,7 +89,7 @@ func TestGetMissingRunes(t *testing.T) {
 		t.Fatal("unexpected rune \"\\uF800\" not missing")
 	}
 
-	missing, err = GetMissingRunes(testFontA, " \uF800 \uF800\uF800    ")
+	missing, err = GetMissingRunes(font, " \uF800 \uF800\uF800    ")
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}

@@ -15,9 +15,8 @@ import (
 // BlendMode is left out: it's ebiten.Blend or uint8 depending on the
 // build tags, with no non-default value available to both.
 func TestStoreRestoreState(t *testing.T) {
-	if testFontA == nil || testFontB == nil {
-		t.SkipNow()
-	}
+	pair := testFontsWithRunes(t, "", "") // any two different fonts
+	fontA, fontB := pair[0], pair[1]
 
 	check := func(ok bool, failure string) {
 		t.Helper()
@@ -31,8 +30,8 @@ func TestStoreRestoreState(t *testing.T) {
 	colorA, colorB := color.RGBA{255, 0, 0, 255}, color.RGBA{0, 255, 0, 255}
 
 	renderer := NewRenderer()
-	renderer.SetFont(testFontA)
-	renderer.Script().SetFont(unicode.Han, testFontA)
+	renderer.SetFont(fontA)
+	renderer.Script().SetFont(unicode.Han, fontA)
 	renderer.SetAlign(Left | Baseline)
 	renderer.SetColor(colorA)
 	renderer.SetSize(16)
@@ -45,8 +44,8 @@ func TestStoreRestoreState(t *testing.T) {
 
 	renderer.Utils().StoreState()
 
-	renderer.SetFont(testFontB)
-	renderer.Script().SetFont(unicode.Han, testFontB)
+	renderer.SetFont(fontB)
+	renderer.Script().SetFont(unicode.Han, fontB)
 	renderer.SetAlign(Right | Top)
 	renderer.SetColor(colorB)
 	renderer.SetSize(32)
@@ -66,8 +65,8 @@ func TestStoreRestoreState(t *testing.T) {
 	check(renderer.Utils().RestoreState(), "expected a stored state to restore")
 
 	// stored properties are back to their stored values
-	check(renderer.GetFont() == testFontA, "font not restored")
-	check(renderer.Script().GetFont(unicode.Han) == testFontA, "script fonts not restored")
+	check(renderer.GetFont() == fontA, "font not restored")
+	check(renderer.Script().GetFont(unicode.Han) == fontA, "script fonts not restored")
 	check(renderer.GetAlign() == Left|Baseline, "align not restored")
 	check(renderer.GetColor() == colorA, "color not restored")
 	check(renderer.GetSize() == 16 && renderer.GetScale() == 1, "size and scale not restored")
@@ -96,42 +95,42 @@ func TestStoreRestoreState(t *testing.T) {
 	}
 
 	renderer.Utils().StoreState()
-	renderer.Script().SetFont(unicode.Han, testFontB)      // replace
-	renderer.Script().SetFont(unicode.Cyrillic, testFontA) // insert before Han
+	renderer.Script().SetFont(unicode.Han, fontB)      // replace
+	renderer.Script().SetFont(unicode.Cyrillic, fontA) // insert before Han
 	renderer.Utils().StoreState()
-	renderer.Script().SetFont(unicode.Cyrillic, nil)    // remove
-	renderer.Script().SetFont(unicode.Greek, testFontB) // insert between
+	renderer.Script().SetFont(unicode.Cyrillic, nil) // remove
+	renderer.Script().SetFont(unicode.Greek, fontB)  // insert between
 	renderer.Utils().StoreState()
 	renderer.Script().Clear()
 	expectScripts("after clearing", nil, nil, nil)
 
 	renderer.Utils().RestoreState()
-	expectScripts("on the third level", testFontB, testFontB, nil)
+	expectScripts("on the third level", fontB, fontB, nil)
 	renderer.Utils().RestoreState()
-	expectScripts("on the second level", testFontB, nil, testFontA)
+	expectScripts("on the second level", fontB, nil, fontA)
 	renderer.Utils().RestoreState()
-	expectScripts("on the first level", testFontA, nil, nil)
+	expectScripts("on the first level", fontA, nil, nil)
 
 	renderer.Utils().StoreState()
-	renderer.Script().SetFont(unicode.Greek, testFontA)
-	expectScripts("on a second visit to the second level", testFontA, testFontA, nil)
+	renderer.Script().SetFont(unicode.Greek, fontA)
+	expectScripts("on a second visit to the second level", fontA, fontA, nil)
 	renderer.Utils().RestoreState()
-	expectScripts("back on the first level", testFontA, nil, nil)
+	expectScripts("back on the first level", fontA, nil, nil)
 
 	renderer.Utils().StoreState() // a level without writes
 	renderer.Utils().StoreState()
-	renderer.Script().SetFont(unicode.Greek, testFontB)
+	renderer.Script().SetFont(unicode.Greek, fontB)
 	renderer.Utils().RestoreState()
 	renderer.Utils().RestoreState()
-	expectScripts("after restoring a level without writes", testFontA, nil, nil)
+	expectScripts("after restoring a level without writes", fontA, nil, nil)
 
 	// each depth keeps its memory across visits, including visits without
 	// writes, so once every depth has been written to, nothing allocates
 	allocs := testing.AllocsPerRun(100, func() {
 		renderer.Utils().StoreState() // writes on both depths
-		renderer.Script().SetFont(unicode.Han, testFontB)
+		renderer.Script().SetFont(unicode.Han, fontB)
 		renderer.Utils().StoreState()
-		renderer.Script().SetFont(unicode.Greek, testFontB)
+		renderer.Script().SetFont(unicode.Greek, fontB)
 		renderer.Utils().RestoreState()
 		renderer.Utils().RestoreState()
 
@@ -143,7 +142,7 @@ func TestStoreRestoreState(t *testing.T) {
 	if allocs != 0 {
 		t.Fatalf("expected no allocations for temporary script font changes, got %v", allocs)
 	}
-	expectScripts("after the temporary changes", testFontA, nil, nil)
+	expectScripts("after the temporary changes", fontA, nil, nil)
 }
 
 // TestZeroValueRenderer verifies that a zero value renderer can be set up

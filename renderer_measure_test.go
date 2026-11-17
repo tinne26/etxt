@@ -7,12 +7,9 @@ import (
 )
 
 func TestMeasure(t *testing.T) {
-	if testFontA == nil {
-		t.SkipNow()
-	}
-
+	font := testFontsWithRunes(t, testLatinSample)[0]
 	renderer := NewRenderer()
-	renderer.SetFont(testFontA)
+	renderer.SetFont(font)
 	renderer.Utils().SetCache8MiB()
 
 	testMeasureBasics(t, renderer, func(r *Renderer, str string) fract.Rect {
@@ -21,12 +18,9 @@ func TestMeasure(t *testing.T) {
 }
 
 func TestMeasureWithWrap(t *testing.T) {
-	if testFontA == nil {
-		t.SkipNow()
-	}
-
+	font := testFontsWithRunes(t, testLatinSample)[0]
 	renderer := NewRenderer()
-	renderer.SetFont(testFontA)
+	renderer.SetFont(font)
 	renderer.Utils().SetCache8MiB()
 
 	testMeasureBasics(t, renderer, func(r *Renderer, str string) fract.Rect {

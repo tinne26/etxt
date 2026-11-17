@@ -14,12 +14,9 @@ func TestLibrary(t *testing.T) {
 		t.Fatal("really?")
 	}
 
-	ensureTestAssetsLoaded()
-	if testFontA == nil {
-		t.SkipNow()
-	}
+	test := testFonts.WithRunes(t, "")[0]
 
-	added, skipped, err := lib.ParseAllFromPath(testFontsDir + "/" + testPathA)
+	added, skipped, err := lib.ParseAllFromPath(testFontsDir + "/" + test.File)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err.Error())
 	}
@@ -30,7 +27,7 @@ func TestLibrary(t *testing.T) {
 		t.Fatal("expected 0 skipped fonts")
 	}
 
-	font, name, err := ParseFromPath(testFontsDir + "/" + testPathA)
+	font, name, err := ParseFromPath(testFontsDir + "/" + test.File)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -72,24 +69,14 @@ func TestLibrary(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	switch added {
-	case 0:
-		t.Fatal("expected at least 1 added font")
-	case 1:
-		if testFontB != nil {
-			t.Fatal("expected at least 2 added fonts")
-		}
-	default:
-		if testFontB == nil {
-			t.Fatal("expected at most 1 added font, internal test init parsing mismatch")
-			// ^ see init_test.go
-		}
+	if fonts := testFonts.All(t); added != len(fonts) {
+		t.Fatalf("expected %d added fonts, got %d", len(fonts), added)
 	}
 	if skipped != 0 {
 		t.Logf("WARNING: skipped %d fonts during embed parsing. Do you have dup fonts on %s?", skipped, testFontsDir)
 	}
 
-	fname, err := lib.ParseFromFS(testfs, testFontsDir+"/"+testPathA)
+	fname, err := lib.ParseFromFS(testfs, testFontsDir+"/"+test.File)
 	if err != ErrAlreadyPresent {
 		t.Fatalf("expected ErrAlreadyPresent, got '%s'", err.Error())
 	}
@@ -100,7 +87,7 @@ func TestLibrary(t *testing.T) {
 	if !lib.RemoveFont(name) {
 		t.Fatalf("expected font %s to be present and possible to remove", name)
 	}
-	file, err := testfs.Open(testFontsDir + "/" + testPathA)
+	file, err := testfs.Open(testFontsDir + "/" + test.File)
 	if err != nil {
 		_ = file.Close()
 		panic(err)
