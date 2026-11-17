@@ -172,7 +172,7 @@ const (
 //
 // By default, [NewRenderer]() initializes the align to (etxt.[Baseline] | etxt.[Left]).
 //
-// [this image]: https://github.com/tinne26/etxt/blob/v0.0.10/docs/img/gtxt_aligns.png
+// [this image]: https://github.com/tinne26/etxt/blob/v0.0.11/docs/img/gtxt_aligns.png
 func (self *Renderer) SetAlign(align Align) {
 	state := self.state()
 	state.align = state.align.Adjusted(align)

@@ -19,12 +19,12 @@ import (
 // advisable to be familiar with [RendererFract] and the [etxt/fract]
 // subpackage before diving in.
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.11#Renderer
 type RendererGlyph Renderer
 
 // [Gateway] to [RendererGlyph] functionality.
 //
-// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10#Renderer
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.11#Renderer
 func (self *Renderer) Glyph() *RendererGlyph {
 	return (*RendererGlyph)(self)
 }
@@ -76,8 +76,8 @@ func (self *RendererGlyph) GetDrawFunc() func(Target, sfnt.GlyphIndex, fract.Poi
 // function is generally unsafe and many behaviors are undefined.
 // Only the text color can be safely changed at the moment.
 //
-// [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/v0.0.10/examples/ebiten/colorful/main.go
-// [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/v0.0.10/examples/ebiten/shaking/main.go
+// [examples/ebiten/colorful]: https://github.com/tinne26/etxt/blob/v0.0.11/examples/ebiten/colorful/main.go
+// [examples/ebiten/shaking]: https://github.com/tinne26/etxt/blob/v0.0.11/examples/ebiten/shaking/main.go
 func (self *RendererGlyph) SetDrawFunc(drawFn func(Target, sfnt.GlyphIndex, fract.Point)) {
 	// Note: we could actually allow the font and the sizer to be changed, but this
 	//       has implications on measuring. We wouldn't be able to measure properly,
@@ -156,13 +156,13 @@ func (self *RendererGlyph) SetMissHandler(missHandler func(font *sfnt.Font, buff
 //	if err != nil { /* handle */ }
 //	if index == 0 { /* handle notdef glyph */ }
 //
-// For users of script-specific fonts, notice that this method always returns
-// the glyph index corresponding to the primary font, unless the method is
-// called from inside a custom draw function and the current text run uses a
-// different script. This also means that to cache glyphs of script-specific
-// fonts, you must set them with [Renderer.SetFont]() first.
+// For users of script-specific or fallback fonts, notice that this method
+// always returns the glyph index corresponding to the primary font, unless
+// the method is called from inside a custom draw function. This also means
+// that to cache glyphs of those other fonts, you must set them with
+// [Renderer.SetFont]() first.
 //
-// [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10/font#GetMissingRunes
+// [font.GetMissingRunes]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.11/font#GetMissingRunes
 func (self *RendererGlyph) GetRuneIndex(codePoint rune) sfnt.GlyphIndex {
 	return (*Renderer)(self).glyphGetRuneIndex(codePoint)
 }

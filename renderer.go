@@ -41,8 +41,8 @@ import (
 // If you need further help or guidance, consider reading ["advice on
 // renderers"] and going through the code in the [examples] folder.
 //
-// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.10/docs/renderer.md
-// [examples]: https://github.com/tinne26/etxt/tree/v0.0.10/examples
+// ["advice on renderers"]: https://github.com/tinne26/etxt/blob/v0.0.11/docs/renderer.md
+// [examples]: https://github.com/tinne26/etxt/tree/v0.0.11/examples
 type Renderer struct {
 	states []restorableState // stored states, with the active one last (see state())
 
@@ -115,7 +115,7 @@ func (self *Renderer) state() *restorableState {
 // See also [Renderer.SetScale]() for proper handling of high
 // resolution text and display scaling.
 //
-// [general reference]: https://github.com/tinne26/etxt/blob/v0.0.10/docs/px-size.md
+// [general reference]: https://github.com/tinne26/etxt/blob/v0.0.11/docs/px-size.md
 func (self *Renderer) SetSize(size float64) {
 	// TODO: test with size zero for draws and measures and all that,
 	//       as well as fractional but almost zero sizes. the rounding
@@ -144,7 +144,7 @@ func (self *Renderer) GetSize() float64 {
 // The scale must be non-negative. By default, [NewRenderer]()
 // initializes it to 1.0.
 //
-// [this guide]: https://github.com/tinne26/etxt/blob/v0.0.10/docs/display-scaling.md
+// [this guide]: https://github.com/tinne26/etxt/blob/v0.0.11/docs/display-scaling.md
 func (self *Renderer) SetScale(scale float64) {
 	self.fractSetScale(fract.FromFloat64Up(scale))
 }
@@ -195,7 +195,7 @@ func (self *Renderer) GetDirection() Direction {
 //   - If you need a quick font for testing, take one from [github.com/tinne26/fonts]
 //     (e.g. lbrtsans.Font()).
 //
-// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.10#Library
+// [etxt/font.Library]: https://pkg.go.dev/github.com/tinne26/etxt/font@v0.0.11#Library
 // [github.com/tinne26/fonts]: https://github.com/tinne26/fonts
 func (self *Renderer) SetFont(font *sfnt.Font) {
 	state := self.state()

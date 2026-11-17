@@ -23,7 +23,7 @@ func loadScriptNames() {
 
 // [Gateway] to [RendererScript] functionality.
 //
-// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10#Renderer
+// [Gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.11#Renderer
 func (self *Renderer) Script() *RendererScript {
 	return (*RendererScript)(self)
 }
@@ -37,7 +37,7 @@ func (self *Renderer) Script() *RendererScript {
 //
 //	renderer.Script().SetFont(unicode.Han, notoFont)
 //
-// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.10#Renderer
+// [gateway]: https://pkg.go.dev/github.com/tinne26/etxt@v0.0.11#Renderer
 type RendererScript Renderer
 
 // ---- wrapper methods ----

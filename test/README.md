@@ -12,18 +12,18 @@ Many scripts are provided in `/test/scripts`. For example, you can run the tests
 ```
 $ ./test/scripts/run_tests.sh
 [testing with gtxt...]
-ok      github.com/tinne26/etxt         0.212s  coverage: 75.5% of statements
-ok      github.com/tinne26/etxt/cache   0.004s  coverage: 83.8% of statements
-ok      github.com/tinne26/etxt/font    0.016s  coverage: 81.8% of statements
+ok      github.com/tinne26/etxt         0.259s  coverage: 79.2% of statements
+ok      github.com/tinne26/etxt/cache   0.004s  coverage: 82.2% of statements
+ok      github.com/tinne26/etxt/font    0.013s  coverage: 82.9% of statements
 ok      github.com/tinne26/etxt/fract   0.007s  coverage: 89.4% of statements
-ok      github.com/tinne26/etxt/mask    0.017s  coverage: 78.9% of statements
+ok      github.com/tinne26/etxt/mask    0.015s  coverage: 72.9% of statements
 
 [testing with Ebitengine...]
-ok      github.com/tinne26/etxt         0.248s  coverage: 54.5% of statements
-ok      github.com/tinne26/etxt/cache   0.041s  coverage: 83.8% of statements
-ok      github.com/tinne26/etxt/font    0.017s  coverage: 81.8% of statements
-ok      github.com/tinne26/etxt/fract   0.055s  coverage: 88.9% of statements
-ok      github.com/tinne26/etxt/mask    0.065s  coverage: 78.9% of statements
+ok      github.com/tinne26/etxt         0.255s  coverage: 55.9% of statements
+ok      github.com/tinne26/etxt/cache   0.045s  coverage: 82.2% of statements
+ok      github.com/tinne26/etxt/font    0.015s  coverage: 82.9% of statements
+ok      github.com/tinne26/etxt/fract   0.048s  coverage: 88.9% of statements
+ok      github.com/tinne26/etxt/mask    0.063s  coverage: 72.9% of statements
 ```
 
 Tests pick fonts in the same order on every run, sorted by name. You can set the `ETXT_TEST_SEED` environment variable to any integer in order to shuffle fonts in a reproducible way.

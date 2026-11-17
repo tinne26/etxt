@@ -75,9 +75,10 @@ func main() {
 
 	// miss handler
 	renderer.Glyph().SetMissHandler(etxt.OnMissNotdef)
+	// alternative drawing '?' instead (requires importing golang.org/x/image/font/sfnt):
 	// glyph := renderer.Glyph().GetRuneIndex('?')
-	// renderer.Glyph().SetMissHandler(func(*sfnt.Font, rune) (sfnt.GlyphIndex, bool) {
-	// 	return glyph, false
+	// renderer.Glyph().SetMissHandler(func(*sfnt.Font, *sfnt.Buffer, rune) (*sfnt.Font, sfnt.GlyphIndex) {
+	// 	return sfntFont, glyph
 	// })
 
 	// run the game
